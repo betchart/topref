@@ -17,6 +17,16 @@ class channelClassification(analysisStep) :
             self.book.fill( iBin, 'ttDecayMode', self.nbins, 0, self.nbins, xAxisLabels = self.labels )
 
 #####################################
+class leptonSigned(analysisStep) :
+    def __init__(self, var, binning = (100,0,1)):
+        self.moreName = "+/- lepton of %s"%var
+        self.var = var
+        self.binning = binning
+
+    def uponAcceptance(self,ev) :
+        q = 'Pos' if ev['fitTopLeptonCharge']>0 else 'Neg'
+        self.book.fill(ev[self.var], self.var+q, *self.binning, title = ';%s (%s lepton);events / bin'%(self.var,q))
+#####################################
 class jetPrinter(analysisStep) :
     def uponAcceptance(self,ev) :
         jets = ev['TopJets']['fixes']
@@ -286,10 +296,17 @@ class kinematics(analysisStep) :
     def uponAcceptance(self,ev) :
         index = ev["%sRecoIndex"%self.moreName]
         if index < 0 : return
-        #topReco = ev["TopReconstruction"][index]
+        topReco = ev["TopReconstruction"]
+        self.book.fill(ev[self.moreName+"TtxMass"], "TTX.mass", 50,300,1300, title = ";ttx invariant mass;events / bin")
+        self.book.fill(ev[self.moreName+"PtSum"],   "TT.pt",   100,  0, 200, title = ";ttbar.pt;events / bin")
+        self.book.fill( topReco[index]['hadTraw'].mass(), "rawHadTopMass", 100, 100,300, title = ";%s raw hadronic top mass;events / bin"%self.moreName)
+        self.book.fill( topReco[index]['hadWraw'].mass(), "rawHadWMass", 100, 0,200, title = ";%s raw hadronic W mass;events / bin"%self.moreName)
 
-        mass = ev["%sTtxMass"%self.moreName]
-        self.book.fill(mass , "TTX.mass", 70,300,1000, title = ";ttx invariant mass;events / bin")
+        lo = (-1,0)
+        up = (1,1)
+        v = tuple( max(L,min(val,U-1e-6)) for val,L,U  in zip((ev['TridiscriminantWTopQCD'],
+                                                               ev[self.moreName+'SqrtPtOverSumPt']), lo, up) )
+        self.book.fill( v, 'triD_v_sqtsumptopt', (100,100), lo, up, title = ""  )
 #####################################
 class resolutions(analysisStep) :
     def __init__(self,indexName) : self.moreName = indexName
@@ -307,27 +324,16 @@ class resolutions(analysisStep) :
             for s in ['lep','nu','bLep','bHad','q'] :
                 self.book.fill(ev['%sDeltaRTopRecoGen'%s][index], s+'DeltaRTopRecoGen', 50,0,2, title = ';%s DeltaR reco gen;events / bin'%s)
         
-
-        iX = ev['genTopIndicesX']
-
-        self.book.fill(len(iX), "multiplicity_iX", 5, -0.5, 4.5, title = ";n extra hard;events / bin")
-        self.book.fill((len(iX),0 if topReco[index]['iX']==None else 1), "multiplicity_iX_v_reco", (5,2), (-0.5,-0.5), (4.5,1.5), title = ";n extra hard;n chosen xhard;events / bin")
-
         gsP4 = ev['genSumP4']
-
-        self.book.fill( topReco[index]['ttx'].pz() - gsP4.pz(), "resolution_pz", 100, -500, 500, title = ";%s #Delta_{reco-gen} ttx.pz;events / bin"%self.moreName )
         self.book.fill( topReco[index]['ttx'].pt() - gsP4.pt(), "resolution_pt", 100, -100, 100, title = ";%s #Delta_{reco-gen} ttx.pt;events / bin"%self.moreName )
-        self.book.fill( topReco[index]['ttx'].mass() - gsP4.mass(), "resolution_m", 100, -100, 100, title = ";%s #Delta_{reco-gen} ttx.m;events / bin"%self.moreName )
+        self.book.fill( topReco[index]['ttx'].mass() - gsP4.mass(), "resolution_m", 100, -200, 200, title = ";%s #Delta_{reco-gen} ttx.m;events / bin"%self.moreName )
 
         iLep = min(0,topReco[index]["lepCharge"])
         gen =  (ev["genP4"][genTTbar[0]], ev["genP4"][genTTbar[1]])
         reco = (topReco[index]['top'],topReco[index]['tbar'])
         unfit = (topReco[index]['lepTraw'], topReco[index]['hadTraw'])[::topReco[index]["lepCharge"]]
 
-        self.book.fill( (min(1.99,r.Math.VectorUtil.DeltaR(reco[iLep],gen[iLep])),
-                         min(1.99,r.Math.VectorUtil.DeltaR(reco[not iLep],gen[not iLep]))), "deltaR_lepvhad", (50,50), (0,0), (2,2), title = ";lep top #Delta R_{reco gen};had top #Delta R_{reco gen}; events / bin"  ) 
-
-        for func in ['Rapidity','eta'] :
+        for func in ['Rapidity'] :
             genFunc = (getattr(gen[0],func)(), getattr(gen[1],func)())
             recoFunc = (getattr(reco[0],func)(),getattr(reco[1],func)())
             unfitFunc = (getattr(unfit[0],func)(), getattr(unfit[1],func)())
@@ -336,7 +342,6 @@ class resolutions(analysisStep) :
                 self.book.fill( fit[not iLep] - genFunc[not iLep],   "d%sHadTop_%s"%(func,f), 100,-1,1, title=";had top #Delta %s_{%s reco gen};events / bin"%(func,f))
                 self.book.fill( fit[0]-fit[1] - (genFunc[0]-genFunc[1]), "dd%sTTbar_%s"%(func,f), 100,-1,1, title = ";#Delta %s_{t#bar{t} %s reco}-#Delta %s_{t#bar{t} gen};events / bin"%(func,f,func))
 
-        
         #iHad = max(0,topReco[index]["lepCharge"])
         #genLepY = ev['genP4'][max(ev['genTTbarIndices'][item] for item in ['lplus','lminus'])].Rapidity()
         #self.book.fill( recoY[iHad] - topReco[index]['lep'].Rapidity() - (genY[iHad]-genLepY), "ddRapidityLHadTop", 100,-1,1, title = ";#Delta y_{l-htop reco}-#Delta y_{l-htop gen};events / bin")
@@ -648,3 +653,89 @@ class mcQuestions(analysisStep) :
             self.book.fill(cmGlu.P(), 'cmgluP', 200,0,200, title = ';q#bar{q}cm gluP')
             self.book.fill(cmzGlu.pt(), 'cmzgluPt', 200,0,200, title = ';q#bar{q}cm_{z} gluP_{T}')
             self.book.fill(abs(cmzGlu.eta()), 'cmzgluAbsEta', 100,0,5.5, title = ';|cmz glu #eta|')
+
+class mcQuestions2(analysisStep) :
+    def __init__(self,pred=None) :
+        self.pred = pred
+        self.maxes = {'genttCosThetaStar':1,
+                      #'genTopCosEqualThetaZ':1,
+                      #'genTopCosThetaBoost':1,
+                      'genTopCosThetaBoostAlt':1,
+                      #'genTopDeltaAbsYttbar':3,
+                      #'genTopBetaProjection':1,
+                      'genTopDeltaBetazRel':1,
+                      'genTopCosPhiBoost':1}
+
+    def uponAcceptance(self,ev) :
+        if self.pred and not ev[self.pred] : return
+        for var,m in self.maxes.items() :
+            self.book.fill(ev[var], var          , 100, -m,m, title = ';%s;events / bin'%var)
+            self.book.fill(ev[var], var+"_lowres",   2, -m,m, title = ';%s;events / bin'%var)
+
+        for ((v1,m1),(v2,m2)) in itertools.combinations(self.maxes.items(),2) :
+            self.book.fill(ev[v1]*ev[v2], "product_%s_%s"%(v1,v2), 2, -m1*m2, m1*m2, title = ";%s . %s;events / bin"%(v1,v2))
+
+class fractions(calculables.secondary) :
+
+    def uponAcceptance(self,ev) :
+        abssum = ev['genTopAbsSumRapidities']
+        absdelta = ev['genTopDeltaAbsYttbar']
+        self.book.fill(  abssum,  'abssum', 100,  0, 8, w = 1)
+        self.book.fill(absdelta,'absdelta', 100, -3, 3, w = 1)
+
+    def reportCache(self) :
+        fileName = '/'.join(self.outputFileName.split('/')[:-1]+[self.name])
+        optstat = r.gStyle.GetOptStat()
+        r.gStyle.SetOptStat(0)
+        c = r.TCanvas()
+        c.Print(fileName+'.pdf[')
+
+        names = ['%s#rightarrow^{}t#bar{t} '%i for i in ['gg','qg','q#bar{q}','#bar{q}g']]
+        samples = ['ttj_ph.w%s.tw.pu'%s for s in ['GG','QG','QQ','AG']]
+        colors = [r.kBlack,r.kBlue,r.kRed,r.kGreen]
+        hists = self.fromCache(samples, ['abssum','absdelta'])
+
+        def arrange(name, rebin = 1) :
+            coll = [hists[s][name] for s in samples]
+            for h_ in coll : h_.Rebin(rebin)
+            h = coll[0].Clone();
+            h.Reset()
+            for h_ in coll : h.Add(h_)
+            return h,coll
+        abssum,abssumColl = arrange('abssum',4)
+        absdelta,absdeltaColl = arrange('absdelta',2)
+        leg = r.TLegend(0.72,0.55,0.87,0.80)
+        leg.SetTextFont(102)
+        for i,h in enumerate(abssumColl) :
+            leg.AddEntry(h,names[i],'l')
+            h.Divide(abssum)
+            h.SetTitle(';|y_{t}+y_{#bar{t}}|;fraction  t#bar{t}')
+            h.SetMinimum(0.01)
+            h.SetMaximum(1.1)
+            h.SetLineWidth(2)
+            h.SetLineColor(colors[i])
+            h.Draw('hist same'[:None if i else -4])
+        c.SetLogy(1)
+        leg.SetTextSize(0.04)
+        leg.Draw()
+        c.Print(fileName+'.pdf')
+        leg2 = r.TLegend(0.62,0.55,0.87,0.88)
+        leg2.SetTextSize(0.04)
+        leg2.SetHeader('(N^{+}-N^{-}) / (N^{+}+N^{-})  (%)')
+        #leg2.SetTextAlign(22)
+        leg2.SetTextFont(102)
+        for i,h in enumerate(absdeltaColl) :
+            h.SetTitle(';|y_{t}|-|y_{#bar{t}}|;Events / bin / pb^{-1}')
+            h.SetMinimum(0)
+            h.SetLineWidth(2)
+            h.SetLineColor(colors[i])
+            h.Draw('hist same'[:None if i else -4])
+            asymm = 100 * (h.Integral(h.FindFixBin(0.0001), h.GetNbinsX()+2) - h.Integral(0, h.FindFixBin(-0.0001))) / h.Integral(0,h.GetNbinsX()+2)
+            leg2.AddEntry(h, names[i]+'%+.1f'%asymm,'l')
+        c.SetLogy(0)
+        leg.Draw()
+        leg2.Draw()
+        c.Print(fileName+'.pdf')
+        c.Print(fileName+'.pdf]')
+        r.gStyle.SetOptStat(optstat)
+        print "Wrote file: %s.pdf"%fileName
