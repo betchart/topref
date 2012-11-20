@@ -1,1 +1,1 @@
-import electron,gen,jet,muon,other,photon,top,trigger,vertex,xclean
+import electron,gen,jet,muon,other,top,trigger

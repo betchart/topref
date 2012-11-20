@@ -1,10 +1,8 @@
 from supy import calculables,utils,wrappedChain
 import collections,os, ROOT as r
 import itertools,operator,random,math
-try:
-    import numpy as np
-except:
-    pass
+try:  import numpy as np
+except: np = None
 
 #####################################
 class lowestUnPrescaledTrigger(wrappedChain.calculable) :
