@@ -1,6 +1,5 @@
 for module in [
-    "electron16",
-    "muon16",
+    "lepton112",
     "qcd112",
     "ewk112",
     "top112",
