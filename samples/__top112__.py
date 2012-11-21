@@ -2,7 +2,7 @@ from supy.samples import SampleHolder
 from supy.sites import srm
 top112 = SampleHolder()
 
-srm_burt = srm + '/bbetchar/ICF/automated'
+srm_burt = srm + '/bbetchar/TOP/automated'
 singleT = srm_burt + '/2012_11_17_19_05_24/%s_%s_TuneZ2star_8TeV-powheg-tauola.Summer12_DR53X-PU_S10_START53_V7A-v1.AODSIM/")'
 ttj_ph = '2012_11_17_06_07_35/TT_CT10_TuneZ2star_8TeV-powheg-tauola.Summer12_DR53X-PU_S10_START53_V7A-v%d.AODSIM'
 
