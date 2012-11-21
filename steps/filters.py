@@ -20,35 +20,3 @@ class run(analysisStep) :
     def select (self,eventVars) :
         return not ((eventVars["run"] in self.runs) ^ self.accept)
 #####################################
-class hbheNoise(analysisStep) :
-    def select (self,eventVars) :
-        return eventVars["hbheNoiseFilterResult"]
-#####################################
-class monster(analysisStep) :
-    def __init__(self,maxNumTracks=10,minGoodTrackFraction=0.25) :
-        self.maxNumTracks=maxNumTracks
-        self.minGoodTrackFraction=minGoodTrackFraction
-
-        self.moreName = "<=%d tracks or >%.2f good fraction" % (maxNumTracks, minGoodTrackFraction)
-
-    def select (self,eventVars) :
-        nTracks = eventVars['nTracksAll']
-        nGoodTracks = eventVars['nTracksHighPurity']
-        return (nTracks <= self.maxNumTracks or nGoodTracks > self.minGoodTrackFraction*nTracks)
-#####################################
-class DeltaRGreaterSelector(analysisStep) :
-
-    def __init__(self, jets = None, particles = None, minDeltaR = None, particleIndex = None):
-        self.particleIndex = particleIndex
-        self.minDeltaR = minDeltaR
-        self.particleIndicesName = "%sIndices%s"%particles
-
-        self.moreName = "%s%s; DR(%s%s[i[%d]], jet) > %.2f"%(jets[0], jets[1], particles[0], particles[1], particleIndex, minDeltaR)
-        self.minDeltaRVar = "%s%sMinDeltaRToJet%s%s"%(particles[0], particles[1], jets[0], jets[1])
-        
-    def select (self,eventVars) :
-        indices = eventVars[self.particleIndicesName]
-        if len(indices) <= self.particleIndex : return False
-        index = indices[self.particleIndex]
-        return eventVars[self.minDeltaRVar][index]>self.minDeltaR
-#####################################

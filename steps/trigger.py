@@ -1,47 +1,6 @@
 import math,collections,re, ROOT as r
 from supy import analysisStep,utils
 #####################################
-class physicsDeclaredFilter(analysisStep) :
-
-    def select (self,eventVars) :
-        return eventVars["physicsDeclared"]
-#####################################
-class techBitFilter(analysisStep) :
-
-    def __init__(self,bitList,acceptRatherThanReject) :
-        self.bitList=bitList
-        self.accept=acceptRatherThanReject
-
-        self.moreName=""
-        if (self.accept) : self.moreName+="any "
-        else :             self.moreName+="no  "
-        self.moreName+="tech. bit in ["
-        for i in range(len(self.bitList)) :
-            self.moreName+=str(self.bitList[i])
-            if (i!=len(self.bitList)-1) : self.moreName+=","
-            else : self.moreName+="]"
-        
-    def select (self,eventVars) :
-        l1techbits = eventVars["l1techbits"]
-        anyBitInList=False
-        for bit in self.bitList:
-            if l1techbits.at(bit) :
-                anyBitInList=True
-                break
-
-        return not (anyBitInList ^ self.accept)
-#####################################
-class triggerTest(analysisStep) :
-
-    def select (self,eventVars) :
-        #print eventVars["l1techbits"][9],eventVars["L1triggered"]["L1Tech_HCAL_HF_totalOR_minBias.v0"]
-        L1 = eventVars["L1triggered"]
-        print "bit 9=%d; v0=%d; v1=%d" % \
-              ( eventVars["l1techbits"].at(9), \
-                L1["L1Tech_HCAL_HF_coincidence_PM.v0"], \
-                L1["L1Tech_HCAL_HF_coincidence_PM.v1"] )
-        return True
-#####################################
 class NameDump(analysisStep) :
 
     def __init__(self,triggerLevel = ""):
@@ -131,38 +90,13 @@ class lowestUnPrescaledTriggerHistogrammer(analysisStep) :
         iBin = self.labels.index(self.label[eventVars[self.key]])
         self.book.fill(iBin, self.key, self.nBins, 0.0, self.nBins, title = ";lowest un-prescaled path;events / bin", xAxisLabels = self.labels)
 #####################################
-class l1Filter(analysisStep) :
-
-    def __init__(self, bitName):
-        self.bitName = bitName
-        self.moreName = self.bitName
-
-    def select (self,eventVars) :
-        return eventVars["L1triggered"][self.bitName]
-#####################################
 class hltFilter(analysisStep) :
-
     def __init__(self,hltPathName):
         self.hltPathName = hltPathName
         self.moreName = self.hltPathName
 
     def select (self,eventVars) :
-        return eventVars["triggered"][self.hltPathName]
-#####################################
-class hltFail(analysisStep) :
-
-    def __init__(self, paths):
-        self.paths = paths
-        self.moreName = str(self.paths)
-
-    def select (self,eventVars) :
-        fired = False
-        inMenu = False
-        for path in self.paths :
-            if path not in eventVars["triggered"] : continue
-            inMenu = True
-            if eventVars["triggered"][path] : fired = True
-        return inMenu and (not fired)
+        return eventVars["prescaled"][self.hltPathName]
 #####################################
 class hltFilterList(analysisStep) :
 
@@ -170,10 +104,8 @@ class hltFilterList(analysisStep) :
         self.hltPathNames = hltPathNames
         self.moreName = "any of "+str(self.hltPathNames)
 
-    def select (self,eventVars) :
-        for path in self.hltPathNames :
-            if eventVars["triggered"][path] : return True
-        return False
+    def select (self,ev) :
+        return any( ev[path] for path in self.hltPathNames )
 #####################################
 class hltPrescaleHistogrammer(analysisStep) :
 
@@ -206,10 +138,10 @@ class hltTurnOnHistogrammer(analysisStep) :
         self.moreName = "%s by %s, given %s;" % (probe, var, tags)
 
     def uponAcceptance(self,eventVars) :
-        if not any([eventVars["triggered"][t] for t in self.tags]) : return
+        if not any([eventVars["prescaled"][t] for t in self.tags]) : return
         if (not self.permissive) and 1 != eventVars["prescaled"][self.probe] : return
         
-        for t in ([self.tagTitle] if not eventVars["triggered"][self.probe] else [self.tagTitle,self.probeTitle]) :
+        for t in ([self.tagTitle] if not eventVars["prescaled"][self.probe] else [self.tagTitle,self.probeTitle]) :
             self.book.fill( eventVars[self.var], t[0], self.binsMinMax[0],self.binsMinMax[1],self.binsMinMax[2], title = t[1] )
     
     def mergeFunc(self, products) :
@@ -224,41 +156,6 @@ class hltTurnOnHistogrammer(analysisStep) :
             efficiency.SetBinError(bin,0)
         efficiency.Write()
         print "Output updated with TurnOn %s."%self.effTitle[0]
-#####################################
-class jetMetTriggerHistogrammer(analysisStep) :
-
-    def __init__(self,triggerJets,triggerMet,offlineJets,offlineMht) :
-        self.triggerJets = triggerJets
-        self.triggerMet = triggerMet
-        self.offlineJets = offlineJets
-        self.offlineMht = offlineMht
-        self.moreName  = "trigger: %s,%s"%(self.triggerJets,self.triggerMet)
-        self.moreName2 = " offline: %s,%s"%(self.offlineJets,self.offlineMht)
-        self.triggerJetsP4String = "%sCorrectedP4%s"%self.triggerJets
-        self.triggerJetsCorrFactorString = "%sCorrFactor%s"%self.triggerJets
-        self.triggerMetString = "%sP4%s"%self.triggerMet
-
-        self.offlineJetsP4String = "%sCorrectedP4%s"%self.offlineJets
-        self.offlineSumP4String = "%sSumP4%s"%self.offlineJets
-        
-    def uponAcceptance(self,eventVars) :
-        nTriggerJets = eventVars[self.triggerJetsP4String].size()
-        if not nTriggerJets : return
-        triggerJetPt = max( [eventVars[self.triggerJetsP4String].at(i).pt()/eventVars[self.triggerJetsCorrFactorString].at(i) for i in range(nTriggerJets)] )
-        triggerMet = eventVars[self.triggerMetString].pt()
-
-        nOfflineJets = eventVars[self.offlineJetsP4String].size()
-        offlineJetPt = eventVars[self.offlineJetsP4String].at(0).pt() if nOfflineJets else 0.0
-        offlineMht   = eventVars[self.offlineSumP4String].pt() if eventVars[self.offlineSumP4String] else 0.0
-        
-        self.book.fill( (triggerJetPt,triggerMet), "TriggerMet_vs_TriggerJetPt", (100,100), (0.0,0.0), (200.0,100.0),
-                        title=";leading un-corr. %s p_{T} (GeV);%s p_{T} (GeV);events / bin"%(self.triggerJets,self.triggerMet))
-        
-        self.book.fill( (offlineMht,triggerMet),   "TriggerMet_vs_OfflineMht",   (100,100), (0.0,0.0), (400.0,100.0),
-                        title=";%s MHT (GeV);%s (GeV);events / bin"%(self.offlineMht,self.triggerMet))
-
-        self.book.fill( (triggerJetPt,offlineJetPt), "OfflineJetPt_vs_TriggerJetPt", (100,100), (0.0,0.0), (200.0,200.0),
-                        title=";leading un-corr. %s p_{T} (GeV);%s p_{T} (GeV);events / bin"%(self.triggerJets,self.offlineJets))
 #####################################
 class triggerScan(analysisStep) :
     def __init__(self, pattern = r".*", prescaleRequirement = "True", tag = "") :
@@ -311,6 +208,7 @@ class triggerScan(analysisStep) :
         print "Output updated with triggerScans %s."%self.tag
 #####################################
 class prescaleScan(analysisStep) :
+    '''Currently broken due to double duty "prescaled" branch (topRef/tree).'''
     def __init__(self, trigger = None, ptMin = None, triggeringPt = "") :
         self.trigger = trigger
         self.triggeringPt = triggeringPt
@@ -337,6 +235,8 @@ class anyTrigger(analysisStep) :
 
 #####################################
 class prescaleLumiEpochs(analysisStep) :
+    '''Currently broken due to double duty "prescaled" branch (topRef/tree).'''
+
     def __init__(self, triggers) :
         self.triggers = zip(*triggers)[0]
         self.thresh = zip(*triggers)[1]

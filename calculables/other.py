@@ -1,16 +1,9 @@
 from supy import wrappedChain,utils
 import configuration
 import math,ROOT as r
-try:
-    import numpy as np
-except:
-    pass
+try: import numpy as np
+except: np = None
 
-#####################################
-class ecalDeadTowerIsBarrel(wrappedChain.calculable) :
-    etaBE = configuration.detectorSpecs()["cms"]["etaBE"]
-    def update(self,ignored) : self.value = map( self.isBarrel, self.source["ecalDeadTowerTrigPrimP4"] )
-    def isBarrel(self, p4) : return abs(p4.eta()) < self.etaBE
 #####################################
 class pthatLess(wrappedChain.calculable) :
     def __init__(self, maxPtHat = None) :
@@ -45,107 +38,6 @@ class Mt(wrappedChain.calculable) :
             self.value = math.sqrt( 2.0*lep.pt()*met.pt()*(1.0 - math.cos(r.Math.VectorUtil.DeltaPhi(lep, met))) )
         else :
             self.value = (lep+met).Mt()
-##############################
-class SumP4(wrappedChain.calculable) :
-    def __init__(self, collection = None) :
-        self.fixes = collection
-        self.stash(["Indices","P4"])
-    def update(self, ignored) :
-        p4s = self.source[self.P4]
-        indices = self.source[self.Indices]
-        self.value = reduce( lambda x,i: x+p4s.at(i), indices, utils.LorentzV()) if len(indices) else None
-##############################
-class SumEt(wrappedChain.calculable) :
-    def __init__(self, collection = None) :
-        self.fixes = collection
-        self.stash(["Indices","P4"])
-    def update(self, ignored) :
-        p4s = self.source[self.P4]
-        indices = self.source[self.Indices]
-        self.value = reduce( lambda x,i: x+p4s.at(i).Et(), indices , 0)
-##############################
-class RecHitSumPt(wrappedChain.calculable) :
-    @property
-    def name(self) :
-        return "%sRecHitSumPt"%self.collection
-    def __init__(self, collection = None, minEcalSeverity = 2, minHcalSeverity = 10, excludeHf = True, prune = True) :
-        for item in ["collection", "minEcalSeverity", "minHcalSeverity", "prune"] :
-            setattr(self, item, eval(item))
-        self.considerSeverity = self.collection=="Calo"
-        self.subdetectors = configuration.detectorSpecs()["cms"]["%sSubdetectors"%self.collection]
-        if excludeHf : self.subdetectors = filter(lambda s:"Hf" not in s, self.subdetectors)
-        self.recHitCollections = configuration.detectorSpecs()["cms"]["%sRecHitCollections"%self.collection]
-    def update(self, ignored) :
-        self.value = 0.0
-        for detector in self.subdetectors :
-            minSeverityLevel = self.minEcalSeverity if detector[0]=="E" else self.minHcalSeverity
-            considered = []
-            for collectionName in self.recHitCollections :
-                p4Var = "rechit%s%s%s%s"%(collectionName, self.collection, "P4", detector)
-                slVar = "rechit%s%s%s%s"%(collectionName, self.collection, "SeverityLevel", detector)
-                for iHit in range(len(self.source[p4Var])) :
-                    if self.considerSeverity and (self.source[slVar].at(iHit)<minSeverityLevel) : continue
-                    hit = self.source[p4Var].at(iHit)
-                    coords = (hit.eta(), hit.phi())
-                    if self.prune :
-                        if coords in considered : continue
-                        considered.append(coords)
-                    self.value += hit.pt()
-##############################
-class RecHitSumP4(wrappedChain.calculable) :
-    @property
-    def name(self) :
-        return "%sRecHitSumP4"%self.collection
-    def __init__(self, collection = None, minEcalSeverity = 2, minHcalSeverity = 10) :
-        for item in ["collection", "minEcalSeverity", "minHcalSeverity"] :
-            setattr(self, item, eval(item))
-        self.considerSeverity = self.collection=="Calo"
-        self.subdetectors = configuration.detectorSpecs()["cms"]["%sSubdetectors"%self.collection]
-        self.recHitCollections = configuration.detectorSpecs()["cms"]["%sRecHitCollections"%self.collection]
-    def update(self, ignored) :
-        self.value = utils.LorentzV()
-        for detector in self.subdetectors :
-            minSeverityLevel = self.minEcalSeverity if detector[0]=="E" else self.minHcalSeverity
-            for collectionName in self.recHitCollections :
-                p4Var = "rechit%s%s%s%s"%(collectionName, self.collection, "P4", detector)
-                slVar = "rechit%s%s%s%s"%(collectionName, self.collection, "SeverityLevel", detector)
-                for iHit in range(len(self.source[p4Var])) :
-                    if self.considerSeverity and (self.source[slVar].at(iHit)<minSeverityLevel) : continue
-                    self.value += self.source[p4Var].at(iHit)
-##############################
-class metPlusParticles(wrappedChain.calculable) :
-    @property
-    def name(self) :
-        return "%sPlus%s%s"%(self.met, self.particles[0], self.particles[1])
-    def __init__(self, met, particles) :
-        self.met = met
-        self.particles = particles
-        self.moreName = "%s + %s%s"%(self.met, self.particles[0], self.particles[1])
-    def update(self, ignored) :
-        self.value = self.source[self.met] + self.source["%sSumP4%s"%self.particles]
-##############################
-class minDeltaRToJet(wrappedChain.calculable) :
-    @property
-    def name(self) : return "%s%sMinDeltaRToJet%s%s"% (self.particles[0], self.particles[1], self.jets[0], self.jets[1])
-
-    def __init__(self, particles, jets) :
-        for item in ["particles","jets"] :
-            setattr(self,item,eval(item))
-        self.particleIndices = "%sIndices%s"%self.particles
-        self.particleP4s     = "%sP4%s"     %self.particles
-
-        self.jetIndices = "%sIndices%s"    %self.jets
-        self.jetP4s     = "%sCorrectedP4%s"%self.jets
-
-    def update(self, ignored) :
-        self.value = {}
-        particleIndices = self.source[self.particleIndices]
-        particles       = self.source[self.particleP4s]
-
-        jetIndices    = self.source[self.jetIndices]
-        jets          = self.source[self.jetP4s]
-        for iParticle in particleIndices :
-            self.value[iParticle] = min([r.Math.VectorUtil.DeltaR( particles.at(iParticle), jets.at(iJet) ) for iJet in jetIndices]) if len(jetIndices) else None
 #####################################
 class jsonWeight(wrappedChain.calculable) :
     def __init__(self, fileName = "", acceptFutureRuns = False) :
@@ -195,18 +87,6 @@ class Covariance(wrappedChain.calculable) :
     def update(self,_) :
         self.value = np.array([[self.source[self.SigmaXX],self.source[self.SigmaXY]],
                                [self.source[self.SigmaXY],self.source[self.SigmaYY]]])
-#####################################
-class TriDiscriminant(wrappedChain.calculable) :
-    def __init__(self, fixes = ("","") , LR = None, splitLR = 0.5, LC = None, RC = None) :
-        self.fixes = fixes
-        self.split = splitLR
-        self.LR = LR
-        self.LC = LC
-        self.RC = RC
-
-    def update(self,_) :
-        R  = int( self.split < self.source[self.LR] )
-        self.value = ( 1 - self.source[self.RC] ) if R else ( self.source[self.LC] - 1 )
 #####################################
 class KarlsruheDiscriminant(wrappedChain.calculable) :
     def __init__(self, jet, met) :
