@@ -23,7 +23,7 @@ def hadd() :
     return ['hadd', whereami()+'/bin/phaddy'][1]
 
 def cppROOTDictionariesToGenerate() :
-    return []
+    return [("vector<ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<double> > >", "vector;Math/LorentzVector.h")]
 
 def detectorSpecs() :
     return {
