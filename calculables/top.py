@@ -1,12 +1,12 @@
 from supy import wrappedChain,utils
-from jet import xcStrip
+#from jet import xcStrip
 import math,operator,itertools,ROOT as r
 try: import numpy as np
 except: pass
 
-class TopJets(wrappedChain.calculable) :
-    def __init__(self, jets ) : self.value = {"fixes":jets,"fixesStripped":xcStrip(jets)}
-    def update(self,_): pass
+#class TopJets(wrappedChain.calculable) :
+#    def __init__(self, jets ) : self.value = {"fixes":jets,"fixesStripped":xcStrip(jets)}
+#    def update(self,_): pass
 ######################################
 class TopLeptons(wrappedChain.calculable) :
     def __init__(self, leptons ) : self.value = leptons

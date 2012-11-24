@@ -1,31 +1,27 @@
 import supy,steps,samples,calculables
 
-class jsonMaker16(supy.analysis) :
+class jsonMaker(supy.analysis) :
     def parameters(self) :
 
         group = self.vary()
 
-        group['SingleMu'] = [(["SingleMu.2011A",
-                               "SingleMu.2011B",
+        group['SingleMu'] = [(["MuHad.2012A_1",
+                               "MuHad.2012A_2",
+                               "SingleMu.2012B",
+                               "SingleMu.2012C"
                                ], [])]
 
-        group['MuHad'] = [(["MuHad.2011A",
-                            "MuHad.2011B",
-                            ],[])]
-
-        group['SingleEl'] = [(["SingleEl.2011A",
-                               "SingleEl.2011B",
-                               ], [])] 
-
-        group['EleHad'] = [(["EleHad.2011A",
-                             "EleHad.2011B",
-                             ], [])]
+        group['SingleEl'] = [(["ElHad.2012A_1",
+                               "ElHad.2012A_2",
+                               "SingleEl.2012B",
+                               "SingleEl.2012C"
+                               ], [])]
 
         return {'group':group}
 
     def listOfSteps(self,pars) :
         return [ supy.steps.printer.progressPrinter(2,300),
-                 steps.other.jsonMaker(pixelLumi = True),
+                 steps.other.jsonMaker(calculateLumi = False),
                  ]
 
     def listOfCalculables(self,pars) :
@@ -35,7 +31,7 @@ class jsonMaker16(supy.analysis) :
         return sum([supy.samples.specify(names = samps, weights = jw) for samps,jw in pars['group']],[])
 
     def listOfSampleDictionaries(self) :
-        return [samples.electron16, samples.muon16]
+        return [samples.lepton112]
 
     def mainTree(self) :
         return ("lumiTree","tree")
