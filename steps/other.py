@@ -31,11 +31,10 @@ class handleChecker(analysisStep) :
 #####################################
 class jsonMaker(analysisStep) :
 
-    def __init__(self, calculateLumi = True, pixelLumi = True, debug = False) :
+    def __init__(self, calculateLumi = True, verbose = False) :
         self.lumisByRun = collections.defaultdict(list)
         self.calculateLumi = calculateLumi
-        self.pixelLumi = pixelLumi
-        self.debug = debug
+        self.verbose = verbose
         self.moreName="see below"
 
     def uponAcceptance(self,eventVars) :
@@ -46,23 +45,8 @@ class jsonMaker(analysisStep) :
     def outputSuffix(self) : return ".json"
 
     def lumi(self, json) :
-        if not self.calculateLumi : return -1.0
-        if self.pixelLumi :
-            return utils.luminosity.recordedInvMicrobarns(json)/1e6
-        else :
-            dct = utils.getCommandOutput("lumiCalc2.py overview -i %s"%self.outputFileName)
-            assert not dct["returncode"],dct["returncode"]
-            assert not dct["stderr"],dct["stderr"]
-            s = dct["stdout"]
-            if self.debug : print s[s.find("Total"):]
-            m = "Recorded(/"
-            i = s.rindex(m) + len(m)
-            units = s[i-1:i+2]
-            factor = {"/fb":1.0e3, "/pb":1.0, "/nb":1.0e-3, "/ub":1.0e-6}
-            assert units in factor,units
-            i2 = dct["stdout"].rindex("|")
-            i1 = dct["stdout"][:i2].rindex("|")
-            return float(dct["stdout"][1+i1:i2])*factor[units]
+        return (-1 if not self.calculateLumi else
+                utils.luminosity.recordedInvMicrobarns(json,False)/1e6 )
 
     def mergeFunc(self, products) :
         d = collections.defaultdict(list)
@@ -74,7 +58,7 @@ class jsonMaker(analysisStep) :
         for run,lumis in d.iteritems() :
             d2[run] = sorted(set(lumis))
             for ls in d2[run] :
-                if 1 < lumis.count(ls) :
+                if 1 < lumis.count(ls) and self.verbose :
                     print "Run %d ls %d appears %d times in the lumiTree."%(run,ls,lumis.count(ls))
 
         json = utils.jsonFromRunDict(d2)

@@ -1,5 +1,7 @@
 import supy,steps,samples,calculables
 
+#supy.utils.luminosity.recordedInvMicrobarns({})
+
 class jsonMaker(supy.analysis) :
     def parameters(self) :
 
@@ -21,7 +23,7 @@ class jsonMaker(supy.analysis) :
 
     def listOfSteps(self,pars) :
         return [ supy.steps.printer.progressPrinter(2,300),
-                 steps.other.jsonMaker(calculateLumi = False),
+                 steps.other.jsonMaker(),
                  ]
 
     def listOfCalculables(self,pars) :
