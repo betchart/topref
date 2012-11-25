@@ -27,12 +27,10 @@ def cppROOTDictionariesToGenerate() :
 
 def detectorSpecs() :
     return {
-        "cms": {"etaBE": 1.479, #from CMS PAS EGM-10-005
-                "barrelEtaMax": 1.4442,
-                "endcapEtaMin": 1.560,
-                "CaloSubdetectors": ["Eb", "Ee", "Hbhe", "Hf"],
-                "PFSubdetectors": ["Ecal", "Hcal", "Hfem", "Hfhad", "Ps"],
-                "CaloRecHitCollections": [""],
-                "PFRecHitCollections": ["","cluster"],
+        "cms": {"barrelEtaMax": 1.4442,
+                "endcapEtaMin": 1.5660,
                 },
         }
+
+def LorentzVectorType() :
+    return ('PtEtaPhiM4D','double')
