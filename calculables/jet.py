@@ -3,60 +3,54 @@ from supy import wrappedChain,calculables,utils
 try: import numpy as np
 except: np = None
 
+def xcStrip((pre,suf)) : return (pre.lower(),suf)
+
 ##############################
-class Indices(wrappedChain.calculable) :
-    def __init__(self, collection = None, ptMin = None, etaMax = None):
+class AdjustedP4(wrappedChain.calculable) :
+    def __init__(self, collection = None, smear = "", jesAbs = 1, jesRel = 0) :
         self.fixes = collection
-        self.stash(["P4"],collection)
-        self.pt2Min = ptMin*ptMin
-        self.moreName = "pT>=%.1f GeV; |eta|<%.1f"% (ptMin, etaMax)
+        self.jesAbs,self.jesRel = jesAbs,jesRel
+        self.Smear = smear.join(collection)
+        self.stash(['P4'])
+        self.moreName = "p4 * %s * %.2f * (1 + %.2f|eta|)" % (smear, jesAbs, jesRel)
+
+    @staticmethod
+    def smear(p4,smear) : return p4*smear
+    def jes(self,p4) : return p4 * (self.jesAbs * (1+self.jesRel*abs(p4.eta())))
 
     def update(self,_) :
-        self.value = []
-        pt2s    = []
+        self.value = ( utils.hackMap(self.jes, self.source[self.P4]) if self.source['isRealData'] else
+                       utils.hackMap(self.smear, self.source[self.P4], self.source[self.Smear]) )
+##############################
+class Pt(wrappedChain.calculable) :
+    def __init__(self,collection=None) :
+        self.fixes = collection
+        self.stash(["AdjustedP4"])
+    def update(self,ignored) :
+        self.value = utils.hackMap( lambda x: x.pt(), self.source[self.AdjustedP4] )
+##############################
+class Indices(wrappedChain.calculable) :
+    def __init__(self, collection = None, ptMin = None):
+        self.fixes = collection
+        self.stash(["Pt"])
+        self.ptMin = ptMin
+        self.moreName = "pT>=%.1f GeV" % ptMin
 
-        for i,p4 in enumerate(self.source[self.P4]) :
-            pt2 = p4s.at(i).Perp2()
-            pt2s.append(pt2)
-            if pt2 < self.pt2Min : continue
-            elif abs(p4s.at(i).eta()) < self.etaMax :
-                self.value.append(i)
-            else: other.append(i)
-        self.value.sort( key = pt2s.__getitem__, reverse = True)
+    def update(self,_) :
+        pts = self.source[self.Pt]
+        self.value = sorted( [ i for i,pt in enumerate(pts) if pt>= self.ptMin ],
+                             key = pts.__getitem__, reverse = True)
 ###################################
 class IndicesBtagged(wrappedChain.calculable) :
-    '''
-    CMS PAS BTV-09-001
-    CMS PAS BTV-10-001
-    '''
     def __init__(self,collection,tag) :
         self.fixes = collection
         self.stash(["Indices"])
-        self.tag = ("%s"+tag+"%s") % xcStrip(collection)
-        self.moreName = "Ordered by %s; %s%s"%((tag,)+collection)
+        self.Tag = tag.join(collection)
+        self.moreName = "Ordered by %s"%self.Tag
     def update(self,ignored) :
         self.value = sorted(self.source[self.Indices],
-                            key = self.source[self.tag].__getitem__, reverse = True )
+                            key = self.source[self.Tag].__getitem__, reverse = True )
 ###################################
-class IndicesBtagged2(wrappedChain.calculable) :
-    '''
-    CMS PAS BTV-09-001
-    CMS PAS BTV-10-001
-    '''
-    def __init__(self, collection, tag, threshold = None) :
-        self.fixes = collection
-        self.stash(["Indices"])
-        self.tag = ("%s"+tag+"%s") % xcStrip(collection)
-        self.moreName = " (>%g)"%threshold
-        self.threshold = threshold
-
-    def update(self,ignored) :
-        self.value = []
-        for i in self.source[self.Indices] :
-            v = self.source[self.tag].at(i)
-            if v > self.threshold :
-                self.value.append(i)
-#####################################
 class IndicesGenB(wrappedChain.calculable) :
     def __init__(self,collection) :
         self.fixes = collection
@@ -86,23 +80,6 @@ class IndicesGenWqq(wrappedChain.calculable) :
             if r.Math.VectorUtil.DeltaR(p4,qP4) < 0.5 and abs(p4.pt()-qP4.pt()) / qP4.pt() < 0.4 : return True
         return False
     def update(self,ignored) : self.value = filter(self.matchesGenWqq, self.source[self.Indices])
-###################################
-class LeadingPt(wrappedChain.calculable) :
-    def __init__(self, collection = None) :
-        self.fixes = collection
-        self.stash(["CorrectedP4","Indices"])
-    def update(self,ignored) :
-        p4s = self.source[self.CorrectedP4]
-        indices = self.source[self.Indices]
-        self.value = p4s.at(indices[0]).pt() if len(indices) else None
-##############################
-class Pt(wrappedChain.calculable) :
-    def __init__(self,collection=None) :
-        self.fixes = collection
-        self.stash(["CorrectedP4"])
-    def update(self,ignored) :
-        p4s = self.source[self.CorrectedP4]
-        self.value = [p4s.at(i).pt() for i in range(len(p4s))]
 ##############################
 class M3(wrappedChain.calculable) :
     def __init__(self, collection) :

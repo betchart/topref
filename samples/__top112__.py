@@ -16,3 +16,4 @@ top112.add("tbar_s_ph", singleT%('Tbar','s-channel'), xs = 1.57 )
 top112.add("tbar_t_ph", singleT%('Tbar','t-channel'), xs = 25.0 )
 top112.add("tbar_tW_ph", singleT%('Tbar','tW-channel-DR'), xs = 10.7 )
 
+top112.add("syncMC", '''eval('["/vols/cms04/bbetchar/sync/mc53X_v112.root"]')''', xs = 211 )
