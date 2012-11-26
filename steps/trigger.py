@@ -1,6 +1,31 @@
 import math,collections,re, ROOT as r
 from supy import analysisStep,utils
 #####################################
+class hltKeys(analysisStep) :
+    def setup(self,*_) : self.keys = collections.defaultdict(lambda : collections.defaultdict(set) )
+    def uponAcceptance(self, ev) :
+        d = self.keys[str(ev['hltKey'])]
+        for t,p in ev['prescaled'] :
+            if 'Central' not in t : continue
+            else: d[str(t)].add( p )
+    def varsToPickle(self) : return ['keys']
+    def endFunc(self,*_) : self.keys = dict(self.keys)
+    def mergeFunc(self, products) :
+        allkeys = collections.defaultdict(lambda : collections.defaultdict(set) )
+        for keys in products['keys'] :
+            for key,ps in keys.items() :
+                for t,p in ps.items() :
+                    allkeys[key][t] |= p
+        with open(self.outputFileName,"w") as outFile : 
+            for key in sorted(allkeys) :
+                print>>outFile, key
+                for t,ps in allkeys[key].items() :
+                    if 1 in ps :
+                        print>>outFile, '\t',len(ps), t, ps
+        print "Wrote ", self.outputFileName
+    def outputSuffix(self) :
+        return "_hltkeys.txt"
+#####################################
 class NameDump(analysisStep) :
 
     def __init__(self,triggerLevel = ""):
@@ -60,27 +85,26 @@ class Counts(analysisStep) :
         print utils.hyphens
 #####################################
 class lowestUnPrescaledTriggerFilter(analysisStep) :
-    def __init__(self) :
-        self.moreName = "lowest unprescaled of triggers in calculable"
-        
-    def select (self,eventVars) :
-        return eventVars["triggered"][eventVars["lowestUnPrescaledTrigger"]]
+    def select (self,ev) : return ev["lowestUnPrescaledTrigger"] is not None
 #####################################
 class lowestUnPrescaledTriggerHistogrammer(analysisStep) :
-    def __init__(self, collectVersions = True) :
+    def __init__(self, collectVersions = True, drop = []) :
         self.key = "lowestUnPrescaledTrigger"
         self.collectVersions = collectVersions
+        self.drop = drop
 
     def makeLabels(self, eventVars) :
         self.label = {}
         paths = dict.__getitem__(eventVars,self.key).sortedListOfPaths
+        self.labels = []
         for path in paths :
             s = path.split("_")
             if self.collectVersions and s[0]=="HLT" and s[-1][0]=="v" :
                 self.label[path] = "_".join(s[1:-1])
             else :
                 self.label[path] = path
-        self.labels = sorted(list(set(self.label.values()))) if self.collectVersions else paths
+            for item in self.drop : self.label[path] = self.label[path].replace(item,'.')
+            if not self.labels or self.labels[-1]!=self.label[path] :self.labels.append(self.label[path])
         self.nBins = len(self.labels)
         
     def uponAcceptance(self, eventVars) :
