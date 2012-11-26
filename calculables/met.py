@@ -13,7 +13,8 @@ class AdjustedP4(wrappedChain.calculable) :
         met = self.source[self.P4]
         self.value = utils.LorentzV(met.pt(),met.eta(),met.phi(),met.mass())
         if not self.source["isRealData"] :
-            self.value += self.source[self.dSmear]
+            smear = self.source[self.dSmear]
+            self.value += utils.LorentzV(smear.pt(),smear.eta(),smear.phi(),smear.mass())
 #####################################
 class Covariance(wrappedChain.calculable) :
     def __init__(self, collection) :
