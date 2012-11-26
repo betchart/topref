@@ -6,7 +6,7 @@ class hltKeys(analysisStep) :
     def uponAcceptance(self, ev) :
         d = self.keys[str(ev['hltKey'])]
         for t,p in ev['prescaled'] :
-            if 'Central' not in t : continue
+            if not any(item in t for item in ['Central','HLT_Ele25_CaloIdV']) : continue
             else: d[str(t)].add( p )
     def varsToPickle(self) : return ['keys']
     def endFunc(self,*_) : self.keys = dict(self.keys)
