@@ -54,39 +54,34 @@ class IndicesBtagged(wrappedChain.calculable) :
 class IndicesGenB(wrappedChain.calculable) :
     def __init__(self,collection) :
         self.fixes = collection
-        self.stash(["Indices","CorrectedP4"])
-    
-    def matchesGenB(self,index) :
-        genP4s = self.source["genP4"]
-        p4s = self.source[self.CorrectedP4]
-        for iGenB in self.source["genIndicesB"] :
-            bP4 = genP4s[iGenB]
-            p4 = p4s[index]
-            if r.Math.VectorUtil.DeltaR(p4,bP4) < 0.6 : return True #and abs(p4.pt()-bP4.pt()) / bP4.pt() < 0.4 : return True
-        return False
-    def update(self,ignored) : self.value = filter(self.matchesGenB, self.source[self.Indices])
+        self.stash(["Indices","GenFlavor"])
+    def update(self,ignored) :
+        flav = self.source[self.GenFlavor]
+        self.value = [i for i in self.source[self.Indices] if abs(flav[i])==5]
 ###################################
 class IndicesGenWqq(wrappedChain.calculable) :
     def __init__(self,collection) :
         self.fixes = collection
-        self.stash(["Indices","CorrectedP4"])
+        self.stash(["Indices","AdjustedP4",'GenFlavor'])
     
     def matchesGenWqq(self,index) :
         genP4s = self.source["genP4"]
-        p4s = self.source[self.CorrectedP4]
+        p4s = self.source[self.AdjustedP4]
         for iGenQ in self.source["genIndicesWqq"] :
             qP4 = genP4s[iGenQ]
             p4 = p4s[index]
             if r.Math.VectorUtil.DeltaR(p4,qP4) < 0.5 and abs(p4.pt()-qP4.pt()) / qP4.pt() < 0.4 : return True
         return False
-    def update(self,ignored) : self.value = filter(self.matchesGenWqq, self.source[self.Indices])
+    def update(self,ignored) :
+        flav = self.source[self.GenFlavor]
+        self.value = [i for i in self.source[self.Indices] if abs(flav[i]) not in [5,21] and self.matchesGenWqq(i)]
 ##############################
 class M3(wrappedChain.calculable) :
     def __init__(self, collection) :
         self.fixes = collection
-        self.stash(["CorrectedP4","Indices"])
+        self.stash(["AdjustedP4","Indices"])
     def update(self,ignored) :
-        p4 = self.source[self.CorrectedP4]
+        p4 = self.source[self.AdjustedP4]
         sumP4s = sorted([p4[i]+p4[j]+p4[k] for i,j,k in itertools.combinations(self.source[self.Indices], 3)], key = lambda sumP4 : -sumP4.pt() )
         self.value = sumP4s[0].M() if sumP4s else None
 ####################################
@@ -95,7 +90,7 @@ class CovariantResolution2(wrappedChain.calculable) :
 
     def __init__(self, collection = None) :
         self.fixes = collection
-        self.stash(["CorrectedP4","Resolution"])
+        self.stash(["AdjustedP4","Resolution"])
 
     @staticmethod
     def matrix(p4,res) :
@@ -103,7 +98,7 @@ class CovariantResolution2(wrappedChain.calculable) :
         return p4.Perp2() * res**2 * np.outer(*(2*[[math.cos(phi),math.sin(phi)]]))
 
     def update(self,ignored) : 
-        self.value = utils.hackMap(self.matrix , self.source[self.CorrectedP4] , self.source[self.Resolution] )
+        self.value = utils.hackMap(self.matrix , self.source[self.AdjustedP4] , self.source[self.Resolution] )
 #####################################
 class ProbabilityGivenBQN(calculables.secondary) :
     def __init__(self, collection = None, bvar = None, binning = (0,0,0), samples = ('',[]), tag = None,) :
@@ -148,19 +143,19 @@ class ProbabilityGivenBQN(calculables.secondary) :
 class Kt(wrappedChain.calculable) :
     def __init__(self, collection = None) :
         self.fixes = collection
-        self.stash(["IndicesMinDeltaR","CorrectedP4"])
+        self.stash(["IndicesMinDeltaR","AdjustedP4"])
         self.moreName = "min(pt_i,pt_j) * dR(i,j); ij with minDR; %s%s"%collection
     def update(self,ignored) :
-        p4 = self.source[self.CorrectedP4]
+        p4 = self.source[self.AdjustedP4]
         i,j = self.source[self.IndicesMinDeltaR]
         self.value = min(p4[i].pt(),p4[j].pt()) * r.Math.VectorUtil.DeltaR(p4[i],p4[j]) if j else -1
 ######################################
 class ComboPQBRawMassWTop(wrappedChain.calculable) :
     def __init__(self, collection = None) :
         self.fixes = collection
-        self.stash(['Indices','CorrectedP4'])
+        self.stash(['Indices','AdjustedP4'])
     def update(self,_) :
-        p4 = self.source[self.CorrectedP4]
+        p4 = self.source[self.AdjustedP4]
         self.value = {}
         for iPQB in itertools.permutations(self.source[self.Indices],3) :
             if iPQB[0]>iPQB[1] : continue
@@ -178,11 +173,11 @@ class ComboPQBDeltaRawMassWTop(wrappedChain.calculable) :
 class __value__(wrappedChain.calculable) :
     def __init__(self, jets = None, index = 0, Btagged = True ) :
         self.fixes = ("%s%s%d"%(jets[0],'B' if Btagged else '', index), jets[1])
-        self.stash(["CorrectedP4","Indices","IndicesBtagged"],jets)
+        self.stash(["AdjustedP4","Indices","IndicesBtagged"],jets)
         self.index = index
         self.Btagged = Btagged
     def update(self,_) :
-        p4 = self.source[self.CorrectedP4]
+        p4 = self.source[self.AdjustedP4]
         indices = self.source[self.IndicesBtagged if self.Btagged else self.Indices]
         self.value = self.function(p4[indices[self.index]]) if len(indices)>self.index else 0
 ######################################
@@ -210,9 +205,9 @@ class FourJetPtThreshold(wrappedChain.calculable) :
 class FourJetAbsEtaThreshold(wrappedChain.calculable) :
     def __init__(self, collection = None) :
         self.fixes = collection
-        self.stash(['CorrectedP4', 'Indices'])
+        self.stash(['AdjustedP4', 'Indices'])
     def update(self,_):
-        p4 = self.source[self.CorrectedP4]
+        p4 = self.source[self.AdjustedP4]
         indices = self.source[self.Indices]
         idAbsEta = sorted([abs(p4.at(i).eta()) for i in indices])
         self.value = 0 if len(idAbsEta)<4 else idAbsEta[3]
@@ -220,9 +215,9 @@ class FourJetAbsEtaThreshold(wrappedChain.calculable) :
 class MaxAbsEta(wrappedChain.calculable) :
     def __init__(self, collection = None) :
         self.fixes = collection
-        self.stash(['CorrectedP4', 'Indices'])
+        self.stash(['AdjustedP4', 'Indices'])
     def update(self,_):
-        p4 = self.source[self.CorrectedP4]
+        p4 = self.source[self.AdjustedP4]
         indices = self.source[self.Indices]
         self.value = max(abs(p4.at(i).eta()) for i in indices)
 ######################################
