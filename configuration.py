@@ -29,6 +29,7 @@ def detectorSpecs() :
     return {
         "cms": {"barrelEtaMax": 1.4442,
                 "endcapEtaMin": 1.5660,
+                "etaBE": 1.479, #from CMS PAS EGM-10-005
                 },
         }
 
