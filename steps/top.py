@@ -59,35 +59,6 @@ class jetPrinter(analysisStep) :
             print ("\t%.0f\t%+.1f\t%+.1f")%(p4.pt(),p4.eta(),p4.phi())
         print
 #####################################
-class pileupJets(analysisStep) :
-    def uponAcceptance(self,ev) :
-        xcjets = ev['TopJets']['fixes']
-        jets = ev['TopJets']['fixesStripped']
-        indices = ev['Indices'.join(xcjets)]
-        indicesPU = ev['IndicesGenPileup'.join(xcjets)]
-        p4 = ev['CorrectedP4'.join(xcjets)]
-        n = ev['CountwithPrimaryHighPurityTracks'.join(jets)]
-        nPU = ev['CountwithPileUpHighPurityTracks'.join(jets)]
-        puPtFrac = ev['PileUpPtFraction'.join(xcjets)]
-
-        for i in indices :
-            eta = abs(p4[i].eta())
-            label = "pileup" if i in indicesPU else "primary"
-            label2 = ('inner' if eta<1.9 else 'middle' if eta<2.6 else 'outer')  + '_' +  label
-            if "outer" in label2 : continue
-
-            self.book.fill( p4[i].pt(), "pT_"+label, 50, 0, 100, title = ';p_{T};jets / bin')
-            self.book.fill( n[i], "ntracks_%s"%label2, 30, 0, 30, title = ';ntracks (%s);jets / bin'%label2 )
-            self.book.fill( puPtFrac[i], "pileupPtFrac_%s"%label2, 50, 0, 1, title = ';pileup Pt Fraction (%s);jets / bin'%label2)
-
-        indicesPrimary = [i for i in indices if i not in indicesPU]
-        if len(indicesPrimary) :
-            iMaxPrimary = max(indicesPrimary, key = puPtFrac.__getitem__)
-            eta = abs(p4[iMaxPrimary].eta())
-            label = ('inner' if eta<1.9 else 'middle' if eta<2.6 else 'outer')  + '_' +  'primaryMax'
-            self.book.fill(puPtFrac[iMaxPrimary], "pileupPtFrac_%s"%label, 50, 0, 1, title = ';pilup Pt Fraction (%s);events / bin'%label)
-
-#####################################
 class Asymmetry(analysisStep) :
     def __init__(self, collection, bins = 18 ) :
         self.collection = collection
