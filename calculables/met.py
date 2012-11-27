@@ -1,5 +1,8 @@
 import math,ROOT as r
 from supy import wrappedChain,utils
+try: import numpy as np
+except: pass
+
 ##############################
 class AdjustedP4(wrappedChain.calculable) :
     def __init__(self, met = None, jet = None, smear="", z = None) :

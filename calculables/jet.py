@@ -3,8 +3,6 @@ from supy import wrappedChain,calculables,utils
 try: import numpy as np
 except: np = None
 
-def xcStrip((pre,suf)) : return (pre.lower(),suf)
-
 ##############################
 class AdjustedP4(wrappedChain.calculable) :
     def __init__(self, collection = None, smear = "", jesAbs = 1, jesRel = 0) :
@@ -103,8 +101,8 @@ class CovariantResolution2(wrappedChain.calculable) :
 class ProbabilityGivenBQN(calculables.secondary) :
     def __init__(self, collection = None, bvar = None, binning = (0,0,0), samples = ('',[]), tag = None,) :
         self.fixes = collection
-        self.__name = ('%s'+bvar+self.__class__.__name__+'%s')%self.fixes
-        self.bvar = ("%s"+bvar+"%s")%xcStrip(collection)
+        self.__name = (bvar+self.__class__.__name__).join(self.fixes)
+        self.bvar = bvar.join(collection)
         for item in ['binning','samples','tag'] : setattr(self,item,eval(item))
         self.stash(['Indices','IndicesGenB','IndicesGenWqq'])
         self.moreName = (tag if tag!=None else '') + '; ' + ','.join(samples[1] if samples[1] else [samples[0]])
