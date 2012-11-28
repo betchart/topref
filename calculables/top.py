@@ -612,13 +612,13 @@ class TopReconstruction(wrappedChain.calculable) :
     def update(self,_) :
         
         jets = dict( (item, self.source[item.join(self.source["TopJets"])] )
-                     for item in ["AdjustedP4","IndicesBtagged","Indices","Resolution","CovariantResolution2","ComboPQBDeltaRawMassWTop"] )
+                     for item in ["AdjustedP4","BIndices","Indices","Resolution","CovariantResolution2","ComboPQBDeltaRawMassWTop"] )
 
         lepton = dict( (item, self.source[item.join(self.source['TopLeptons'])][self.source["SemileptonicTopIndex"]])
                        for item in ["Charge","P4"])
 
         topP = self.source["TopComboQQBBProbability"]
-        bIndices = jets["IndicesBtagged"][:5] #consider only the first few b-tagged jets as possible b-candidates
+        bIndices = jets["BIndices"]
         
         recos = []
         for iPQH in itertools.permutations(jets["Indices"],3) :
@@ -909,7 +909,7 @@ class OtherJetsLikelihood(wrappedChain.calculable) :
         self.value = reduce(operator.mul, [N[k] for k in indices])
 ######################################
 class TopRatherThanWProbability(wrappedChain.calculable) :
-    def __init__(self, priorTop = 0.80) :
+    def __init__(self, priorTop = 0.05) :
         self.priorTop = priorTop
         self.invPriorTopMinusOne =  ( 1.0 / priorTop  - 1)
         self.moreName = "priorTop = %0.3f"%priorTop

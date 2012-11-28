@@ -45,9 +45,17 @@ class IndicesBtagged(wrappedChain.calculable) :
         self.stash(["Indices"])
         self.Tag = tag.join(collection)
         self.moreName = "Ordered by %s"%self.Tag
-    def update(self,ignored) :
+    def update(self,_) :
         self.value = sorted(self.source[self.Indices],
                             key = self.source[self.Tag].__getitem__, reverse = True )
+###################################
+class BIndices(wrappedChain.calculable) :
+    def __init__(self, collection, nMax) :
+        self.fixes = collection
+        self.stash(["IndicesBtagged"])
+        self.nMax = nMax
+        self.moreName = "First %d %s"%(nMax,self.IndicesBtagged)
+    def update(self,_) : self.value = self.source[self.IndicesBtagged][:self.nMax]
 ###################################
 class IndicesGenB(wrappedChain.calculable) :
     def __init__(self,collection) :
