@@ -24,8 +24,10 @@ class Covariance(wrappedChain.calculable) :
         self.fixes = collection
         self.stash(['SigmaXX','SigmaXY','SigmaYY'])
     def update(self,_) :
-        self.value = np.array([[self.source[self.SigmaXX],self.source[self.SigmaXY]],
-                               [self.source[self.SigmaXY],self.source[self.SigmaYY]]])
+        XY = self.source[self.SigmaXY]
+        self.value = (np.array([[1000,0],[0,1000]]) if math.isnan(XY) else
+                      np.array([[self.source[self.SigmaXX],XY ],
+                                [XY ,self.source[self.SigmaYY]]]) )
 #####################################
 class MetMt(wrappedChain.calculable) :
     def __init__(self, lepton = None, met = None, byHand = True) :
