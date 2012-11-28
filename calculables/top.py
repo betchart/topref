@@ -600,8 +600,6 @@ class SemileptonicTopIndex(wrappedChain.calculable) :
 #####################################
 class TopReconstruction(wrappedChain.calculable) :
     def __init__(self, bscale = 1.1, eCoupling = 0.55, v2had = False) :
-        theta = math.pi/6
-        self.ellipseR = np.array([[math.cos(theta),-math.sin(theta)],[math.sin(theta), math.cos(theta)]])
         self.epsilon = 1e-7
         for item in ['bscale',    # factor by which to scale hypothesized b jets
                      'eCoupling', # percentage of jet resolution used to sharpen MET resolution
@@ -612,7 +610,7 @@ class TopReconstruction(wrappedChain.calculable) :
     def update(self,_) :
         
         jets = dict( (item, self.source[item.join(self.source["TopJets"])] )
-                     for item in ["AdjustedP4","BIndices","Indices","Resolution","CovariantResolution2","ComboPQBDeltaRawMassWTop","HTopCandidateIndices"] )
+                     for item in ["AdjustedP4","BIndices","Indices","Resolution","CovariantResolution2","ComboPQBDeltaRawMassWTop","HTopCandidateIndicesSelected"] )
 
         lepton = dict( (item, self.source[item.join(self.source['TopLeptons'])][self.source["SemileptonicTopIndex"]])
                        for item in ["Charge","P4"])
@@ -620,9 +618,7 @@ class TopReconstruction(wrappedChain.calculable) :
         topP = self.source["TopComboQQBBProbability"]
         
         recos = []
-        for iPQH in jets["HTopCandidateIndices"] :
-            if np.dot(*(2*[self.ellipseR.dot(jets["ComboPQBDeltaRawMassWTop"][iPQH]) / [35,70]])) > 1 : continue # elliptical window on raw masses
-
+        for iPQH in jets["HTopCandidateIndicesSelected"] :
             hadFit = utils.fitKinematic.leastsqHadronicTop2(*zip(*((jets["AdjustedP4"][i]*(self.bscale if i==2 else 1), jets["Resolution"][i]) for i in iPQH)) ) if self.v2had else \
                      utils.fitKinematic.leastsqHadronicTop( *zip(*((jets["AdjustedP4"][i]*(self.bscale if i==2 else 1), jets["Resolution"][i]) for i in iPQH)), widthW = 4./2 ) #tuned w width
 

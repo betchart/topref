@@ -181,6 +181,27 @@ class ComboPQBDeltaRawMassWTop(wrappedChain.calculable) :
         self.stash(['ComboPQBRawMassWTop'])
     def update(self,_) : self.value = dict([(key,(val[0]-80.4,val[1]-172.5)) for key,val in self.source[self.ComboPQBRawMassWTop].iteritems()])
 ######################################
+class HTopCandidateLevel(wrappedChain.calculable) :
+    def __init__(self, collection = None) :
+        self.fixes = collection
+        self.stash(['HTopCandidateIndices','ComboPQBDeltaRawMassWTop'])
+        theta = math.pi/6
+        self.ellipseR = np.array([[math.cos(theta),-math.sin(theta)],[math.sin(theta), math.cos(theta)]])
+        self.minorMajor = [35,70]
+        self.moreName = "phi=pi/6; minor:35; major:70"
+    def update(self,_) :
+        deltas = self.source[self.ComboPQBDeltaRawMassWTop]
+        self.value = dict([(iPQH,
+                            np.dot(*(2*[self.ellipseR.dot(deltas[iPQH]) / self.minorMajor])))
+                           for iPQH in self.source[self.HTopCandidateIndices] ])
+######################################
+class HTopCandidateIndicesSelected(wrappedChain.calculable) :
+    def __init__(self, collection = None) :
+        self.fixes = collection
+        self.stash(['HTopCandidateLevel'])
+        self.moreName = 'HTopCandidates; Level<1'
+    def update(self,_) :
+        self.value = sorted(key for key,val in self.source[self.HTopCandidateLevel].items() if val<1)
 
 ######################################
 class __value__(wrappedChain.calculable) :
