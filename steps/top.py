@@ -29,7 +29,7 @@ class leptonSigned(analysisStep) :
 #####################################
 class jetPrinter(analysisStep) :
     def uponAcceptance(self,ev) :
-        jets = ev['TopJets']['fixes']
+        jets = ev['TopJets']
         iTT = ev['genTTbarIndices']
         gen = ev['genP4']
         print 'mu,gen b,bbar,q*'
@@ -186,7 +186,7 @@ class combinatorialFrequency(analysisStep) :
     def uponAcceptance(self,ev) :
         if not ev['genTopTTbar'] : return
         recos = ev['TopReconstruction']
-        iP,iQ,iH,iL = ev['IndicesGenTopPQHL'.join(ev['TopJets']['fixes'])]
+        iP,iQ,iH,iL = ev['IndicesGenTopPQHL'.join(ev['TopJets'])]
 
         igen=ev['genTopRecoIndex']
 
