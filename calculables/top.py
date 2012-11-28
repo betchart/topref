@@ -612,18 +612,15 @@ class TopReconstruction(wrappedChain.calculable) :
     def update(self,_) :
         
         jets = dict( (item, self.source[item.join(self.source["TopJets"])] )
-                     for item in ["AdjustedP4","BIndices","Indices","Resolution","CovariantResolution2","ComboPQBDeltaRawMassWTop"] )
+                     for item in ["AdjustedP4","BIndices","Indices","Resolution","CovariantResolution2","ComboPQBDeltaRawMassWTop","HTopCandidateIndices"] )
 
         lepton = dict( (item, self.source[item.join(self.source['TopLeptons'])][self.source["SemileptonicTopIndex"]])
                        for item in ["Charge","P4"])
 
         topP = self.source["TopComboQQBBProbability"]
-        bIndices = jets["BIndices"]
         
         recos = []
-        for iPQH in itertools.permutations(jets["Indices"],3) :
-            if iPQH[0]>iPQH[1] : continue
-            if iPQH[2] not in bIndices : continue
+        for iPQH in jets["HTopCandidateIndices"] :
             if np.dot(*(2*[self.ellipseR.dot(jets["ComboPQBDeltaRawMassWTop"][iPQH]) / [35,70]])) > 1 : continue # elliptical window on raw masses
 
             hadFit = utils.fitKinematic.leastsqHadronicTop2(*zip(*((jets["AdjustedP4"][i]*(self.bscale if i==2 else 1), jets["Resolution"][i]) for i in iPQH)) ) if self.v2had else \
@@ -633,7 +630,7 @@ class TopReconstruction(wrappedChain.calculable) :
             nuXY = np.array([metP4.x(), metP4.y()])
             nuErr2 = sum([-self.eCoupling*jets["CovariantResolution2"][i] for i in iPQH], self.source["metCovariance"])
 
-            for iL in set(bIndices)-set(iPQH) :
+            for iL in set(jets["BIndices"])-set(iPQH) :
                 iPQHL = iPQH+(iL,)
                 iQQBB = iPQHL[:2]+tuple(sorted(iPQHL[2:]))
                 b = jets["AdjustedP4"][iL]
@@ -880,23 +877,22 @@ class TopComboQQBBLikelihood(wrappedChain.calculable) :
     def update(self,_) :
         jets = self.source["TopJets"]
         indices = self.source["Indices".join(jets)]
+        hCands = self.source['HTopCandidateIndices'.join(jets)]
         B,Q,N = zip(*self.source[self.tagProbabilityGivenBQN.join(jets)])
         self.value = {}
-        for iPQHL in itertools.permutations(indices,4) :
-            if iPQHL[0]>iPQHL[1] : continue
-            if iPQHL[2]>iPQHL[3] : continue
-            self.value[iPQHL] = reduce(operator.mul, ([Q[i] for i in iPQHL[:2]] +
-                                                      [B[i] for i in iPQHL[2:]]  +
-                                                      [N[k] for k in indices if k not in iPQHL]) )
+        for iL in zip(self.source["BIndices".join(jets)]) :
+            for iPQH in hCands :
+                iPQHL = iPQH+iL
+                if iPQH[2] >= iL[0] : continue
+                self.value[iPQHL] = reduce(operator.mul, ([Q[i] for i in iPQHL[:2]] +
+                                                          [B[i] for i in iPQHL[2:]]  +
+                                                          [N[k] for k in indices if k not in iPQHL]) )
 ######################################
 class TopComboQQBBProbability(wrappedChain.calculable) :
     def update(self,_) :
         likelihoods = self.source['TopComboQQBBLikelihood']
         sumL = max(1e-20,sum(likelihoods.values()))
         self.value = dict([(key,val/sumL) for key,val in likelihoods.iteritems()])
-######################################
-class TopComboQQBBMaxProbability(wrappedChain.calculable) :
-    def update(self,_) : self.value = max(self.source["TopComboQQBBProbability"].values())
 ######################################
 class OtherJetsLikelihood(wrappedChain.calculable) :
     def __init__(self, tag = None) :
