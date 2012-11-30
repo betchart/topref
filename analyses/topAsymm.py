@@ -150,7 +150,7 @@ class topAsymm(supy.analysis) :
             calculables.jet.AdjustedP4(jet, pars['smear']),
             calculables.jet.Indices(jet,ptMin = 20 ),
             calculables.jet.IndicesBtagged(jet,pars["bVar"]),
-            calculables.jet.BIndices(jet,5),
+            calculables.jet.BIndices(jet,None),
             supy.calculables.other.abbreviation('combinedSecondaryVertex','CSV',jet),
             calculables.muon.Indices(mu),
             calculables.electron.Indices(el),
@@ -166,7 +166,7 @@ class topAsymm(supy.analysis) :
             calculables.top.IndicesGenTopPQHL( jet ),
             calculables.top.IndicesGenTopExtra( jet ),
             calculables.top.genTopRecoIndex(),
-            calculables.top.TopReconstruction(),
+            #calculables.top.TopReconstruction(),
             #calculables.top.TTbarSignExpectation(nSamples = 16, qDirFunc = "qDirExpectation_EtaSum"),
 
             calculables.met.MetMt( lepton, "AdjustedP4".join(met)),
@@ -194,10 +194,11 @@ class topAsymm(supy.analysis) :
         lepton = obj[lname]
         otherLepton = obj[{'el':'mu','mu':'el'}[lname]]
         lIsoMinMax = pars["lepton"][pars['selection']['iso']]
-        topTag = pars['tag'].replace("QCD","top")
         bVar = pars["bVar"].join(jet)
         rw = pars['reweights']['abbr']
         tt = pars['toptype']
+        topSamples = (pars['topBsamples'][0]%tt,[s%(tt,rw) for s in pars['topBsamples'][1]])
+        topTag = pars['tag'].replace("QCD","top")
         
         ssteps = supy.steps
 
@@ -245,20 +246,22 @@ class topAsymm(supy.analysis) :
              ssteps.histos.value("Pt".join(jet), 125, 0, 250, indices = 'Indices'.join(jet), index=3),
              ssteps.histos.pt('P4'.join(lepton), 125, 0, 250, indices = 'Indices'.join(lepton), index=0),
              ssteps.histos.pt('AdjustedP4'.join(met), 125, 0, 250 ),
-             calculables.jet.ProbabilityGivenBQN(jet, pars['bVar'], binning=(51,-0.02,1), samples = (pars['topBsamples'][0]%tt,[s%(tt,rw) for s in pars['topBsamples'][1]]), tag = topTag),
+             supy.calculables.other.TwoDChiSquared('RawMassWTopCorrectPQB'.join(jet), samples = topSamples[1], tag = topTag),
+             calculables.jet.HTopSigmasLikelihoodRatioPQB(jet, samples = topSamples[1], tag = topTag),
+             calculables.jet.ProbabilityGivenBQN(jet, pars['bVar'], binning=(51,-0.02,1), samples = topSamples, tag = topTag),
              ssteps.histos.value("TopRatherThanWProbability", 100,0,1),
              ssteps.histos.value('MetMt'.join(lepton), 120, 0, 120)
 
              #, ssteps.histos.value(bVar, 51,-0.02,1, indices = "IndicesBtagged".join(jet), index = 0)
              #, ssteps.histos.value(bVar, 51,-0.02,1, indices = "IndicesBtagged".join(jet), index = 1)
              #, ssteps.histos.value(bVar, 51,-0.02,1, indices = "IndicesBtagged".join(jet), index = 2)
-             
-             , ssteps.filters.label('top reco'),
-             ssteps.filters.multiplicity("TopReconstruction",min=1)
-             #, steps.displayer.ttbar(jets=jet, met=obj['met'], muons = obj['mu'], electrons = obj['el'])
-             , ssteps.filters.label("selection complete")
-
+             #steps.top.HTopCandidates(),
+             #ssteps.filters.multiplicity('HTopCandidateIndicesSelected'.join(jet),min=1)
              , steps.top.channelClassification().onlySim()
+             , ssteps.filters.label("selection complete").invert()
+             , ssteps.filters.label('top reco')
+             #, steps.displayer.ttbar(jets=jet, met=obj['met'], muons = obj['mu'], electrons = obj['el'])
+
              , steps.top.combinatorialFrequency().onlySim()
              ####################################
              #, steps.top.leptonSigned('TridiscriminantWTopQCD', (60,-1,1))

@@ -24,7 +24,7 @@ class Pt(wrappedChain.calculable) :
     def __init__(self,collection=None) :
         self.fixes = collection
         self.stash(["AdjustedP4"])
-    def update(self,ignored) :
+    def update(self,_) :
         self.value = utils.hackMap( lambda x: x.pt(), self.source[self.AdjustedP4] )
 ##############################
 class Indices(wrappedChain.calculable) :
@@ -50,18 +50,18 @@ class IndicesBtagged(wrappedChain.calculable) :
                             key = self.source[self.Tag].__getitem__, reverse = True )
 ###################################
 class BIndices(wrappedChain.calculable) :
-    def __init__(self, collection, nMax) :
+    def __init__(self, collection, nMax = None) :
         self.fixes = collection
         self.stash(["IndicesBtagged"])
         self.nMax = nMax
-        self.moreName = "First %d %s"%(nMax,self.IndicesBtagged)
+        self.moreName = "First %d %s"%(max(nMax,-1),self.IndicesBtagged)
     def update(self,_) : self.value = self.source[self.IndicesBtagged][:self.nMax]
 ###################################
 class IndicesGenB(wrappedChain.calculable) :
     def __init__(self,collection) :
         self.fixes = collection
         self.stash(["Indices","GenFlavor"])
-    def update(self,ignored) :
+    def update(self,_) :
         flav = self.source[self.GenFlavor]
         self.value = [i for i in self.source[self.Indices] if abs(flav[i])==5]
 ###################################
@@ -78,7 +78,7 @@ class IndicesGenWqq(wrappedChain.calculable) :
             p4 = p4s[index]
             if r.Math.VectorUtil.DeltaR(p4,qP4) < 0.5 and abs(p4.pt()-qP4.pt()) / qP4.pt() < 0.4 : return True
         return False
-    def update(self,ignored) :
+    def update(self,_) :
         flav = self.source[self.GenFlavor]
         self.value = [i for i in self.source[self.Indices] if abs(flav[i]) not in [5,21] and self.matchesGenWqq(i)]
 ##############################
@@ -86,7 +86,7 @@ class M3(wrappedChain.calculable) :
     def __init__(self, collection) :
         self.fixes = collection
         self.stash(["AdjustedP4","Indices"])
-    def update(self,ignored) :
+    def update(self,_) :
         p4 = self.source[self.AdjustedP4]
         sumP4s = sorted([p4[i]+p4[j]+p4[k] for i,j,k in itertools.combinations(self.source[self.Indices], 3)], key = lambda sumP4 : -sumP4.pt() )
         self.value = sumP4s[0].M() if sumP4s else None
@@ -103,7 +103,7 @@ class CovariantResolution2(wrappedChain.calculable) :
         phi = p4.phi()
         return p4.Perp2() * res**2 * np.outer(*(2*[[math.cos(phi),math.sin(phi)]]))
 
-    def update(self,ignored) : 
+    def update(self,_) : 
         self.value = utils.hackMap(self.matrix , self.source[self.AdjustedP4] , self.source[self.Resolution] )
 #####################################
 class ProbabilityGivenBQN(calculables.secondary) :
@@ -151,59 +151,120 @@ class Kt(wrappedChain.calculable) :
         self.fixes = collection
         self.stash(["IndicesMinDeltaR","AdjustedP4"])
         self.moreName = "min(pt_i,pt_j) * dR(i,j); ij with minDR; %s%s"%collection
-    def update(self,ignored) :
+    def update(self,_) :
         p4 = self.source[self.AdjustedP4]
         i,j = self.source[self.IndicesMinDeltaR]
         self.value = min(p4[i].pt(),p4[j].pt()) * r.Math.VectorUtil.DeltaR(p4[i],p4[j]) if j else -1
 ######################################
-class HTopCandidateIndices(wrappedChain.calculable) :
+class BScaling(wrappedChain.calculable) :
+    def __init__(self, collection = None) :
+        self.fixes = collection
+        self.stash(["AdjustedP4"])
+        self.factor = 1.1
+        self.moreName = "Uniform factor %.1f"%self.factor
+    def update(self,_) :
+        self.value = [self.factor] * len(self.source[self.AdjustedP4])
+######################################
+class TopCandidateIndices(wrappedChain.calculable) :
     def __init__(self, collection = None) :
         self.fixes = collection
         self.stash(["Indices","BIndices"])
     def update(self,_) :
-        bIndices = self.source[self.BIndices]
-        self.value = [(p,q,h) for p,q,h in itertools.permutations(self.source[self.Indices],3) if h in bIndices and q>p]
-#####################################
-class ComboPQBRawMassWTop(wrappedChain.calculable) :
+        self.value = [ PQ+HL
+                       for PQ in itertools.combinations(sorted(self.source[self.Indices]),2)
+                       for HL in itertools.permutations(self.source[self.BIndices],2)
+                       if len(set(PQ+HL))==4 ]
+######################################
+class HTopCandidateIndices(wrappedChain.calculable) :
     def __init__(self, collection = None) :
         self.fixes = collection
-        self.stash(['HTopCandidateIndices','AdjustedP4'])
+        self.stash(["TopCandidateIndices"])
+    def update(self,_) :
+        self.value = sorted(set(iPQHL[:3] for iPQHL in self.source[self.TopCandidateIndices]))
+#####################################
+class RawMassWTopCorrectPQB(wrappedChain.calculable) :
+    def __init__(self, collection) :
+        self.fixes = collection
+        self.stash(['IndicesGenTopPQHL','RawMassWTopPQB'])
+    def update(self,_) :
+        iPQB = self.source[self.IndicesGenTopPQHL][:3]
+        self.value = self.source[self.RawMassWTopPQB][iPQB] if len(set(iPQB))==3 and None not in iPQB else ()
+#####################################
+class RawMassWTopPQB(wrappedChain.calculable) :
+    def __init__(self, collection = None) :
+        self.fixes = collection
+        self.stash(['HTopCandidateIndices','AdjustedP4','BScaling'])
     def update(self,_) :
         p4 = self.source[self.AdjustedP4]
+        bscale = self.source[self.BScaling]
         self.value = {}
         for iPQB in self.source[self.HTopCandidateIndices] :
-            _,W,t = np.cumsum([p4[i] for i in iPQB])
+            _,W,t = np.cumsum([p4[i]*(bscale[i] if i==2 else 1) for i in iPQB])
             self.value[iPQB] = (W.M(),t.M())
 ######################################
-class ComboPQBDeltaRawMassWTop(wrappedChain.calculable) :
+class HTopSigmasPQB(wrappedChain.calculable) :
     def __init__(self, collection = None) :
         self.fixes = collection
-        self.stash(['ComboPQBRawMassWTop'])
-    def update(self,_) : self.value = dict([(key,(val[0]-80.4,val[1]-172.5)) for key,val in self.source[self.ComboPQBRawMassWTop].iteritems()])
-######################################
-class HTopCandidateLevel(wrappedChain.calculable) :
-    def __init__(self, collection = None) :
-        self.fixes = collection
-        self.stash(['HTopCandidateIndices','ComboPQBDeltaRawMassWTop'])
-        theta = math.pi/6
-        self.ellipseR = np.array([[math.cos(theta),-math.sin(theta)],[math.sin(theta), math.cos(theta)]])
-        self.minorMajor = [35,70]
-        self.moreName = "phi=pi/6; minor:35; major:70"
+        self.stash(['HTopCandidateIndices','RawMassWTopPQB','RawMassWTopCorrectPQB'])
+        self.matrix = None
     def update(self,_) :
-        deltas = self.source[self.ComboPQBDeltaRawMassWTop]
-        self.value = dict([(iPQH,
-                            np.dot(*(2*[self.ellipseR.dot(deltas[iPQH]) / self.minorMajor])))
-                           for iPQH in self.source[self.HTopCandidateIndices] ])
+        if self.matrix==None:
+            self.matrix = dict.__getitem__(self.source.someDict if type(self.source).__name__=='keyTracer' else self.source,
+                                           self.RawMassWTopCorrectPQB+'TwoDChiSquared').matrix
+        rawM = self.source[self.RawMassWTopPQB]
+        self.value = dict( ( iPQH, math.sqrt(np.dot( v, np.dot(self.matrix, v) )) ) for iPQH,v in
+                           [( i3, rawM[i3]+(1,) ) for i3 in self.source[self.HTopCandidateIndices]])
 ######################################
-class HTopCandidateIndicesSelected(wrappedChain.calculable) :
-    def __init__(self, collection = None) :
+class HTopSigmasLikelihoodRatioPQB(calculables.secondary) :
+    def __init__(self, collection, samples, tag) :
         self.fixes = collection
-        self.stash(['HTopCandidateLevel'])
-        self.moreName = 'HTopCandidates; Level<1'
-    def update(self,_) :
-        self.value = sorted(key for key,val in self.source[self.HTopCandidateLevel].items() if val<1)
+        for item in ['samples','tag'] : setattr(self,item,eval(item))
+        self.stash(['HTopSigmasPQB','IndicesGenTopPQHL'])
+        self.max = 5 # sigma
 
+    def update(self,_) :
+        self.value = dict( (iPQB, self.likeR.GetBinContent(self.likeR.FindFixBin(max(level,self.max-1e-6))) )
+                           for iPQB,level in self.source[self.HTopSigmasPQB].items() ) if self.likeR else 0
+    
+    def uponAcceptance(self,ev) :
+        if not ev['genTopTTbar'] : return
+        iCorrect = ev[self.IndicesGenTopPQHL][:3]
+        for iPQB,level in ev[self.HTopSigmasPQB].items() :
+            self.book.fill( min(level,self.max-1e-6), '%scorrect'%('' if iCorrect==iPQB else 'in'), 250,0,self.max, title = ';HTopSigmasPQB;')
+
+    def setup(self,*_) :
+        hists = self.fromCache(['merged'],['%scorrect'%s for s in ['','in']])['merged']
+        if None in hists.values() : self.likeR = None
+        else :
+            for h in hists.values() : h.Scale(1./h.Integral(0,h.GetNbinsX()+1))
+            self.likeR = hists['correct'].Clone('likelihoodR')
+            self.likeR.Divide(hists['incorrect'])
+            return hists
+
+    def onlySamples(self) : return ['merged']
+    def baseSamples(self) : return self.samples
+    def organize(self,org) :
+        if org.tag ==self.tag :
+            org.mergeSamples(targetSpec = {"name":'merged'}, sources = self.samples )
+    def reportCache(self) :
+        hists = self.setup()
+        if not hists :
+            print '%s.setup() failed'%self.name
+            return
+        fileName = '/'.join(self.outputFileName.split('/')[:-1]+[self.name]) + '.pdf'
+        c = r.TCanvas()
+        c.Print(fileName +'[')
+        hists['correct'].SetLineColor(r.kRed)
+        hists['correct'].Draw('hist')
+        hists['incorrect'].Draw('hist same')
+        c.Print(fileName)
+        self.likeR.SetTitle("LikelihoodRatio, Correct:Incorrect; HTopSigmasPQB")
+        self.likeR.Draw('hist')
+        c.Print(fileName)
+        c.Print(fileName +']')
+        print 'Wrote : %s'%fileName
 ######################################
+
 class __value__(wrappedChain.calculable) :
     def __init__(self, jets = None, index = 0, Btagged = True ) :
         self.fixes = ("%s%s%d"%(jets[0],'B' if Btagged else '', index), jets[1])
@@ -224,35 +285,3 @@ class absEta(__value__) :
 class eta(__value__) :
     def function(self,x) : return x.eta()
 ######################################
-
-######################################
-class FourJetPtThreshold(wrappedChain.calculable) :
-    def __init__(self, collection = None) :
-        self.fixes = collection
-        self.stash(['Pt', 'Indices'])
-    def update(self,_):
-        pt = self.source[self.Pt]
-        indices = self.source[self.Indices]
-        idPt = [pt[i] for i in indices]
-        self.value = 0 if len(idPt)<4 else idPt[3]
-######################################
-class FourJetAbsEtaThreshold(wrappedChain.calculable) :
-    def __init__(self, collection = None) :
-        self.fixes = collection
-        self.stash(['AdjustedP4', 'Indices'])
-    def update(self,_):
-        p4 = self.source[self.AdjustedP4]
-        indices = self.source[self.Indices]
-        idAbsEta = sorted([abs(p4.at(i).eta()) for i in indices])
-        self.value = 0 if len(idAbsEta)<4 else idAbsEta[3]
-######################################
-class MaxAbsEta(wrappedChain.calculable) :
-    def __init__(self, collection = None) :
-        self.fixes = collection
-        self.stash(['AdjustedP4', 'Indices'])
-    def update(self,_):
-        p4 = self.source[self.AdjustedP4]
-        indices = self.source[self.Indices]
-        self.value = max(abs(p4.at(i).eta()) for i in indices)
-######################################
-
