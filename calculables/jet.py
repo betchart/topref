@@ -224,7 +224,7 @@ class HTopSigmasLikelihoodRatioPQB(calculables.secondary) :
 
     def update(self,_) :
         self.value = dict( (iPQB,
-                            self.likeR.GetBinContent(self.likeR.FindFixBin(min(level,self.max-1e-6))) if self.likeR else 1)
+                            self.likeR.Interpolate(level) if self.likeR else 1)
                            for iPQB,level in self.source[self.HTopSigmasPQB].items() )
     
     def uponAcceptance(self,ev) :
