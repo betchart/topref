@@ -205,7 +205,7 @@ class RawMassWTopPQB(wrappedChain.calculable) :
 class HTopSigmasPQB(wrappedChain.calculable) :
     def __init__(self, collection = None) :
         self.fixes = collection
-        self.stash(['HTopCandidateIndices','RawMassWTopPQB','RawMassWTopCorrectPQB'])
+        self.stash(['RawMassWTopPQB','RawMassWTopCorrectPQB'])
         self.matrix = None
     def update(self,_) :
         if self.matrix==None:
@@ -213,7 +213,7 @@ class HTopSigmasPQB(wrappedChain.calculable) :
                                            self.RawMassWTopCorrectPQB+'TwoDChiSquared').matrix
         rawM = self.source[self.RawMassWTopPQB]
         self.value = dict( ( iPQH, math.sqrt(np.dot( v, np.dot(self.matrix, v) )) ) for iPQH,v in
-                           [( i3, rawM[i3]+(1,) ) for i3 in self.source[self.HTopCandidateIndices]])
+                           [( i3, ms+(1,) ) for i3,ms in rawM.items()])
 ######################################
 class HTopSigmasLikelihoodRatioPQB(calculables.secondary) :
     def __init__(self, collection, samples, tag) :
@@ -223,8 +223,9 @@ class HTopSigmasLikelihoodRatioPQB(calculables.secondary) :
         self.max = 5 # sigma
 
     def update(self,_) :
-        self.value = dict( (iPQB, self.likeR.GetBinContent(self.likeR.FindFixBin(max(level,self.max-1e-6))) )
-                           for iPQB,level in self.source[self.HTopSigmasPQB].items() ) if self.likeR else 0
+        self.value = dict( (iPQB,
+                            self.likeR.GetBinContent(self.likeR.FindFixBin(min(level,self.max-1e-6))) if self.likeR else 1)
+                           for iPQB,level in self.source[self.HTopSigmasPQB].items() )
     
     def uponAcceptance(self,ev) :
         if not ev['genTopTTbar'] : return
@@ -233,8 +234,10 @@ class HTopSigmasLikelihoodRatioPQB(calculables.secondary) :
             self.book.fill( min(level,self.max-1e-6), '%scorrect'%('' if iCorrect==iPQB else 'in'), 250,0,self.max, title = ';HTopSigmasPQB;')
 
     def setup(self,*_) :
-        hists = self.fromCache(['merged'],['%scorrect'%s for s in ['','in']])['merged']
-        if None in hists.values() : self.likeR = None
+        hists = self.fromCache(['merged'],['%scorrect'%s for s in ['','in']], tag = self.tag)['merged']
+        if None in hists.values() :
+            self.likeR = None
+            print self.name, ': Histograms not found'
         else :
             for h in hists.values() : h.Scale(1./h.Integral(0,h.GetNbinsX()+1))
             self.likeR = hists['correct'].Clone('likelihoodR')
@@ -263,6 +266,17 @@ class HTopSigmasLikelihoodRatioPQB(calculables.secondary) :
         c.Print(fileName)
         c.Print(fileName +']')
         print 'Wrote : %s'%fileName
+######################################
+class ProbabilityHTopMasses(wrappedChain.calculable) :
+    def __init__(self, collection = None) :
+        self.fixes = collection
+        self.prior = 0.5
+        self.pfactor = (1-self.prior) / self.prior
+        self.stash(['HTopSigmasLikelihoodRatioPQB'])
+    def update(self,_):
+        LRs = self.source[self.HTopSigmasLikelihoodRatioPQB].values()
+        sumLRs = sum(LRs)
+        self.value = sumLRs / (sumLRs + len(LRs) * self.pfactor )
 ######################################
 
 class __value__(wrappedChain.calculable) :
