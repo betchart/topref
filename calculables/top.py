@@ -826,19 +826,85 @@ class IndicesGenTopExtra(wrappedChain.calculable) :
         self.value = [j for j in indices if any( self.rMax > r.Math.VectorUtil.DeltaR(jet[j],gen) for gen in extraP4 ) ]
 
 ######################################
-class TopComboLikelihood(calculables.secondary) :
+class TopGenLikelihoodIndex(wrappedChain.calculable) :
+    def update(self,_):
+        L = self.source['TopCandidateLikelihood']
+        iPQHL = self.source['IndicesGenTopPQHL'.join(self.source['TopJets'])]
+        self.value = sorted(L, key = L.__getitem__, reverse = True).index(iPQHL) if iPQHL in L else -1
+######################################
+class TopCandidateLikelihood(calculables.secondary) :
     def uponAcceptance(self,ev) :
         pass
     def update(self,_) :
         jets = self.source["TopJets"]
         self.value = {}
         qqbbL = self.source['TopComboQQBBLikelihood']
-        levelLR = self.source['']
-        lvbMassLR = self.source['']
+        sigmasLR = self.source['HTopSigmasLikelihoodRatioPQB'.join(jets)]
+        unfitX2LR = self.source['LTopUnfitSqrtChi2LR']
         for iPQHL in self.source["TopCandidateIndices".join(jets)] :
-            self.value[iPQHL] = reduce(operator.mul, [qqbbL[ iPQHL[:2]+sorted(iPQHL[2:]) ],
-                                                      levelLR[ iPQHL[:3] ],
-                                                      lvbMassLR[ iPQHL[3] ]])
+            self.value[iPQHL] = reduce(operator.mul, [qqbbL[ iPQHL[:2]+tuple(sorted(iPQHL[2:])) ],
+                                                      sigmasLR[ iPQHL[:3] ],
+                                                      unfitX2LR[ iPQHL[3] ]
+                                                      ])
+######################################
+class LTopUnfitSqrtChi2(wrappedChain.calculable) :
+    def update(self,_) :
+        jets = self.source['TopJets']
+        jP4s = self.source['AdjustedP4'.join(jets)]
+        bscale = self.source['BScaling'.join(jets)]
+        lP4 = self.source['P4'.join(self.source['TopLeptons'])][self.source['SemileptonicTopIndex']]
+        met = self.source['metAdjustedP4']
+        nuXY = np.array([met.px(),met.py()])
+        nuErr2 = self.source['metCovariance']
+
+        self.value = dict( (iL,
+                            math.sqrt(utils.fitKinematic.leastsqLeptonicTop2( jP4s[iL]*bscale[iL], 0, lP4, nuXY, nuErr2 ).chi2) )
+                           for iL in self.source['BIndices'.join(jets)] )
+######################################
+class LTopUnfitSqrtChi2LR(calculables.secondary) :
+    def __init__(self, samples = None, tag = None) :
+        self.samples = samples
+        self.tag = tag
+        self.max = 10
+    def uponAcceptance(self,ev) :
+        iTrue = self.source['IndicesGenTopPQHL'.join(self.source['TopJets'])][3]
+        for i,x2 in self.source['LTopUnfitSqrtChi2'].items() :
+            self.book.fill(min(x2,self.max-1e-6),'%scorrect'%('' if i==iTrue else 'in'), 100,0,self.max)
+    def update(self,_) :
+        self.value = dict((i,
+                           self.LR.Interpolate(v) if self.LR else 1)
+                          for i,v in self.source['LTopUnfitSqrtChi2'].items())
+    def setup(self,*_) :
+        hists = self.fromCache(['merged'],['correct','incorrect'], tag = self.tag)['merged']
+        if None in hists.values() :
+            print self.name, ": Histograms not found."
+            self.LR = None
+            return
+        self.LR = hists['correct'].Clone('LR')
+        self.LR.Divide(hists['incorrect'])
+        return hists
+    def onlySamples(self) : return ['merged']
+    def baseSamples(self) : return self.samples
+    def organize(self,org) :
+        if org.tag ==self.tag :
+            org.mergeSamples(targetSpec = {"name":'merged'}, sources = self.samples )
+    def reportCache(self) :
+        hists = self.setup()
+        if not hists :
+            print '%s.setup() failed'%self.name
+            return
+        fileName = '/'.join(self.outputFileName.split('/')[:-1]+[self.name]) + '.pdf'
+        c = r.TCanvas()
+        c.Print(fileName +'[')
+        hists['correct'].SetLineColor(r.kRed)
+        hists['correct'].Draw('hist')
+        hists['incorrect'].Draw('hist same')
+        c.Print(fileName)
+        self.LR.SetTitle("LikelihoodRatio, Correct:Incorrect; LTopUnfitSqrtChi2")
+        self.LR.Draw('hist')
+        c.Print(fileName)
+        c.Print(fileName +']')
+        print 'Wrote : %s'%fileName
 ######################################
 class TopComboQQBBLikelihood(wrappedChain.calculable) :
     def __init__(self, tag = None) :
