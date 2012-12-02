@@ -1,4 +1,4 @@
-from supy import wrappedChain,utils
+from supy import wrappedChain,utils,calculables
 import math,operator,itertools,ROOT as r
 try: import numpy as np
 except: pass
@@ -599,40 +599,46 @@ class SemileptonicTopIndex(wrappedChain.calculable) :
         self.value = next( iter(self.source["Indices".join(self.source["TopLeptons"])]), None )
 #####################################
 class TopReconstruction(wrappedChain.calculable) :
-    def __init__(self, bscale = 1.1, eCoupling = 0.55, v2had = False) :
+    def __init__(self, eCoupling = 0.55, v2had = False) :
         self.epsilon = 1e-7
-        for item in ['bscale',    # factor by which to scale hypothesized b jets
-                     'eCoupling', # percentage of jet resolution used to sharpen MET resolution
+        for item in ['eCoupling', # percentage of jet resolution used to sharpen MET resolution
                      'v2had',     # v2 (1parameter,3residuals) is twice as fast as v1 (3parameters,5residuals) but 5% less accurate
                      ] : setattr(self,item,eval(item))
-        self.moreName = "bscale:%.1f; eCoupl:%.2f; v%dhad; v2lep"%(bscale,eCoupling,v2had+1)
+        self.moreName = "eCoupl:%.2f; v%dhad; v2lep"%(eCoupling,v2had+1)
+        self.maxFits = 4 # if the correct combo is after index 3, we won't choose it anyway.
 
     def update(self,_) :
         
         jets = dict( (item, self.source[item.join(self.source["TopJets"])] )
-                     for item in ["AdjustedP4","BIndices","Indices","Resolution","CovariantResolution2","ComboPQBDeltaRawMassWTop","HTopCandidateIndicesSelected"] )
+                     for item in ["AdjustedP4","BScaling","BIndices","Indices","Resolution","CovariantResolution2"] )
 
         lepton = dict( (item, self.source[item.join(self.source['TopLeptons'])][self.source["SemileptonicTopIndex"]])
                        for item in ["Charge","P4"])
 
         topP = self.source["TopComboQQBBProbability"]
+        TCL = self.source['TopCandidateLikelihood']
         
         recos = []
-        for iPQH in jets["HTopCandidateIndicesSelected"] :
-            hadFit = utils.fitKinematic.leastsqHadronicTop2(*zip(*((jets["AdjustedP4"][i]*(self.bscale if i==2 else 1), jets["Resolution"][i]) for i in iPQH)) ) if self.v2had else \
-                     utils.fitKinematic.leastsqHadronicTop( *zip(*((jets["AdjustedP4"][i]*(self.bscale if i==2 else 1), jets["Resolution"][i]) for i in iPQH)), widthW = 4./2 ) #tuned w width
+        for iPQH,i4s in itertools.groupby( sorted(sorted( TCL,
+                                                          key = TCL.__getitem__,
+                                                          reverse = True)[:self.maxFits] ),
+                                           key = lambda x: x[:3]) :
+
+            hadFit = utils.fitKinematic.leastsqHadronicTop2(*zip(*((jets["AdjustedP4"][i]*(jets["BScaling"][i] if i==2 else 1), jets["Resolution"][i]) for i in iPQH)) ) if self.v2had else \
+                     utils.fitKinematic.leastsqHadronicTop( *zip(*((jets["AdjustedP4"][i]*(jets["BScaling"][i] if i==2 else 1), jets["Resolution"][i]) for i in iPQH)), widthW = 4./2 ) #tuned w width
 
             metP4 = self.source["metAdjustedP4"] + hadFit.rawT - hadFit.fitT
             nuXY = np.array([metP4.x(), metP4.y()])
             nuErr2 = sum([-self.eCoupling*jets["CovariantResolution2"][i] for i in iPQH], self.source["metCovariance"])
 
-            for iL in set(jets["BIndices"])-set(iPQH) :
-                iPQHL = iPQH+(iL,)
+            for iPQHL in i4s :
+                iL = iPQHL[3]
                 iQQBB = iPQHL[:2]+tuple(sorted(iPQHL[2:]))
                 b = jets["AdjustedP4"][iL]
-                nuXY_b = nuXY - (self.bscale - 1)*np.array([b.y(),b.y()])
+                bscale = jets['BScaling'][iL]
+                nuXY_b = nuXY - (bscale - 1)*np.array([b.y(),b.y()])
                 nuErr2_b = nuErr2-self.eCoupling*jets["CovariantResolution2"][iL]
-                lepFit = utils.fitKinematic.leastsqLeptonicTop2( b*self.bscale, jets["Resolution"][iL], lepton["P4"], nuXY_b, nuErr2_b)
+                lepFit = utils.fitKinematic.leastsqLeptonicTop2( b*bscale, jets["Resolution"][iL], lepton["P4"], nuXY_b, nuErr2_b)
                 tt = hadFit.fitT + lepFit.fitT
                 iX,ttx = min( [(None,tt)]+[(i,tt+jets["AdjustedP4"][i]) for i in jets["Indices"] if i not in iPQHL], key = lambda lv : lv[1].pt() )
                 recos.append( {"nu"   : lepFit.fitNu,       "hadP" : hadFit.fitJ[0],
@@ -707,7 +713,7 @@ class TTbarSignExpectation(wrappedChain.calculable) :
         self.value =  xw / w if w else 0
 ######################################
 class kinfitFailureModes(wrappedChain.calculable) :
-    def update(self,_) : 
+    def update(self,_) :
         reco =  self.source["TopReconstruction"][0]
         genP4 = self.source["genP4"]
         pdg = self.source["genPdgId"]
@@ -774,8 +780,8 @@ class genTopRecoIndex(wrappedChain.calculable) :
         self.moreName = "deltaR[lep,b,b,q,q] <%0.1f; deltaRnum<%0.1f"%(rMax,rMaxNu)
     def update(self,_) :
         self.value = -1
-        if not self.source['genTopTTbar'] : return
         iPQHL = self.source['IndicesGenTopPQHL'.join(self.source['TopJets'])]
+        if None in iPQHL : return
         iPass = [ i for i,R in enumerate(self.source['TopReconstruction'])
                   if R['iPQHL']==iPQHL and all( self.source["%sDeltaRTopRecoGen"%s][i]<getattr(self,"rMax%s"%s)
                                                 for s in ['lep','nu'] ) ]
@@ -790,6 +796,9 @@ class IndicesGenTopPQHL(wrappedChain.calculable) :
         self.stash( ['Indices','AdjustedP4'] )
 
     def update(self,_) :
+        if not self.source['genTopTTbar'] :
+            self.value = (None,)*4
+            return
         genP4 = self.source['genP4']
         iTT = self.source['genTTbarIndices']
 
@@ -823,66 +832,114 @@ class IndicesGenTopExtra(wrappedChain.calculable) :
         jet = self.source[self.AdjustedP4]
         self.value = [j for j in indices if any( self.rMax > r.Math.VectorUtil.DeltaR(jet[j],gen) for gen in extraP4 ) ]
 
+#####################################
+class TopFitLikelihoodCorrectIndex(wrappedChain.calculable) :
+    def update(self,_):
+        L = self.source['TopCandidateLikelihood']
+        iPQHL = self.source['TopReconstruction'][0]['iPQHL']
+        iPQHL_true = self.source['IndicesGenTopPQHL'.join(self.source['TopJets'])]
+        self.value = sorted(L, key = L.__getitem__, reverse = True).index(iPQHL) if iPQHL in L and iPQHL==iPQHL_true else -1
+#####################################
+class TopFitLikelihoodIndex(wrappedChain.calculable) :
+    def update(self,_):
+        L = self.source['TopCandidateLikelihood']
+        iPQHL = self.source['TopReconstruction'][0]['iPQHL']
+        self.value = sorted(L, key = L.__getitem__, reverse = True).index(iPQHL) if iPQHL in L else -1
+#######################################
+class TopGenLikelihoodIndex(wrappedChain.calculable) :
+    def update(self,_):
+        L = self.source['TopCandidateLikelihood']
+        iPQHL = self.source['IndicesGenTopPQHL'.join(self.source['TopJets'])]
+        self.value = sorted(L, key = L.__getitem__, reverse = True).index(iPQHL) if iPQHL in L else -1
 ######################################
-class __HardAsym__(wrappedChain.calculable) :
+class TopCandidateLikelihood(calculables.secondary) :
+    def uponAcceptance(self,ev) :
+        pass
     def update(self,_) :
-        self.value = None
-        boxes,Is = zip(*[(self.source[item],i) for item,i in self.indices])
-        if not all(boxes) : return
-        indices = [box[i] for box,i in zip(boxes,Is)]
-        p4s = self.source['genP4']
-        self.hard.setMomenta([p4s.at(i) for i in indices], check=False)
-        self.value = self.hard
-class __wHardAsym__(wrappedChain.calculable) :
-    def __init__(self,target,nominal) :
-        self.fixes = ("","%+.2fon%+.2f"%(target,nominal))
-        self.target = target
-        self.nominal = nominal
+        jets = self.source["TopJets"]
+        self.value = {}
+        qqbbL = self.source['TopComboQQBBLikelihood']
+        sigmasLR = self.source['HTopSigmasLikelihoodRatioPQB'.join(jets)]
+        unfitX2LR = self.source['LTopUnfitSqrtChi2LR']
+        for iPQHL in self.source["TopCandidateIndices".join(jets)] :
+            self.value[iPQHL] = reduce(operator.mul, [qqbbL[ iPQHL[:2]+tuple(sorted(iPQHL[2:])) ],
+                                                      sigmasLR[ iPQHL[:3] ],
+                                                      unfitX2LR[ iPQHL[3] ]
+                                                      ])
+######################################
+class LTopUnfitSqrtChi2(wrappedChain.calculable) :
     def update(self,_) :
-        h = self.source[self.hardname()]
-        self.value = 1 if not h else h.weight(self.target,self.nominal)
-class QQbarHardAsym(__HardAsym__) :
-    def __init__(self) :
-        self.hard = utils.asymmWeighting.Asymm_qqbar_hard()
-        self.indices = [('genQQbar',0),('genQQbar',1),('genTopTTbar',0),('genTopTTbar',1),('genGlu',0)]
-class GqHardAsym(__HardAsym__) :
-    def __init__(self) :
-        self.hard = utils.asymmWeighting.Asymm_gq_hard()
-        self.indices = [('genQG',1),('genQG',0),('genTopTTbar',0),('genTopTTbar',1),('genQuark',0)] # broken sincy intro of wAG
-class GqbarHardAsym(__HardAsym__) :
-    def __init__(self) :
-        self.hard = utils.asymmWeighting.Asymm_gqbar_hard()
-        self.indices = [('genQG',1),('genQG',0),('genTopTTbar',0),('genTopTTbar',1),('genQuark',0)] # broken sincy intro of wAG
-class wQQbarHardAsym(__wHardAsym__) :
-    def hardname(self) : return 'QQbarHardAsym'
-class wQgHardAsym(__wHardAsym__) :
-    def hardname(self) :
-        return 'GqHardAsym' if self.source['genQG'][0]>0 else 'GqbarHardAsym' # broken sincy intro of wAG
-class hardSymmAnti(wrappedChain.calculable) :
+        jets = self.source['TopJets']
+        jP4s = self.source['AdjustedP4'.join(jets)]
+        bscale = self.source['BScaling'.join(jets)]
+        lP4 = self.source['P4'.join(self.source['TopLeptons'])][self.source['SemileptonicTopIndex']]
+        met = self.source['metAdjustedP4']
+        nuXY = np.array([met.px(),met.py()])
+        nuErr2 = self.source['metCovariance']
+
+        self.value = dict( (iL,
+                            math.sqrt(utils.fitKinematic.leastsqLeptonicTop2( jP4s[iL]*bscale[iL], 0, lP4, nuXY, nuErr2 ).chi2) )
+                           for iL in self.source['BIndices'.join(jets)] )
+######################################
+class LTopUnfitSqrtChi2LR(calculables.secondary) :
+    def __init__(self, samples = None, tag = None) :
+        self.samples = samples
+        self.tag = tag
+        self.max = 10
+    def uponAcceptance(self,ev) :
+        iTrue = self.source['IndicesGenTopPQHL'.join(self.source['TopJets'])][3]
+        for i,x2 in self.source['LTopUnfitSqrtChi2'].items() :
+            self.book.fill(min(x2,self.max-1e-6),'%scorrect'%('' if i==iTrue else 'in'), 100,0,self.max)
     def update(self,_) :
-        qq = self.source['genQQbar']
-        qg = self.source['genQG'] # broken sincy intro of wAG
-        if not (qq or qg) : self.value = () ; return
-        h = self.source['QQbarHardAsym' if qq else 'GqHardAsym' if qg[0]>0 else 'GqbarHardAsym']
-        self.value = () if not h else (h.symm,h.anti)
+        self.value = dict((i,
+                           self.LR.Interpolate(v) if self.LR else 1)
+                          for i,v in self.source['LTopUnfitSqrtChi2'].items())
+    def setup(self,*_) :
+        hists = self.fromCache(['merged'],['correct','incorrect'], tag = self.tag)['merged']
+        if None in hists.values() :
+            print self.name, ": Histograms not found."
+            self.LR = None
+            return
+        self.LR = hists['correct'].Clone('LR')
+        self.LR.Divide(hists['incorrect'])
+        return hists
+    def onlySamples(self) : return ['merged']
+    def baseSamples(self) : return self.samples
+    def organize(self,org) :
+        if org.tag ==self.tag :
+            org.mergeSamples(targetSpec = {"name":'merged'}, sources = self.samples )
+    def reportCache(self) :
+        hists = self.setup()
+        if not hists :
+            print '%s.setup() failed'%self.name
+            return
+        fileName = '/'.join(self.outputFileName.split('/')[:-1]+[self.name]) + '.pdf'
+        c = r.TCanvas()
+        c.Print(fileName +'[')
+        hists['correct'].SetLineColor(r.kRed)
+        hists['correct'].Draw('hist')
+        hists['incorrect'].Draw('hist same')
+        c.Print(fileName)
+        self.LR.SetTitle("LikelihoodRatio, Correct:Incorrect; LTopUnfitSqrtChi2")
+        self.LR.Draw('hist')
+        c.Print(fileName)
+        c.Print(fileName +']')
+        print 'Wrote : %s'%fileName
 ######################################
 class TopComboQQBBLikelihood(wrappedChain.calculable) :
     def __init__(self, tag = None) :
         self.tagProbabilityGivenBQN = tag+'ProbabilityGivenBQN'
 
     def update(self,_) :
+        self.value = {}
         jets = self.source["TopJets"]
         indices = self.source["Indices".join(jets)]
-        hCands = self.source['HTopCandidateIndices'.join(jets)]
         B,Q,N = zip(*self.source[self.tagProbabilityGivenBQN.join(jets)])
-        self.value = {}
-        for iL in zip(self.source["BIndices".join(jets)]) :
-            for iPQH in hCands :
-                iPQHL = iPQH+iL
-                if iPQH[2] >= iL[0] : continue
-                self.value[iPQHL] = reduce(operator.mul, ([Q[i] for i in iPQHL[:2]] +
-                                                          [B[i] for i in iPQHL[2:]]  +
-                                                          [N[k] for k in indices if k not in iPQHL]) )
+        for iPQHL in self.source["TopCandidateIndices".join(jets)] :
+            if iPQHL[2] > iPQHL[3] : continue
+            self.value[iPQHL] = reduce(operator.mul, ([Q[i] for i in iPQHL[:2]] +
+                                                      [B[i] for i in iPQHL[2:]]  +
+                                                      [N[k] for k in indices if k not in iPQHL]) )
 ######################################
 class TopComboQQBBProbability(wrappedChain.calculable) :
     def update(self,_) :

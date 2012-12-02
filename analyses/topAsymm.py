@@ -7,10 +7,11 @@ class topAsymm(supy.analysis) :
     This analysis contains several secondary calculables, which need
     to be primed in the following order:
     
-    1. Reweightings: run all samples in both tags, inverting label "selection";  --update
-    2. Prime the b-tagging variable for [BQN]-type jets: top samples only, inverting label "top reco"; --update
-    3. Prime the discriminants: [ top.tt, top.w_jet, QCD.SingleMu ] samples only, inverting after discriminants if at all; --update
-    4. Run the analysis, all samples, no label inversion
+    1. Reweightings (pileup); all samples, all tags;       invert "selection"; --update
+    2. Prime the secondaries: top samples, top tags;       invert "finer resolution"; --update (x2)
+    3. Prime tridiscriminant: [ top.tt*, top.w*j, QCD.* ]; invert "finer resolution"; --update
+    4. Prime other tridiscri: top samples, top tags;       no inversion; --update
+    4.                      : all samples, all tags;       no inversion
     '''
 
     def parameters(self) :
@@ -150,7 +151,7 @@ class topAsymm(supy.analysis) :
             calculables.jet.AdjustedP4(jet, pars['smear']),
             calculables.jet.Indices(jet,ptMin = 20 ),
             calculables.jet.IndicesBtagged(jet,pars["bVar"]),
-            calculables.jet.BIndices(jet,5),
+            calculables.jet.BIndices(jet,None),
             supy.calculables.other.abbreviation('combinedSecondaryVertex','CSV',jet),
             calculables.muon.Indices(mu),
             calculables.electron.Indices(el),
@@ -194,10 +195,11 @@ class topAsymm(supy.analysis) :
         lepton = obj[lname]
         otherLepton = obj[{'el':'mu','mu':'el'}[lname]]
         lIsoMinMax = pars["lepton"][pars['selection']['iso']]
-        topTag = pars['tag'].replace("QCD","top")
         bVar = pars["bVar"].join(jet)
         rw = pars['reweights']['abbr']
         tt = pars['toptype']
+        topSamples = (pars['topBsamples'][0]%tt,[s%(tt,rw) for s in pars['topBsamples'][1]])
+        topTag = pars['tag'].replace("QCD","top")
         
         ssteps = supy.steps
 
@@ -205,23 +207,18 @@ class topAsymm(supy.analysis) :
         saWeights = []
         return (
             [ssteps.printer.progressPrinter()
-             , ssteps.histos.value("genpthat",200,0,1000,xtitle="#hat{p_{T}} (GeV)").onlySim()
              , ssteps.histos.value("genQ",200,0,1000,xtitle="#hat{Q} (GeV)").onlySim()
-             , #getattr(self,pars['reweights']['func'])(pars),
-             supy.calculables.other.SymmAnti(pars['sample'],"genTopCosPhiBoost",1, inspect=True, nbins=160, weights = saWeights,
-                                             funcEven = r.TF1('phiboost',"[0]*(1+[1]*x**2)/sqrt(1-x**2)",-1,1),
-                                             funcOdd = r.TF1('phiboostodd','[0]*x/sqrt(1-x**2)',-1,1)).disable(saDisable),
-             supy.calculables.other.SymmAnti(pars['sample'],"genTopCosThetaBoostAlt",1, inspect=True, weights = saWeights,
-                                             funcEven = '++'.join('x**%d'%(2*d) for d in range(5)),
-                                             funcOdd = '++'.join('x**%d'%(2*d+1) for d in range(5))).disable(saDisable),
-             supy.calculables.other.SymmAnti(pars['sample'],"genTopDeltaBetazRel",1, inspect=True, weights = saWeights,
-                                             funcEven = '++'.join(['(1-abs(x))']+['x**%d'%d for d in [0,2,4,6,8,10,12,14,16,18]]),
-                                             funcOdd = '++'.join(['x**%d'%d for d in [1,3,5,7,9,11,13]])).disable(saDisable)
              #, steps.top.fractions().disable(saDisable)
-             , ssteps.filters.label('symm anti')
-             , ssteps.histos.symmAnti('genTopCosPhiBoost','genTopCosPhiBoost',100,-1,1).disable(saDisable)
-             , ssteps.histos.symmAnti('genTopDeltaBetazRel','genTopDeltaBetazRel',100,-1,1).disable(saDisable)
-             , ssteps.histos.symmAnti('genTopCosThetaBoostAlt','genTopCosThetaBoostAlt',100,-1,1).disable(saDisable)
+             #, getattr(self,pars['reweights']['func'])(pars)
+             , supy.calculables.other.SymmAnti(pars['sample'],"genTopCosPhiBoost",1, inspect=True, nbins=160, weights = saWeights,
+                                               funcEven = r.TF1('phiboost',"[0]*(1+[1]*x**2)/sqrt(1-x**2)",-1,1),
+                                               funcOdd = r.TF1('phiboostodd','[0]*x/sqrt(1-x**2)',-1,1)).disable(saDisable)
+             , supy.calculables.other.SymmAnti(pars['sample'],"genTopCosThetaBoostAlt",1, inspect=True, weights = saWeights,
+                                               funcEven = '++'.join('x**%d'%(2*d) for d in range(5)),
+                                               funcOdd = '++'.join('x**%d'%(2*d+1) for d in range(5))).disable(saDisable)
+             , supy.calculables.other.SymmAnti(pars['sample'],"genTopDeltaBetazRel",1, inspect=True, weights = saWeights,
+                                               funcEven = '++'.join(['(1-abs(x))']+['x**%d'%d for d in [0,2,4,6,8,10,12,14,16,18]]),
+                                               funcOdd = '++'.join(['x**%d'%d for d in [1,3,5,7,9,11,13]])).disable(saDisable)
              ####################################
              , ssteps.filters.label('selection'),
              ssteps.filters.value("muHandleValid",min=True),
@@ -235,40 +232,60 @@ class topAsymm(supy.analysis) :
              ssteps.filters.value("Pt".join(jet), min = 20, indices = "Indices".join(jet), index=3),
              ssteps.filters.value(bVar, indices = "IndicesBtagged".join(jet), **pars["selection"]["bCut"]),
              ssteps.filters.value('RelIso'.join(lepton), indices='Indices'.join(lepton), index=0, **lIsoMinMax),
-             steps.trigger.lowestUnPrescaledTriggerFilter().onlyData(), #steps.trigger.hltKeys().onlyData(),
-             steps.trigger.lowestUnPrescaledTriggerHistogrammer(drop = {'mu' : ['IsoMu','_eta2p1_','CentralPF','Jet'],
-                                                                        'el' : ['Ele25_CaloIdVT_','CaloIso','TrkId','_TrkIsoT','TriCentralPF','Jet']}[lname]).onlyData(),
-             ssteps.histos.multiplicity('Indices'.join(jet)),
-             ssteps.histos.value("Pt".join(jet), 125, 0, 250, indices = 'Indices'.join(jet), index=0),
-             ssteps.histos.value("Pt".join(jet), 125, 0, 250, indices = 'Indices'.join(jet), index=1),
-             ssteps.histos.value("Pt".join(jet), 125, 0, 250, indices = 'Indices'.join(jet), index=2),
-             ssteps.histos.value("Pt".join(jet), 125, 0, 250, indices = 'Indices'.join(jet), index=3),
-             ssteps.histos.pt('P4'.join(lepton), 125, 0, 250, indices = 'Indices'.join(lepton), index=0),
-             ssteps.histos.pt('AdjustedP4'.join(met), 125, 0, 250 ),
-             calculables.jet.ProbabilityGivenBQN(jet, pars['bVar'], binning=(51,-0.02,1), samples = (pars['topBsamples'][0]%tt,[s%(tt,rw) for s in pars['topBsamples'][1]]), tag = topTag),
-             ssteps.histos.value("TopRatherThanWProbability", 100,0,1),
-             ssteps.histos.value('MetMt'.join(lepton), 120, 0, 120)
+             steps.trigger.lowestUnPrescaledTriggerFilter().onlyData() #, steps.trigger.hltKeys().onlyData(),
+             , steps.trigger.lowestUnPrescaledTriggerHistogrammer(drop = {'mu' : ['IsoMu','_eta2p1_','CentralPF','Jet'],
+                                                                          'el' : ['Ele25_CaloIdVT_','CaloIso','TrkId','_TrkIsoT','TriCentralPF','Jet']}[lname]).onlyData()
+             ####################################
+             , ssteps.filters.label("selection complete")
+             , steps.top.channelClassification().onlySim()
+             , ssteps.histos.multiplicity('Indices'.join(jet))
+
+             , ssteps.filters.label("secondaries")
+             , supy.calculables.other.TwoDChiSquared('RawMassWTopCorrectPQB'.join(jet), samples = topSamples[1], tag = topTag)
+             , calculables.jet.HTopSigmasLikelihoodRatioPQB(jet, samples = topSamples[1], tag = topTag)
+             , calculables.jet.ProbabilityGivenBQN(jet, pars['bVar'], binning=(51,-0.02,1), samples = topSamples, tag = topTag)
+             , calculables.top.LTopUnfitSqrtChi2LR(samples = topSamples[1], tag = topTag)
+             , self.tridiscriminant(pars)
+
+             , ssteps.filters.label('finer resolution')
+             , ssteps.histos.value('MetMt'.join(lepton), 120, 0, 120)
+             , ssteps.histos.value('ProbabilityHTopMasses'.join(jet), 100,0,1)
+             , ssteps.histos.value("TopRatherThanWProbability", 100,0,1)
+
+             , ssteps.filters.label('object pt')
+             , ssteps.histos.pt('AdjustedP4'.join(met), 125, 0, 250 )
+             , ssteps.histos.pt('P4'.join(lepton), 125, 0, 250, indices = 'Indices'.join(lepton), index=0)
+             , ssteps.histos.value("Pt".join(jet), 125, 0, 250, indices = 'Indices'.join(jet), index=0)
+             , ssteps.histos.value("Pt".join(jet), 125, 0, 250, indices = 'Indices'.join(jet), index=1)
+             , ssteps.histos.value("Pt".join(jet), 125, 0, 250, indices = 'Indices'.join(jet), index=2)
+             , ssteps.histos.value("Pt".join(jet), 125, 0, 250, indices = 'Indices'.join(jet), index=3)
+
+             , ssteps.filters.label('object eta')
+             , ssteps.histos.absEta("P4".join(lepton), 100,0,4, indices = "Indices".join(lepton), index = 0)
+             , ssteps.histos.absEta("AdjustedP4".join(jet), 100,0,4, indices = "Indices".join(jet), index = 0)
+             , ssteps.histos.absEta("AdjustedP4".join(jet), 100,0,4, indices = "Indices".join(jet), index = 1)
+             , ssteps.histos.absEta("AdjustedP4".join(jet), 100,0,4, indices = "Indices".join(jet), index = 2)
+             , ssteps.histos.absEta("AdjustedP4".join(jet), 100,0,4, indices = "Indices".join(jet), index = 3)
 
              #, ssteps.histos.value(bVar, 51,-0.02,1, indices = "IndicesBtagged".join(jet), index = 0)
              #, ssteps.histos.value(bVar, 51,-0.02,1, indices = "IndicesBtagged".join(jet), index = 1)
              #, ssteps.histos.value(bVar, 51,-0.02,1, indices = "IndicesBtagged".join(jet), index = 2)
-             
-             , ssteps.filters.label('top reco'),
-             ssteps.filters.multiplicity("TopReconstruction",min=1)
-             #, steps.displayer.ttbar(jets=jet, met=obj['met'], muons = obj['mu'], electrons = obj['el'])
-             , ssteps.filters.label("selection complete")
 
-             , steps.top.channelClassification().onlySim()
-             , steps.top.combinatorialFrequency().onlySim()
-             ####################################
              #, steps.top.leptonSigned('TridiscriminantWTopQCD', (60,-1,1))
              #, steps.top.leptonSigned('KarlsruheDiscriminant', (28,-320,800) )
-             , ssteps.filters.label('discriminants')
+             #, ssteps.filters.label('discriminants')
              #, ssteps.histos.value("KarlsruheDiscriminant", 28, -320, 800 )
-             , self.tridiscriminant(pars)
-             #, self.tridiscriminant2(pars)
              ####################################
-             , ssteps.filters.label('gen top kinfit ').invert()
+             , ssteps.filters.label('top reco')
+             , ssteps.histos.multiplicity('TopCandidateIndices'.join(jet), max=100)
+             , ssteps.histos.value('TopGenLikelihoodIndex', 21,-1,20)
+             , ssteps.histos.value('genTopRecoIndex', 21,-1,20)
+             , ssteps.histos.value('TopFitLikelihoodIndex',21,-1,20)
+             , ssteps.histos.value('TopFitLikelihoodCorrectIndex',21,-1,20)
+             #, steps.displayer.ttbar(jets=jet, met=obj['met'], muons = obj['mu'], electrons = obj['el'])
+             , steps.top.combinatorialFrequency().onlySim()
+             #, self.tridiscriminant2(pars)
+             , ssteps.filters.label('gen top kinfit ')
              , steps.top.kinFitLook('genTopRecoIndex')
              #, steps.top.kinematics('genTop')
              , steps.top.resolutions('genTopRecoIndex')
@@ -279,20 +296,6 @@ class topAsymm(supy.analysis) :
              ####################################
 
              , ssteps.histos.value("M3".join(jet), 20,0,800)
-             , ssteps.histos.multiplicity("Indices".join(jet))
-             , ssteps.filters.label('object pt')
-             , ssteps.histos.pt("metAdjustedP4",100,1,201)
-             , ssteps.histos.pt("P4".join(lepton), 100,1,201, indices = "Indices".join(lepton), index = 0)
-             , ssteps.histos.pt("AdjustedP4".join(jet), 100,1,201, indices = "Indices".join(jet), index = 0)
-             , ssteps.histos.pt("AdjustedP4".join(jet), 100,1,201, indices = "Indices".join(jet), index = 1)
-             , ssteps.histos.pt("AdjustedP4".join(jet), 100,1,201, indices = "Indices".join(jet), index = 2)
-             , ssteps.histos.pt("AdjustedP4".join(jet), 100,1,201, indices = "Indices".join(jet), index = 3)
-             , ssteps.filters.label('object eta')
-             , ssteps.histos.absEta("P4".join(lepton), 100,0,4, indices = "Indices".join(lepton), index = 0)
-             , ssteps.histos.absEta("AdjustedP4".join(jet), 100,0,4, indices = "Indices".join(jet), index = 0)
-             , ssteps.histos.absEta("AdjustedP4".join(jet), 100,0,4, indices = "Indices".join(jet), index = 1)
-             , ssteps.histos.absEta("AdjustedP4".join(jet), 100,0,4, indices = "Indices".join(jet), index = 2)
-             , ssteps.histos.absEta("AdjustedP4".join(jet), 100,0,4, indices = "Indices".join(jet), index = 3)
              
              , ssteps.filters.label('signal distributions')
              , ssteps.histos.symmAnti('genTopCosPhiBoost','genTopCosPhiBoost',100,-1,1).disable(saDisable)
@@ -340,8 +343,8 @@ class topAsymm(supy.analysis) :
                                                        correlations = pars['discriminant2DPlots'],
                                                        otherSamplesToKeep = datas,
                                                        dists = {"TopRatherThanWProbability" : (20,0,1),
+                                                                'ProbabilityHTopMasses'.join(pars['objects']['jet']) : (20,0,1),
                                                                 "B0pt".join(pars['objects']["jet"]) : (20,20,100),
-                                                                "fitTopHadChi2"     : (20,0,20),
                                                                 "MetMt".join(pars['objects'][lname]) : (20,0,100),
                                                                 })
     @staticmethod
