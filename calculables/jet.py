@@ -49,14 +49,6 @@ class IndicesBtagged(wrappedChain.calculable) :
         self.value = sorted(self.source[self.Indices],
                             key = self.source[self.Tag].__getitem__, reverse = True )
 ###################################
-class BIndices(wrappedChain.calculable) :
-    def __init__(self, collection, nMax = None) :
-        self.fixes = collection
-        self.stash(["IndicesBtagged"])
-        self.nMax = nMax
-        self.moreName = "First %d %s"%(max(nMax,-1),self.IndicesBtagged)
-    def update(self,_) : self.value = self.source[self.IndicesBtagged][:self.nMax]
-###################################
 class IndicesGenB(wrappedChain.calculable) :
     def __init__(self,collection) :
         self.fixes = collection
@@ -168,11 +160,11 @@ class BScaling(wrappedChain.calculable) :
 class TopCandidateIndices(wrappedChain.calculable) :
     def __init__(self, collection = None) :
         self.fixes = collection
-        self.stash(["Indices","BIndices"])
+        self.stash(["Indices"])
     def update(self,_) :
         self.value = [ PQ+HL
                        for PQ in itertools.combinations(sorted(self.source[self.Indices]),2)
-                       for HL in itertools.permutations(self.source[self.BIndices],2)
+                       for HL in itertools.permutations(self.source[self.Indices],2)
                        if len(set(PQ+HL))==4 ]
 ######################################
 class HTopCandidateIndices(wrappedChain.calculable) :

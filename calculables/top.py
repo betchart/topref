@@ -610,7 +610,7 @@ class TopReconstruction(wrappedChain.calculable) :
     def update(self,_) :
         
         jets = dict( (item, self.source[item.join(self.source["TopJets"])] )
-                     for item in ["AdjustedP4","BScaling","BIndices","Indices","Resolution","CovariantResolution2"] )
+                     for item in ["AdjustedP4","BScaling","Indices","Resolution","CovariantResolution2"] )
 
         lepton = dict( (item, self.source[item.join(self.source['TopLeptons'])][self.source["SemileptonicTopIndex"]])
                        for item in ["Charge","P4"])
@@ -879,7 +879,7 @@ class LTopUnfitSqrtChi2(wrappedChain.calculable) :
 
         self.value = dict( (iL,
                             math.sqrt(utils.fitKinematic.leastsqLeptonicTop2( jP4s[iL]*bscale[iL], 0, lP4, nuXY, nuErr2 ).chi2) )
-                           for iL in self.source['BIndices'.join(jets)] )
+                           for iL in self.source['Indices'.join(jets)] )
 ######################################
 class LTopUnfitSqrtChi2LR(calculables.secondary) :
     def __init__(self, samples = None, tag = None) :

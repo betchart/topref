@@ -151,7 +151,6 @@ class topAsymm(supy.analysis) :
             calculables.jet.AdjustedP4(jet, pars['smear']),
             calculables.jet.Indices(jet,ptMin = 20 ),
             calculables.jet.IndicesBtagged(jet,pars["bVar"]),
-            calculables.jet.BIndices(jet,None),
             supy.calculables.other.abbreviation('combinedSecondaryVertex','CSV',jet),
             calculables.muon.Indices(mu),
             calculables.electron.Indices(el),
