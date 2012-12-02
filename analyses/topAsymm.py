@@ -270,20 +270,18 @@ class topAsymm(supy.analysis) :
              #, ssteps.histos.value(bVar, 51,-0.02,1, indices = "IndicesBtagged".join(jet), index = 0)
              #, ssteps.histos.value(bVar, 51,-0.02,1, indices = "IndicesBtagged".join(jet), index = 1)
              #, ssteps.histos.value(bVar, 51,-0.02,1, indices = "IndicesBtagged".join(jet), index = 2)
-             #steps.top.HTopCandidates(),
-             #ssteps.filters.multiplicity('HTopCandidateIndicesSelected'.join(jet),min=1)
 
              #, steps.top.leptonSigned('TridiscriminantWTopQCD', (60,-1,1))
              #, steps.top.leptonSigned('KarlsruheDiscriminant', (28,-320,800) )
              #, ssteps.filters.label('discriminants')
              #, ssteps.histos.value("KarlsruheDiscriminant", 28, -320, 800 )
              ####################################
+             , ssteps.filters.label('top reco')
              , ssteps.histos.multiplicity('TopCandidateIndices'.join(jet), max=100)
              , ssteps.histos.value('TopGenLikelihoodIndex', 21,-1,20)
              , ssteps.histos.value('genTopRecoIndex', 21,-1,20)
              , ssteps.histos.value('TopFitLikelihoodIndex',21,-1,20)
              , ssteps.histos.value('TopFitLikelihoodCorrectIndex',21,-1,20)
-             , ssteps.filters.label('top reco').invert()
              #, steps.displayer.ttbar(jets=jet, met=obj['met'], muons = obj['mu'], electrons = obj['el'])
              , steps.top.combinatorialFrequency().onlySim()
              #, self.tridiscriminant2(pars)
