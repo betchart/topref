@@ -605,19 +605,25 @@ class TopReconstruction(wrappedChain.calculable) :
                      'v2had',     # v2 (1parameter,3residuals) is twice as fast as v1 (3parameters,5residuals) but 5% less accurate
                      ] : setattr(self,item,eval(item))
         self.moreName = "eCoupl:%.2f; v%dhad; v2lep"%(eCoupling,v2had+1)
+        self.maxFits = 4 # if the correct combo is after index 3, we won't choose it anyway.
 
     def update(self,_) :
         
         jets = dict( (item, self.source[item.join(self.source["TopJets"])] )
-                     for item in ["AdjustedP4","BScaling","BIndices","Indices","Resolution","CovariantResolution2","HTopCandidateIndicesSelected"] )
+                     for item in ["AdjustedP4","BScaling","BIndices","Indices","Resolution","CovariantResolution2"] )
 
         lepton = dict( (item, self.source[item.join(self.source['TopLeptons'])][self.source["SemileptonicTopIndex"]])
                        for item in ["Charge","P4"])
 
         topP = self.source["TopComboQQBBProbability"]
+        TCL = self.source['TopCandidateLikelihood']
         
         recos = []
-        for iPQH in jets["HTopCandidateIndicesSelected"] :
+        for iPQH,i4s in itertools.groupby( sorted(sorted( TCL,
+                                                          key = TCL.__getitem__,
+                                                          reverse = True)[:self.maxFits] ),
+                                           key = lambda x: x[:3]) :
+
             hadFit = utils.fitKinematic.leastsqHadronicTop2(*zip(*((jets["AdjustedP4"][i]*(jets["BScaling"][i] if i==2 else 1), jets["Resolution"][i]) for i in iPQH)) ) if self.v2had else \
                      utils.fitKinematic.leastsqHadronicTop( *zip(*((jets["AdjustedP4"][i]*(jets["BScaling"][i] if i==2 else 1), jets["Resolution"][i]) for i in iPQH)), widthW = 4./2 ) #tuned w width
 
@@ -625,13 +631,14 @@ class TopReconstruction(wrappedChain.calculable) :
             nuXY = np.array([metP4.x(), metP4.y()])
             nuErr2 = sum([-self.eCoupling*jets["CovariantResolution2"][i] for i in iPQH], self.source["metCovariance"])
 
-            for iL in set(jets["BIndices"])-set(iPQH) :
-                iPQHL = iPQH+(iL,)
+            for iPQHL in i4s :
+                iL = iPQHL[3]
                 iQQBB = iPQHL[:2]+tuple(sorted(iPQHL[2:]))
                 b = jets["AdjustedP4"][iL]
-                nuXY_b = nuXY - (self.bscale - 1)*np.array([b.y(),b.y()])
+                bscale = jets['BScaling'][iL]
+                nuXY_b = nuXY - (bscale - 1)*np.array([b.y(),b.y()])
                 nuErr2_b = nuErr2-self.eCoupling*jets["CovariantResolution2"][iL]
-                lepFit = utils.fitKinematic.leastsqLeptonicTop2( b*self.bscale, jets["Resolution"][iL], lepton["P4"], nuXY_b, nuErr2_b)
+                lepFit = utils.fitKinematic.leastsqLeptonicTop2( b*bscale, jets["Resolution"][iL], lepton["P4"], nuXY_b, nuErr2_b)
                 tt = hadFit.fitT + lepFit.fitT
                 iX,ttx = min( [(None,tt)]+[(i,tt+jets["AdjustedP4"][i]) for i in jets["Indices"] if i not in iPQHL], key = lambda lv : lv[1].pt() )
                 recos.append( {"nu"   : lepFit.fitNu,       "hadP" : hadFit.fitJ[0],
@@ -825,7 +832,20 @@ class IndicesGenTopExtra(wrappedChain.calculable) :
         jet = self.source[self.AdjustedP4]
         self.value = [j for j in indices if any( self.rMax > r.Math.VectorUtil.DeltaR(jet[j],gen) for gen in extraP4 ) ]
 
-######################################
+#####################################
+class TopFitLikelihoodCorrectIndex(wrappedChain.calculable) :
+    def update(self,_):
+        L = self.source['TopCandidateLikelihood']
+        iPQHL = self.source['TopReconstruction'][0]['iPQHL']
+        iPQHL_true = self.source['IndicesGenTopPQHL'.join(self.source['TopJets'])]
+        self.value = sorted(L, key = L.__getitem__, reverse = True).index(iPQHL) if iPQHL in L and iPQHL==iPQHL_true else -1
+#####################################
+class TopFitLikelihoodIndex(wrappedChain.calculable) :
+    def update(self,_):
+        L = self.source['TopCandidateLikelihood']
+        iPQHL = self.source['TopReconstruction'][0]['iPQHL']
+        self.value = sorted(L, key = L.__getitem__, reverse = True).index(iPQHL) if iPQHL in L else -1
+#######################################
 class TopGenLikelihoodIndex(wrappedChain.calculable) :
     def update(self,_):
         L = self.source['TopCandidateLikelihood']

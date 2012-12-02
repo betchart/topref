@@ -167,7 +167,7 @@ class topAsymm(supy.analysis) :
             calculables.top.IndicesGenTopPQHL( jet ),
             calculables.top.IndicesGenTopExtra( jet ),
             calculables.top.genTopRecoIndex(),
-            #calculables.top.TopReconstruction(),
+            calculables.top.TopReconstruction(),
             #calculables.top.TTbarSignExpectation(nSamples = 16, qDirFunc = "qDirExpectation_EtaSum"),
 
             calculables.met.MetMt( lepton, "AdjustedP4".join(met)),
@@ -244,9 +244,10 @@ class topAsymm(supy.analysis) :
              , supy.calculables.other.TwoDChiSquared('RawMassWTopCorrectPQB'.join(jet), samples = topSamples[1], tag = topTag)
              , calculables.jet.HTopSigmasLikelihoodRatioPQB(jet, samples = topSamples[1], tag = topTag)
              , calculables.jet.ProbabilityGivenBQN(jet, pars['bVar'], binning=(51,-0.02,1), samples = topSamples, tag = topTag)
+             , calculables.top.LTopUnfitSqrtChi2LR(samples = topSamples[1], tag = topTag)
              , self.tridiscriminant(pars)
 
-             , ssteps.filters.label('finer resolution').invert()
+             , ssteps.filters.label('finer resolution')
              , ssteps.histos.value('MetMt'.join(lepton), 120, 0, 120)
              , ssteps.histos.value('ProbabilityHTopMasses'.join(jet), 100,0,1)
              , ssteps.histos.value("TopRatherThanWProbability", 100,0,1)
@@ -277,6 +278,11 @@ class topAsymm(supy.analysis) :
              #, ssteps.filters.label('discriminants')
              #, ssteps.histos.value("KarlsruheDiscriminant", 28, -320, 800 )
              ####################################
+             , ssteps.histos.multiplicity('TopCandidateIndices'.join(jet), max=100)
+             , ssteps.histos.value('TopGenLikelihoodIndex', 21,-1,20)
+             , ssteps.histos.value('genTopRecoIndex', 21,-1,20)
+             , ssteps.histos.value('TopFitLikelihoodIndex',21,-1,20)
+             , ssteps.histos.value('TopFitLikelihoodCorrectIndex',21,-1,20)
              , ssteps.filters.label('top reco').invert()
              #, steps.displayer.ttbar(jets=jet, met=obj['met'], muons = obj['mu'], electrons = obj['el'])
              , steps.top.combinatorialFrequency().onlySim()
