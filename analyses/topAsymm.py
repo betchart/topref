@@ -295,9 +295,9 @@ class topAsymm(supy.analysis) :
              , ssteps.histos.symmAnti('genTopDeltaBetazRel','genTopDeltaBetazRel',100,-1,1).disable(saDisable)
              , ssteps.histos.symmAnti('genTopCosThetaBoostAlt','genTopCosThetaBoostAlt',100,-1,1).disable(saDisable)
 
-             , ssteps.histos.symmAnti('genTopCosPhiBoost','fitTopCosPhiBoost',100,-1,1, other = ('TridiscriminantWTopQCD',100,-1,1)).disable(saDisable)
-             , ssteps.histos.symmAnti('genTopCosThetaBoostAlt','fitTopCosThetaBoostAlt',100,-1,1, other = ('TridiscriminantWTopQCD',100,-1,1)).disable(saDisable)
-             , ssteps.histos.symmAnti('genTopDeltaBetazRel','fitTopDeltaBetazRel',100,-1,1, other = ('TridiscriminantWTopQCD',100,-1,1)).disable(saDisable)
+             , ssteps.histos.symmAnti('genTopCosPhiBoost','fitTopCosPhiBoost',100,-1,1, other = ('TridiscriminantWTopQCD',100,-1,1))
+             , ssteps.histos.symmAnti('genTopCosThetaBoostAlt','fitTopCosThetaBoostAlt',100,-1,1, other = ('TridiscriminantWTopQCD',100,-1,1))
+             , ssteps.histos.symmAnti('genTopDeltaBetazRel','fitTopDeltaBetazRel',100,-1,1, other = ('TridiscriminantWTopQCD',100,-1,1))
 
              ])
     ########################################################################################
