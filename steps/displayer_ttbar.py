@@ -1,9 +1,7 @@
 import math,os,collections,configuration, ROOT as r
 import supy
-try:
-    import numpy as np
-except:
-    pass
+try: import numpy as np
+except: pass
 #####################################
 class ttbar(supy.steps.displayer) :
     
@@ -23,12 +21,12 @@ class ttbar(supy.steps.displayer) :
         
         self.prettyReName = {
             "clean jets (xcak5JetPFPat)": "jets (AK5 PF)",
-            "MET (metP4PF)": "PF MET",
-            "muons (muonPF)": "muons",
-            "electrons (electronPF)": "electrons",
-            "xcak5JetPFPat": "AK5 PF Jets",
-            "muonPF": "muons",
-            "electronPF": "electrons",
+            "MET (met)": "PF MET",
+            "muons (mu)": "muons",
+            "electrons (el)": "electrons",
+            "jet": "AK5 PFNoPU Jets",
+            "mu": "muons",
+            "el": "electrons",
             }
 
     def reset(self) :
@@ -197,7 +195,7 @@ class ttbar(supy.steps.displayer) :
         draw(reco['hadQ'], r.kCyan+2)
         draw(reco['hadB'], r.kBlue+2)
         draw(reco['lepB'], r.kMagenta+2)
-        if reco['iX']!=None : self.etaPhiPad.cd(); self.drawCircle(eV["CorrectedP4".join(self.jets)][reco['iX']], 48, 1, 0.2)
+        if reco['iX']!=None : self.etaPhiPad.cd(); self.drawCircle(eV["AdjustedP4".join(self.jets)][reco['iX']], 48, 1, 0.2)
         self.etaPhiPad.cd()
         self.drawMarker(reco['top'], 40, 1.5, r.kFullStar)
         self.drawMarker(reco['top'], 40, 1.5, r.kFullStar, ptMode = True)
@@ -233,8 +231,8 @@ class ttbar(supy.steps.displayer) :
     def drawMet(self, eV, color, lineWidth) :
         if not self.met: return
         reco = eV['TopReconstruction'][0]
-        met = -reco['sumP4']
-        self.legendFunc(color, name = "hadFit corr. MET", desc = "MET (%s)"%self.met)
+        met = reco['metP4']
+        self.legendFunc(color, name = "hadFit corr. MET", desc = "MET (%s%s)"%self.met)
         self.line.SetLineColor(color)
         self.etaPhiPad.cd();  self.line.DrawLine( -3, met.phi(), 3, met.phi()  )
         self.rhoPhiPad.cd();  self.drawP4(self.rhoPhiCoords, met, color, lineWidth, self.arrow.GetDefaultArrowSize() )
@@ -260,17 +258,15 @@ class ttbar(supy.steps.displayer) :
         if not self.jets : return
         self.legendFunc(color, name = "cleanJet".join(self.jets), desc = "clean jets (%s%s)"%self.jets)
         
-        jets = eV["CorrectedP4".join(self.jets)]
-        fPU = eV["PileUpPtFraction".join(self.jets)]
+        jets = eV["AdjustedP4".join(self.jets)]
         
         for iJet in eV["Indices".join(self.jets)] :
-            jet = jets.at(iJet)
-            icolor = r.kGray if fPU[iJet] > 0.7 else color
-            self.rhoPhiPad.cd(); self.drawP4(self.rhoPhiCoords, jet, icolor, lineWidth, self.arrow.GetDefaultArrowSize() )
-            self.etaPhiPad.cd(); self.drawCircle(jet, icolor, lineWidth, circleRadius = self.jetRadius)
+            jet = jets[iJet]
+            self.rhoPhiPad.cd(); self.drawP4(self.rhoPhiCoords, jet, color, lineWidth, self.arrow.GetDefaultArrowSize() )
+            self.etaPhiPad.cd(); self.drawCircle(jet, color, lineWidth, circleRadius = self.jetRadius)
             if jet.pt()>35 :
-                self.drawCircle(jet, icolor, lineWidth, circleRadius = self.jetRadius*(1 + 0.0005*(jet.pt()-30)), lineStyle=1)
-                self.drawCircle(jet, icolor, lineWidth, circleRadius = self.jetRadius*(1 - 0.0005*(jet.pt()-30)), lineStyle=1)
+                self.drawCircle(jet, color, lineWidth, circleRadius = self.jetRadius*(1 + 0.0005*(jet.pt()-30)), lineStyle=1)
+                self.drawCircle(jet, color, lineWidth, circleRadius = self.jetRadius*(1 - 0.0005*(jet.pt()-30)), lineStyle=1)
             
                     
     def drawLeptons(self, eV, color, lineWidth, kind = "muon", desc = "") :
@@ -279,7 +275,7 @@ class ttbar(supy.steps.displayer) :
         self.legendFunc(color, name = kind.join(lepton) if not desc else desc, desc = kind + "s (%s%s)"%lepton if not desc else desc)
         p4 = eV["P4".join(lepton)]
         self.rhoPhiPad.cd()
-        for i in eV["IndicesAnyIso".join(lepton)] :
+        for i in eV["Indices".join(lepton)] :
             self.drawP4(self.rhoPhiCoords, p4.at(i), color, lineWidth, self.arrow.GetDefaultArrowSize() )
                         
     def preparePads(self) :

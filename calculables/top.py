@@ -1,16 +1,71 @@
-from supy import wrappedChain,utils
-from jet import xcStrip
+from supy import wrappedChain,utils,calculables
 import math,operator,itertools,ROOT as r
 try: import numpy as np
 except: pass
 
-class TopJets(wrappedChain.calculable) :
-    def __init__(self, jets ) : self.value = {"fixes":jets,"fixesStripped":xcStrip(jets)}
-    def update(self,_): pass
 ######################################
+class TopJets(wrappedChain.calculable) :
+    def __init__(self, jets ) : self.value = jets
+    def update(self,_): pass
+
 class TopLeptons(wrappedChain.calculable) :
     def __init__(self, leptons ) : self.value = leptons
     def update(self,_): pass
+
+class SemileptonicTopIndex(wrappedChain.calculable) :
+    def update(self,_) :
+        self.value = next( iter(self.source["Indices".join(self.source["TopLeptons"])]), None )
+
+class fitTopRecoIndex(wrappedChain.calculable) :
+    value = 0
+    def update(self,_) : pass
+class genTopRecoIndex(wrappedChain.calculable) :
+    def update(self,_) :
+        iPQHL = self.source['IndicesGenTopPQHL']
+        self.value = next((i for i,TR in enumerate(self.source['TopReconstruction']) if TR['iPQHL']==iPQHL), -1)
+
+class IndicesGenTopPQHL(wrappedChain.calculable) :
+    rMax = 0.6
+    def update(self,_) :
+        if not self.source['genTopTTbar'] :
+            self.value = (None,)*4
+            return
+        genP4 = self.source['genP4']
+        iTT = self.source['genTTbarIndices']
+
+        PQHL = [genP4[i] if i!=None else None for i in ( (iTT['q'][:2] if iTT['q'] else 2*[None]) + [ iTT['bhad'],iTT['blep'] ] )]
+
+        jets = self.source['TopJets']
+        indices = self.source['Indices'.join(jets)]
+        p4 = self.source['AdjustedP4'.join(jets)]
+
+        dRIs = [ min( (r.Math.VectorUtil.DeltaR( p4[i], gen ), i) for i in indices ) if gen else
+                 (None,None)
+                 for gen in PQHL ]
+
+        PQHL = [i if dR<self.rMax else None for dR,i in dRIs ]
+        self.value = tuple( sorted(PQHL[:2]) + PQHL[2:] )
+
+class IndicesGenTopPQH(wrappedChain.calculable) :
+    def update(self,_) : self.value = self.source['IndicesGenTopPQHL'][:3]
+class IndexGenTopL(wrappedChain.calculable) :
+    def update(self,_) : self.value = self.source['IndicesGenTopPQHL'][3]
+
+class IndicesGenTopExtra(wrappedChain.calculable) :
+    rMax = 0.6
+    def update(self,_) :
+        imom = self.source['genMotherIndex']
+        p4 = self.source['genP4']
+        pdg = self.source['genPdgId']
+        status = self.source['genStatus']
+
+        extraP4 = [p4[i] for i in range(8,len(imom)) if 2<imom[i]<6 and abs(pdg[i]) in [1,2,3,4,5,11,13,15,21] and status[i]==3]
+        jets = self.source['TopJets']
+        indices = self.source['Indices'.join(jets)]
+        jet = self.source['AdjustedP4'.join(jets)]
+        self.value = [j for j in indices if any( self.rMax > r.Math.VectorUtil.DeltaR(jet[j],gen) for gen in extraP4 ) ]
+
+
 ######################################
 class TopP4Calculable(wrappedChain.calculable) :
     def __init__(self, collection = None) :
@@ -83,7 +138,7 @@ class JetAbsEtaMax(wrappedChain.calculable) :
         self.fixes = collection
     def update(self,_) :
         iPQHL = self.source["TopReconstruction"][0]['iPQHL']
-        p4 = self.source["CorrectedP4".join(self.source["TopJets"]["fixes"])]
+        p4 = self.source["AdjustedP4".join(self.source["TopJets"])]
         self.value = max([abs(p4[i].eta()) for i in iPQHL])
 ######################################
 class JetPtMin(wrappedChain.calculable) :
@@ -91,7 +146,7 @@ class JetPtMin(wrappedChain.calculable) :
         self.fixes = collection
     def update(self,_) :
         iPQHL = self.source["TopReconstruction"][0]['iPQHL']
-        p4 = self.source["CorrectedP4".join(self.source["TopJets"]["fixes"])]
+        p4 = self.source["AdjustedP4".join(self.source["TopJets"])]
         self.value = min([abs(p4[i].pt()) for i in iPQHL])
 ######################################
 class PartonFractions(TopP4Calculable) :
@@ -450,11 +505,11 @@ class RadiativeCoherence(wrappedChain.calculable) :
         self.stash(['BoostZAlt','RecoIndex','SignQuarkZ'])
 
     def update(self,_) :
-        jets = self.source["TopJets"]["fixes"]
+        jets = self.source["TopJets"]
         topReco = self.source["TopReconstruction"][self.source[self.RecoIndex]]
         boost = self.source[self.BoostZAlt]
         thetaTop = boost(topReco['top' if self.source[self.SignQuarkZ]>0 else 'tbar']).theta()
-        p4 = self.source["CorrectedP4".join(jets)]
+        p4 = self.source["AdjustedP4".join(jets)]
         extraPtTheta = [ ( p4[i].pt(), boost(p4[i]).theta() )  for i in (set(self.source["Indices".join(jets)]) - set(topReco['iPQHL']))]
         sumPtExtra = sum( pt for pt,theta in extraPtTheta )
         sumPtExtraInCones = (sum( pt for pt,theta in extraPtTheta if theta < thetaTop ) +
@@ -492,7 +547,6 @@ class genTopLeptonCharge(wrappedChain.calculable) :
 class fitTopP4(wrappedChain.calculable) :
     def update(self,_) :
         reco = self.source["TopReconstruction"][0]
-        tracks = self.source["CountwithPrimaryHighPurityTracks".join(self.source["TopJets"]['fixesStripped'])]
         t = reco['top']
         tbar = reco['tbar']
         q_z = 0.5*(t+tbar).z()
@@ -504,13 +558,12 @@ class fitTopP4(wrappedChain.calculable) :
                       'p' : reco['hadP'],
                       'q' : reco['hadQ'],
                       'rawW': reco['hadWraw'],
-                      'sumP4':reco['sumP4'],
+                      'metP4':reco['metP4'],
                       'key': reco['key'],
                       'chi2': reco['chi2'],
                       'hadChi2': reco['hadChi2'],
                       'ttx': reco['ttx'],
                       'fifth': reco['iX']!=None,
-                      'ntracks': sum(tracks[i] for i in reco['iPQHL'])
                       }
 class fitTopLeptonCharge(wrappedChain.calculable) :
     def update(self,_) :
@@ -568,99 +621,49 @@ class genTTbarIndices(wrappedChain.calculable) :
         self.value['blep'] = None if not self.value['semi'] else self.value['b'] if self.value['lminus']==None else self.value['bbar']
         self.value['bhad'] = None if not self.value['semi'] else self.value['bbar'] if self.value['lminus']==None else self.value['b']
 ######################################
-class genTopSemiLeptonicWithinAcceptance(wrappedChain.calculable) :
-    def __init__(self, jetPtMin = None, jetAbsEtaMax = None, lepPtMin = None, lepAbsEtaMax = None) :
-        for item in ['jetPtMin','jetAbsEtaMax','lepPtMin','lepAbsEtaMax'] : setattr(self,item,eval(item))
-        self.moreName = 'jetPt>%0.1f; jet|eta|<%0.1f; lepPt>%0.1f; lep|eta|<%0.1f'%(jetPtMin,jetAbsEtaMax,lepPtMin,lepAbsEtaMax)
-    def update(self,_) :
-        self.value = False
-        if not self.source["genTopTTbar"] : return
-        indices = self.source['genTTbarIndices']
-        if not indices['semi'] : return
-        iLep = max(indices['lplus'],indices['lminus'])
-        genP4 = self.source["genP4"]
-        if genP4[iLep].pt() < self.lepPtMin : return
-        if abs(genP4[iLep].eta()) > self.lepAbsEtaMax : return
-        for iJet in ( indices['q'] + [indices['b'],indices['bbar']] ) :
-            if genP4[iJet].pt() < self.jetPtMin : return
-            if abs(genP4[iJet].eta()) > self.jetAbsEtaMax : return
-        self.value = True
-######################################
-class genTopSemiMu(wrappedChain.calculable) :
-    def update(self,_) :
-        ids = self.source['genPdgId']
-        iTT = self.source['genTTbarIndices']
-        self.value = iTT['semi'] and abs(ids[max(iTT['lplus'],iTT['lminus'])])==13
-######################################
-class genTopSemiLeptonicAccepted(wrappedChain.calculable) :
-    def update(self,_) :
-        jets = self.source["TopJets"]["fixes"]
-        self.value = len(self.source["IndicesGenB".join(jets)]) is 2 is len(self.source["IndicesGenWqq".join(jets)])
-######################################
-class mixedSumP4(wrappedChain.calculable) :
-    def __init__(self, transverse = None, longitudinal = None) :
-        self.trans = transverse
-        self.longi = longitudinal
-        self.moreName = "transverse: %s ; longitudinal: %s" % (transverse,longitudinal)
-        self.value = utils.LorentzV()
-    def update(self,_) :
-        trans = self.source[self.trans]
-        longi = self.source[self.longi]
-        f = trans.pt() / longi.pt()
-        self.value.SetPxPyPzE(-trans.px(),-trans.py(), f*longi.pz(), f*longi.E())
-#####################################
-class SemileptonicTopIndex(wrappedChain.calculable) :
-    def update(self,_) :
-        self.value = next( iter(self.source["IndicesAnyIsoIsoOrder".join(self.source["TopLeptons"])]), None )
-#####################################
 class TopReconstruction(wrappedChain.calculable) :
-    def __init__(self, bscale = 1.1, eCoupling = 0.55, v2had = False, v2lep = True ) :
-        theta = math.pi/6
-        self.ellipseR = np.array([[math.cos(theta),-math.sin(theta)],[math.sin(theta), math.cos(theta)]])
+    def __init__(self, eCoupling = 0.55, v2had = False) :
         self.epsilon = 1e-7
-        for item in ['bscale',    # factor by which to scale hypothesized b jets
-                     'eCoupling', # percentage of jet resolution used to sharpen MET resolution
+        for item in ['eCoupling', # percentage of jet resolution used to sharpen MET resolution
                      'v2had',     # v2 (1parameter,3residuals) is twice as fast as v1 (3parameters,5residuals) but 5% less accurate
-                     'v2lep'      # no comment: read the codes
                      ] : setattr(self,item,eval(item))
-        self.moreName = "bscale:%.1f; eCoupl:%.2f; v%dhad; v%dlep"%(bscale,eCoupling,v2had+1,v2lep+1)
+        self.moreName = "eCoupl:%.2f; v%dhad; v2lep"%(eCoupling,v2had+1)
+        self.maxFits = 4 # if the correct combo is after index 3, we won't choose it anyway.
 
     def update(self,_) :
         
-        jets = dict( (item, self.source[item.join(self.source["TopJets"]["fixes"])] )
-                     for item in ["CorrectedP4","IndicesBtagged","Indices","Resolution","CovariantResolution2","ComboPQBDeltaRawMassWTop"] )
+        jets = dict( (item, self.source[item.join(self.source["TopJets"])] )
+                     for item in ["AdjustedP4","BScaling","Indices","Resolution","CovariantResolution2"] )
 
         lepton = dict( (item, self.source[item.join(self.source['TopLeptons'])][self.source["SemileptonicTopIndex"]])
                        for item in ["Charge","P4"])
 
         topP = self.source["TopComboQQBBProbability"]
-        bIndices = jets["IndicesBtagged"][:5] #consider only the first few b-tagged jets as possible b-candidates
+        TCL = self.source['TopCandidateLikelihood']
         
         recos = []
-        for iPQH in itertools.permutations(jets["Indices"],3) :
-            if iPQH[0]>iPQH[1] : continue
-            if iPQH[2] not in bIndices : continue
-            if np.dot(*(2*[self.ellipseR.dot(jets["ComboPQBDeltaRawMassWTop"][iPQH]) / [35,70]])) > 1 : continue # elliptical window on raw masses
+        for iPQH,i4s in itertools.groupby( sorted(sorted( TCL,
+                                                          key = TCL.__getitem__,
+                                                          reverse = True)[:self.maxFits] ),
+                                           key = lambda x: x[:3]) :
 
-            hadFit = utils.fitKinematic.leastsqHadronicTop2(*zip(*((jets["CorrectedP4"][i]*(self.bscale if i==2 else 1), jets["Resolution"][i]) for i in iPQH)) ) if self.v2had else \
-                     utils.fitKinematic.leastsqHadronicTop( *zip(*((jets["CorrectedP4"][i]*(self.bscale if i==2 else 1), jets["Resolution"][i]) for i in iPQH)), widthW = 4./2 ) #tuned w width
+            hadFit = utils.fitKinematic.leastsqHadronicTop2(*zip(*((jets["AdjustedP4"][i]*(jets["BScaling"][i] if i==2 else 1), jets["Resolution"][i]) for i in iPQH)) ) if self.v2had else \
+                     utils.fitKinematic.leastsqHadronicTop( *zip(*((jets["AdjustedP4"][i]*(jets["BScaling"][i] if i==2 else 1), jets["Resolution"][i]) for i in iPQH)), widthW = 4./2 ) #tuned w width
 
-            sumP4 = self.source["mixedSumP4"] - hadFit.rawT + hadFit.fitT
-            nuXY = -np.array([sumP4.x(), sumP4.y()])
-            nuErr2 = sum([-self.eCoupling*jets["CovariantResolution2"][i] for i in iPQH], self.source["metCovariancePF"])
+            metP4 = self.source["metAdjustedP4"] + hadFit.rawT - hadFit.fitT
+            nuXY = np.array([metP4.x(), metP4.y()])
+            nuErr2 = sum([-self.eCoupling*jets["CovariantResolution2"][i] for i in iPQH], self.source["metCovariance"])
 
-            for iL in set(bIndices)-set(iPQH) :
-                iPQHL = iPQH+(iL,)
+            for iPQHL in i4s :
+                iL = iPQHL[3]
                 iQQBB = iPQHL[:2]+tuple(sorted(iPQHL[2:]))
-                b = jets["CorrectedP4"][iL]
-                nuXY_b = nuXY - (self.bscale - 1)*np.array([b.y(),b.y()])
+                b = jets["AdjustedP4"][iL]
+                bscale = jets['BScaling'][iL]
+                nuXY_b = nuXY - (bscale - 1)*np.array([b.y(),b.y()])
                 nuErr2_b = nuErr2-self.eCoupling*jets["CovariantResolution2"][iL]
-                lepFit = utils.fitKinematic.leastsqLeptonicTop2( b*self.bscale, jets["Resolution"][iL], lepton["P4"], nuXY_b, nuErr2_b) if self.v2lep else \
-                         min( utils.fitKinematic.leastsqLeptonicTop( b*self.bscale, jets["Resolution"][iL], lepton["P4"], nuXY_b, nuErr2_b, zPlus = True ),
-                              utils.fitKinematic.leastsqLeptonicTop( b*self.bscale, jets["Resolution"][iL], lepton["P4"], nuXY_b, nuErr2_b, zPlus = False ),
-                              key = lambda x: x.chi2 )
+                lepFit = utils.fitKinematic.leastsqLeptonicTop2( b*bscale, jets["Resolution"][iL], lepton["P4"], nuXY_b, nuErr2_b)
                 tt = hadFit.fitT + lepFit.fitT
-                iX,ttx = min( [(None,tt)]+[(i,tt+jets["CorrectedP4"][i]) for i in jets["Indices"] if i not in iPQHL], key = lambda lv : lv[1].pt() )
+                iX,ttx = min( [(None,tt)]+[(i,tt+jets["AdjustedP4"][i]) for i in jets["Indices"] if i not in iPQHL], key = lambda lv : lv[1].pt() )
                 recos.append( {"nu"   : lepFit.fitNu,       "hadP" : hadFit.fitJ[0],
                                "lep"  : lepFit.mu,          "hadQ" : hadFit.fitJ[1],
                                "lepB" : lepFit.fitB,        "hadB" : hadFit.fitJ[2],
@@ -677,7 +680,7 @@ class TopReconstruction(wrappedChain.calculable) :
                                "iPQHL": iPQHL,
                                "lepCharge": lepton["Charge"], "hadTraw" : hadFit.rawT, "lepTraw" : lepFit.rawT,
                                "lepBound" : lepFit.bound,     "hadWraw" : hadFit.rawW, "lepWraw" : lepFit.rawW,
-                               "sumP4": sumP4 - b + lepFit.fitB,
+                               "metP4": metP4 + b - lepFit.fitB,
                                "nuErr2":nuErr2_b,
                                "residuals" : dict( zip(["lep"+i for i in "BSLWT"],  lepFit.residualsBSLWT ) +
                                                    zip(["had"+i for i in "PQBWT"], hadFit.residualsPQBWT ) ),
@@ -733,21 +736,21 @@ class TTbarSignExpectation(wrappedChain.calculable) :
         self.value =  xw / w if w else 0
 ######################################
 class kinfitFailureModes(wrappedChain.calculable) :
-    def update(self,_) : 
+    def update(self,_) :
         reco =  self.source["TopReconstruction"][0]
         genP4 = self.source["genP4"]
         pdg = self.source["genPdgId"]
         mom = self.source["genMotherPdgId"]
         status = self.source["genStatus"]
-        jets = self.source["TopJets"]['fixes']
-        p4 = self.source["CorrectedP4".join(jets)]
+        jets = self.source["TopJets"]
+        p4 = self.source["AdjustedP4".join(jets)]
         indices = self.source["Indices".join(jets)]
         igenTT = self.source["genTTbarIndices"]
         iTop,iTbar = self.source["genTopTTbar"]
 
         self.value = {}
         if self.source["ttDecayMode"] not in ["ej","mj"] : return
-        self.value["met"] = (abs(r.Math.VectorUtil.DeltaPhi( -self.source["mixedSumP4"], genP4[igenTT['nu']])) < 0.7)
+        self.value["met"] = (abs(r.Math.VectorUtil.DeltaPhi( self.source["metAdjustedP4"], genP4[igenTT['nu']])) < 0.7)
         self.value["nu"] = r.Math.VectorUtil.DeltaR( genP4[igenTT['nu']], reco['nu']) < 0.7
 
         igens = tuple(igenTT['q'])+(igenTT['bhad'],igenTT['blep'])
@@ -789,165 +792,3 @@ class pqDeltaRTopRecoGen(wrappedChain.calculable) :
                      for reco in self.source['TopReconstruction']]
 class qDeltaRTopRecoGen(wrappedChain.calculable) :
     def update(self,_): self.value = [pq[1] for pq in self.source['pqDeltaRTopRecoGen']]
-######################################
-class fitTopRecoIndex(wrappedChain.calculable) :
-    value = 0
-    def update(self,_) : pass
-class genTopRecoIndex(wrappedChain.calculable) :
-    def __init__(self,rMax = 0.6, rMaxNu = 10.0) :
-        for item in ['lep','bLep','bHad','q'] : setattr(self,"rMax"+item, rMax )
-        self.rMaxnu = rMaxNu
-        self.moreName = "deltaR[lep,b,b,q,q] <%0.1f; deltaRnum<%0.1f"%(rMax,rMaxNu)
-    def update(self,_) :
-        self.value = -1
-        if not self.source['genTopTTbar'] : return
-        iPQHL = self.source['IndicesGenTopPQHL'.join(self.source['TopJets']['fixes'])]
-        iPass = [ i for i,R in enumerate(self.source['TopReconstruction'])
-                  if R['iPQHL']==iPQHL and all( self.source["%sDeltaRTopRecoGen"%s][i]<getattr(self,"rMax%s"%s)
-                                                for s in ['lep','nu'] ) ]
-
-        if len(iPass) :
-            self.value = sorted( iPass, key = lambda i: sum([self.source['%sDeltaRTopRecoGen'%s][i] for s in ['lep','nu']]))[0]
-
-class IndicesGenTopPQHL(wrappedChain.calculable) :
-    def __init__(self, jets=None, rMax = 0.6 ) :
-        self.rMax = rMax
-        self.fixes = jets
-        self.stash( ['Indices','CorrectedP4'] )
-
-    def update(self,_) :
-        genP4 = self.source['genP4']
-        iTT = self.source['genTTbarIndices']
-
-        PQHL = [genP4[i] if i!=None else None for i in ( (iTT['q'][:2] if iTT['q'] else 2*[None]) + [ iTT['bhad'],iTT['blep'] ] )]
-
-        indices = self.source[self.Indices]
-        p4 = self.source[self.CorrectedP4]
-
-        dRIs = [ min( (r.Math.VectorUtil.DeltaR( p4[i], gen ), i) for i in indices ) if gen else
-                 (None,None)
-                 for gen in PQHL ]
-
-        PQHL = [i if dR<self.rMax else None for dR,i in dRIs ]
-        self.value = tuple( sorted(PQHL[:2]) + PQHL[2:] )
-
-class IndicesGenTopExtra(wrappedChain.calculable) :
-    def __init__(self, jets=None, rMax = 0.6) :
-        self.rMax = rMax
-        self.fixes = jets
-        self.stash(['Indices','CorrectedP4'])
-
-    def update(self,_) :
-        imom = self.source['genMotherIndex']
-        p4 = self.source['genP4']
-        pdg = self.source['genPdgId']
-        status = self.source['genStatus']
-
-        extraP4 = [p4[i] for i in range(8,len(imom)) if 2<imom[i]<6 and abs(pdg[i]) in [1,2,3,4,5,11,13,15,21] and status[i]==3]
-
-        indices = self.source[self.Indices]
-        jet = self.source[self.CorrectedP4]
-        self.value = [j for j in indices if any( self.rMax > r.Math.VectorUtil.DeltaR(jet[j],gen) for gen in extraP4 ) ]
-
-######################################
-class __HardAsym__(wrappedChain.calculable) :
-    def update(self,_) :
-        self.value = None
-        boxes,Is = zip(*[(self.source[item],i) for item,i in self.indices])
-        if not all(boxes) : return
-        indices = [box[i] for box,i in zip(boxes,Is)]
-        p4s = self.source['genP4']
-        self.hard.setMomenta([p4s.at(i) for i in indices], check=False)
-        self.value = self.hard
-class __wHardAsym__(wrappedChain.calculable) :
-    def __init__(self,target,nominal) :
-        self.fixes = ("","%+.2fon%+.2f"%(target,nominal))
-        self.target = target
-        self.nominal = nominal
-    def update(self,_) :
-        h = self.source[self.hardname()]
-        self.value = 1 if not h else h.weight(self.target,self.nominal)
-class QQbarHardAsym(__HardAsym__) :
-    def __init__(self) :
-        self.hard = utils.asymmWeighting.Asymm_qqbar_hard()
-        self.indices = [('genQQbar',0),('genQQbar',1),('genTopTTbar',0),('genTopTTbar',1),('genGlu',0)]
-class GqHardAsym(__HardAsym__) :
-    def __init__(self) :
-        self.hard = utils.asymmWeighting.Asymm_gq_hard()
-        self.indices = [('genQG',1),('genQG',0),('genTopTTbar',0),('genTopTTbar',1),('genQuark',0)] # broken sincy intro of wAG
-class GqbarHardAsym(__HardAsym__) :
-    def __init__(self) :
-        self.hard = utils.asymmWeighting.Asymm_gqbar_hard()
-        self.indices = [('genQG',1),('genQG',0),('genTopTTbar',0),('genTopTTbar',1),('genQuark',0)] # broken sincy intro of wAG
-class wQQbarHardAsym(__wHardAsym__) :
-    def hardname(self) : return 'QQbarHardAsym'
-class wQgHardAsym(__wHardAsym__) :
-    def hardname(self) :
-        return 'GqHardAsym' if self.source['genQG'][0]>0 else 'GqbarHardAsym' # broken sincy intro of wAG
-class hardSymmAnti(wrappedChain.calculable) :
-    def update(self,_) :
-        qq = self.source['genQQbar']
-        qg = self.source['genQG'] # broken sincy intro of wAG
-        if not (qq or qg) : self.value = () ; return
-        h = self.source['QQbarHardAsym' if qq else 'GqHardAsym' if qg[0]>0 else 'GqbarHardAsym']
-        self.value = () if not h else (h.symm,h.anti)
-######################################
-class TopComboQQBBLikelihood(wrappedChain.calculable) :
-    def __init__(self, tag = None) :
-        self.tagProbabilityGivenBQN = tag+'ProbabilityGivenBQN'
-
-    def update(self,_) :
-        jets = self.source["TopJets"]["fixes"]
-        indices = self.source["Indices".join(jets)]
-        B,Q,N = zip(*self.source[self.tagProbabilityGivenBQN.join(jets)])
-        self.value = {}
-        for iPQHL in itertools.permutations(indices,4) :
-            if iPQHL[0]>iPQHL[1] : continue
-            if iPQHL[2]>iPQHL[3] : continue
-            self.value[iPQHL] = reduce(operator.mul, ([Q[i] for i in iPQHL[:2]] +
-                                                      [B[i] for i in iPQHL[2:]]  +
-                                                      [N[k] for k in indices if k not in iPQHL]) )
-######################################
-class TopComboQQBBProbability(wrappedChain.calculable) :
-    def update(self,_) :
-        likelihoods = self.source['TopComboQQBBLikelihood']
-        sumL = max(1e-20,sum(likelihoods.values()))
-        self.value = dict([(key,val/sumL) for key,val in likelihoods.iteritems()])
-######################################
-class TopComboQQBBMaxProbability(wrappedChain.calculable) :
-    def update(self,_) : self.value = max(self.source["TopComboQQBBProbability"].values())
-######################################
-class OtherJetsLikelihood(wrappedChain.calculable) :
-    def __init__(self, tag = None) :
-        self.tagProbabilityGivenBQN = tag+'ProbabilityGivenBQN'
-
-    def update(self,_) :
-        jets = self.source["TopJets"]["fixes"]
-        indices = self.source["Indices".join(jets)]
-        B,Q,N = zip(*self.source[self.tagProbabilityGivenBQN.join(jets)])
-        self.value = reduce(operator.mul, [N[k] for k in indices])
-######################################
-class TopRatherThanWProbability(wrappedChain.calculable) :
-    def __init__(self, priorTop = 0.05) :
-        self.priorTop = priorTop
-        self.invPriorTopMinusOne =  ( 1.0 / priorTop  - 1)
-        self.moreName = "priorTop = %0.3f"%priorTop
-        
-    def update(self,_) :
-        topLikes = self.source["TopComboQQBBLikelihood"]
-        if not topLikes : self.value = self.priorTop; return
-        topL = sum(topLikes.values()) / float(len(topLikes))
-        wL = self.source["OtherJetsLikelihood"]
-        denom = (topL + wL * self.invPriorTopMinusOne)
-        self.value = (topL / denom) if denom else self.priorTop
-######################################
-class BMomentsSum2(wrappedChain.calculable) :
-    def __init__(self, collection = None) :
-        self.fixes = collection
-        self.stash(["RecoIndex"])
-    def update(self,_) :
-        _,__,iH,iL = self.source['TopReconstruction'][self.source[self.RecoIndex]]['iPQHL']
-        jets = self.source["TopJets"]["fixesStripped"]
-        phi2 = self.source["Phi2Moment".join(jets)]
-        eta2 = self.source["Eta2Moment".join(jets)]
-        self.value = phi2[iH]+phi2[iL]+eta2[iH]+eta2[iL]
