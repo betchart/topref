@@ -160,14 +160,10 @@ class topAsymm(supy.analysis) :
             calculables.gen.genIndicesHardPartons(),
             calculables.top.TopJets( jet ),
             calculables.top.TopLeptons( lepton ),
-            calculables.top.TopComboQQBBLikelihood( pars['bVar'] ),
-            calculables.top.OtherJetsLikelihood( pars['bVar'] ),
-            calculables.top.TopRatherThanWProbability( priorTop = 0.05 ),
-            calculables.top.IndicesGenTopPQHL( jet ),
-            calculables.top.IndicesGenTopExtra( jet ),
-            calculables.top.genTopRecoIndex(),
+            calculables.comb.TopComboQQBBLikelihood( pars['bVar'] ),
+            calculables.comb.OtherJetsLikelihood( pars['bVar'] ),
+            calculables.comb.TopRatherThanWProbability( priorTop = 0.05 ),
             calculables.top.TopReconstruction(),
-            #calculables.top.TTbarSignExpectation(nSamples = 16, qDirFunc = "qDirExpectation_EtaSum"),
 
             calculables.met.MetMt( lepton, "AdjustedP4".join(met)),
             calculables.met.Covariance( met ),
@@ -240,15 +236,15 @@ class topAsymm(supy.analysis) :
              , ssteps.histos.multiplicity('Indices'.join(jet))
 
              , ssteps.filters.label("secondaries")
-             , supy.calculables.other.TwoDChiSquared('RawMassWTopCorrectPQB'.join(jet), samples = topSamples[1], tag = topTag)
-             , calculables.jet.HTopSigmasLikelihoodRatioPQB(jet, samples = topSamples[1], tag = topTag)
+             , supy.calculables.other.TwoDChiSquared('RawMassWTopCorrectPQB', samples = topSamples[1], tag = topTag)
+             , supy.calculables.other.CombinationsLR( var = 'HTopSigmasPQB', varMax = 5, trueKey = 'IndicesGenTopPQH', samples = topSamples[1], tag = topTag)
+             , supy.calculables.other.CombinationsLR( var = 'LTopUnfitSqrtChi2',varMax = 10, trueKey = 'IndexGenTopL', samples = topSamples[1], tag = topTag)
              , calculables.jet.ProbabilityGivenBQN(jet, pars['bVar'], binning=(51,-0.02,1), samples = topSamples, tag = topTag)
-             , calculables.top.LTopUnfitSqrtChi2LR(samples = topSamples[1], tag = topTag)
              , self.tridiscriminant(pars)
 
              , ssteps.filters.label('finer resolution')
              , ssteps.histos.value('MetMt'.join(lepton), 120, 0, 120)
-             , ssteps.histos.value('ProbabilityHTopMasses'.join(jet), 100,0,1)
+             , ssteps.histos.value('ProbabilityHTopMasses', 100,0,1)
              , ssteps.histos.value("TopRatherThanWProbability", 100,0,1)
 
              , ssteps.filters.label('object pt')
@@ -276,7 +272,6 @@ class topAsymm(supy.analysis) :
              #, ssteps.histos.value("KarlsruheDiscriminant", 28, -320, 800 )
              ####################################
              , ssteps.filters.label('top reco')
-             , ssteps.histos.multiplicity('TopCandidateIndices'.join(jet), max=100)
              , ssteps.histos.value('TopGenLikelihoodIndex', 21,-1,20)
              , ssteps.histos.value('genTopRecoIndex', 21,-1,20)
              , ssteps.histos.value('TopFitLikelihoodIndex',21,-1,20)
@@ -342,7 +337,7 @@ class topAsymm(supy.analysis) :
                                                        correlations = pars['discriminant2DPlots'],
                                                        otherSamplesToKeep = datas,
                                                        dists = {"TopRatherThanWProbability" : (20,0,1),
-                                                                'ProbabilityHTopMasses'.join(pars['objects']['jet']) : (20,0,1),
+                                                                'ProbabilityHTopMasses' : (20,0,1),
                                                                 "B0pt".join(pars['objects']["jet"]) : (20,20,100),
                                                                 "MetMt".join(pars['objects'][lname]) : (20,0,100),
                                                                 })
