@@ -7,11 +7,13 @@ class topAsymm(supy.analysis) :
     This analysis contains several secondary calculables, which need
     to be primed in the following order:
     
-    1. Reweightings (pileup); all samples, all tags;       invert "selection"; --update
-    2. Prime the secondaries: top samples, top tags;       invert "finer resolution"; --update (x2)
-    3. Prime tridiscriminant: [ top.tt*, top.w*j, QCD.* ]; invert "finer resolution"; --update
-    4. Prime other tridiscri: top samples, top tags;       no inversion; --update
-    4.                      : all samples, all tags;       no inversion
+    Pass#
+    0: ^selection : prime sim.*   : pileup
+    1: ^finegrain : prime top.top : RawMassWTopCorrectPQBTwoDChiSquared,jetCSVProbabilityGivenBQN,LTopUnfitSqrtChi2CombinationsLR
+    2: ^finegrain : prime top.top : HTopSigmasPQBCombinationsLR
+    3: ^finegrain : prime needed  : TridiscriminantWTopQCD
+    4: ^genTop    : prime top.top : TridiscriminantGGqqGq
+    5.            : *
     '''
 
     def parameters(self) :
@@ -160,14 +162,11 @@ class topAsymm(supy.analysis) :
             calculables.gen.genIndicesHardPartons(),
             calculables.top.TopJets( jet ),
             calculables.top.TopLeptons( lepton ),
-            calculables.top.TopComboQQBBLikelihood( pars['bVar'] ),
-            calculables.top.OtherJetsLikelihood( pars['bVar'] ),
-            calculables.top.TopRatherThanWProbability( priorTop = 0.05 ),
-            calculables.top.IndicesGenTopPQHL( jet ),
-            calculables.top.IndicesGenTopExtra( jet ),
-            calculables.top.genTopRecoIndex(),
             calculables.top.TopReconstruction(),
-            #calculables.top.TTbarSignExpectation(nSamples = 16, qDirFunc = "qDirExpectation_EtaSum"),
+
+            calculables.comb.TopComboQQBBLikelihood( pars['bVar'] ),
+            calculables.comb.OtherJetsLikelihood( pars['bVar'] ),
+            calculables.comb.TopRatherThanWProbability( priorTop = 0.05 ),
 
             calculables.met.MetMt( lepton, "AdjustedP4".join(met)),
             calculables.met.Covariance( met ),
@@ -240,15 +239,15 @@ class topAsymm(supy.analysis) :
              , ssteps.histos.multiplicity('Indices'.join(jet))
 
              , ssteps.filters.label("secondaries")
-             , supy.calculables.other.TwoDChiSquared('RawMassWTopCorrectPQB'.join(jet), samples = topSamples[1], tag = topTag)
-             , calculables.jet.HTopSigmasLikelihoodRatioPQB(jet, samples = topSamples[1], tag = topTag)
+             , supy.calculables.other.TwoDChiSquared('RawMassWTopCorrectPQB', samples = topSamples[1], tag = topTag)
+             , supy.calculables.other.CombinationsLR( var = 'HTopSigmasPQB', varMax = 5, trueKey = 'IndicesGenTopPQH', samples = topSamples[1], tag = topTag)
+             , supy.calculables.other.CombinationsLR( var = 'LTopUnfitSqrtChi2',varMax = 10, trueKey = 'IndexGenTopL', samples = topSamples[1], tag = topTag)
              , calculables.jet.ProbabilityGivenBQN(jet, pars['bVar'], binning=(51,-0.02,1), samples = topSamples, tag = topTag)
-             , calculables.top.LTopUnfitSqrtChi2LR(samples = topSamples[1], tag = topTag)
              , self.tridiscriminant(pars)
 
-             , ssteps.filters.label('finer resolution')
+             , ssteps.filters.label('finegrain')
              , ssteps.histos.value('MetMt'.join(lepton), 120, 0, 120)
-             , ssteps.histos.value('ProbabilityHTopMasses'.join(jet), 100,0,1)
+             , ssteps.histos.value('ProbabilityHTopMasses', 100,0,1)
              , ssteps.histos.value("TopRatherThanWProbability", 100,0,1)
 
              , ssteps.filters.label('object pt')
@@ -269,49 +268,39 @@ class topAsymm(supy.analysis) :
              #, ssteps.histos.value(bVar, 51,-0.02,1, indices = "IndicesBtagged".join(jet), index = 0)
              #, ssteps.histos.value(bVar, 51,-0.02,1, indices = "IndicesBtagged".join(jet), index = 1)
              #, ssteps.histos.value(bVar, 51,-0.02,1, indices = "IndicesBtagged".join(jet), index = 2)
-
              #, steps.top.leptonSigned('TridiscriminantWTopQCD', (60,-1,1))
-             #, steps.top.leptonSigned('KarlsruheDiscriminant', (28,-320,800) )
-             #, ssteps.filters.label('discriminants')
-             #, ssteps.histos.value("KarlsruheDiscriminant", 28, -320, 800 )
+
              ####################################
-             , ssteps.filters.label('top reco')
-             , ssteps.histos.multiplicity('TopCandidateIndices'.join(jet), max=100)
-             , ssteps.histos.value('TopGenLikelihoodIndex', 21,-1,20)
-             , ssteps.histos.value('genTopRecoIndex', 21,-1,20)
-             , ssteps.histos.value('TopFitLikelihoodIndex',21,-1,20)
-             , ssteps.histos.value('TopFitLikelihoodCorrectIndex',21,-1,20)
              #, steps.displayer.ttbar(jets=jet, met=obj['met'], muons = obj['mu'], electrons = obj['el'])
+             , ssteps.filters.label('top reco')
              , steps.top.combinatorialFrequency().onlySim()
+             , ssteps.histos.value('genTopRecoIndex', 10,-1.5,8.5)
+             , ssteps.histos.value('TopGenLikelihoodIndex', 10,-1.5,8.5)
+             , ssteps.histos.value('TopFitLikelihoodIndex',10,-1.5,8.5)
+             , ssteps.histos.value('TopFitLikelihoodCorrectIndex',10,-1.5,8.5)
              #, self.tridiscriminant2(pars)
-             , ssteps.filters.label('gen top kinfit ')
+
+             , ssteps.filters.label('genTop')
              , steps.top.kinFitLook('genTopRecoIndex')
-             #, steps.top.kinematics('genTop')
              , steps.top.resolutions('genTopRecoIndex')
-             , ssteps.filters.label('reco top kinfit ')
+
+             , ssteps.filters.label('recoTop')
              , steps.top.kinFitLook('fitTopRecoIndex')
-             , steps.top.kinematics('fitTop')
              , steps.top.resolutions('fitTopRecoIndex')
+             , steps.top.kinematics('fitTop')
              ####################################
 
-             , ssteps.histos.value("M3".join(jet), 20,0,800)
-             
              , ssteps.filters.label('signal distributions')
              , ssteps.histos.symmAnti('genTopCosPhiBoost','genTopCosPhiBoost',100,-1,1).disable(saDisable)
              , ssteps.histos.symmAnti('genTopDeltaBetazRel','genTopDeltaBetazRel',100,-1,1).disable(saDisable)
              , ssteps.histos.symmAnti('genTopCosThetaBoostAlt','genTopCosThetaBoostAlt',100,-1,1).disable(saDisable)
 
-             , ssteps.histos.symmAnti('genTopCosPhiBoost','fitTopCosPhiBoost',100,-1,1, other = ('TridiscriminantWTopQCD',100,-1,1)).disable(saDisable)
-             , ssteps.histos.symmAnti('genTopCosThetaBoostAlt','fitTopCosThetaBoostAlt',100,-1,1, other = ('TridiscriminantWTopQCD',100,-1,1)).disable(saDisable)
-             , ssteps.histos.symmAnti('genTopDeltaBetazRel','fitTopDeltaBetazRel',100,-1,1, other = ('TridiscriminantWTopQCD',100,-1,1)).disable(saDisable)
+             , ssteps.histos.symmAnti('genTopCosPhiBoost','fitTopCosPhiBoost',100,-1,1, other = ('TridiscriminantWTopQCD',100,-1,1))
+             , ssteps.histos.symmAnti('genTopCosThetaBoostAlt','fitTopCosThetaBoostAlt',100,-1,1, other = ('TridiscriminantWTopQCD',100,-1,1))
+             , ssteps.histos.symmAnti('genTopDeltaBetazRel','fitTopDeltaBetazRel',100,-1,1, other = ('TridiscriminantWTopQCD',100,-1,1))
 
              ])
     ########################################################################################
-
-    @staticmethod
-    def lepIso(index,pars) :
-        lepton = pars["objects"][pars["lepton"]["name"]]
-        return 
 
     @classmethod
     def pileup(cls,pars) :
@@ -342,7 +331,7 @@ class topAsymm(supy.analysis) :
                                                        correlations = pars['discriminant2DPlots'],
                                                        otherSamplesToKeep = datas,
                                                        dists = {"TopRatherThanWProbability" : (20,0,1),
-                                                                'ProbabilityHTopMasses'.join(pars['objects']['jet']) : (20,0,1),
+                                                                'ProbabilityHTopMasses' : (20,0,1),
                                                                 "B0pt".join(pars['objects']["jet"]) : (20,20,100),
                                                                 "MetMt".join(pars['objects'][lname]) : (20,0,100),
                                                                 })
@@ -427,13 +416,15 @@ class topAsymm(supy.analysis) :
     def skimStats(self,org) :
         statsname = {'DY+jets':'dy',
                      'W+jets': 'wj',
+                     'Mullijet': 'qcd',
                      't#bar{t}':'tt',
                      'ttj_ph.wGG.pu':'ttgg',
                      'ttj_ph.wQG.pu':'ttqg',
                      'ttj_ph.wAG.pu':'ttag',
                      'ttj_ph.wQQ.pu':'ttqq',
                      'Single top' : 'st',
-                     'SingleMu.2011': 'mu'
+                     'Mu.2012': 'mu',
+                     'El.2012': 'el'
                      }
 
         fileName = '%s/stats_%s.root'%(self.globalStem,org.tag)
@@ -560,42 +551,6 @@ class topAsymm(supy.analysis) :
         templateSamples = ['top.t#bar{t}'] # hack !!
         org.mergeSamples(targetSpec = {"name":"S.M.", "color":r.kGreen+2}, sources = templateSamples + baseSamples , keepSources = True, force = True)
         org.drop('bg')
-
-    def PEcurves(self, rw, lname, tt) :
-        if (lname,rw,tt) not in self.orgMelded : return
-        org = self.orgMelded[(lname,rw,tt)]
-        c = r.TCanvas()
-        fileName = "%s/pur_eff_%s_%s"%(self.globalStem,lname,rw)
-        supy.utils.tCanvasPrintPdf(c, fileName, option = '[', verbose = False)
-        specs = ([{'var' : "TopRatherThanWProbability",                                "canvas":c, 'left':True, 'right':False}] +
-                 [{'var' : "ak5JetPFCSVPat[i[%d]]:xcak5JetPFIndicesBtaggedPat"%bIndex, "canvas":c, 'left':True, 'right':False} for bIndex in [0,1,2]]
-                 )
-        pes = {}
-        for spec in specs :
-            dists = dict(zip([ss['name'] for ss in org.samples ],
-                             org.steps[next(org.indicesOfStepsWithKey(spec['var']))][spec['var']] ) )
-            contours = supy.utils.optimizationContours( [dists['top.t#bar{t}']],
-                                                        [dists[s] for s in ['QCD.multijet','top.W','top.Single','top.DY']],
-                                                        **spec
-                                                        )
-            supy.utils.tCanvasPrintPdf(c, fileName, verbose = False)
-            if spec['left']^spec['right'] : pes[spec['var']] = contours[1]
-            c.Clear()
-        leg = r.TLegend(0.5,0.8,1.0,1.0)
-        graphs = []
-        for i,(var,pe) in enumerate(pes.items()) :
-            pur,eff = zip(*pe)
-            g = r.TGraph(len(pe), np.array(eff), np.array(pur))
-            g.SetTitle(";efficiency;purity")
-            g.SetLineColor(i+2)
-            leg.AddEntry(g,var,'l')
-            graphs.append(g)
-            g.Draw('' if i else 'AL')
-        leg.Draw()
-        c.Update()
-        supy.utils.tCanvasPrintPdf(c, fileName, option = ')' )
-        return
-
 
     def measureAmplitudes(self,rw,tt) :
         lnames = ['mu','el']
