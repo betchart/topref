@@ -265,11 +265,6 @@ class topAsymm(supy.analysis) :
              , ssteps.histos.absEta("AdjustedP4".join(jet), 100,0,4, indices = "Indices".join(jet), index = 2)
              , ssteps.histos.absEta("AdjustedP4".join(jet), 100,0,4, indices = "Indices".join(jet), index = 3)
 
-             #, ssteps.histos.value(bVar, 51,-0.02,1, indices = "IndicesBtagged".join(jet), index = 0)
-             #, ssteps.histos.value(bVar, 51,-0.02,1, indices = "IndicesBtagged".join(jet), index = 1)
-             #, ssteps.histos.value(bVar, 51,-0.02,1, indices = "IndicesBtagged".join(jet), index = 2)
-             #, steps.top.leptonSigned('TridiscriminantWTopQCD', (60,-1,1))
-
              ####################################
              #, steps.displayer.ttbar(jets=jet, met=obj['met'], muons = obj['mu'], electrons = obj['el'])
              , ssteps.filters.label('top reco')
@@ -278,7 +273,9 @@ class topAsymm(supy.analysis) :
              , ssteps.histos.value('TopGenLikelihoodIndex', 10,-1.5,8.5)
              , ssteps.histos.value('TopFitLikelihoodIndex',10,-1.5,8.5)
              , ssteps.histos.value('TopFitLikelihoodCorrectIndex',10,-1.5,8.5)
-             #, self.tridiscriminant2(pars)
+
+             , ssteps.filters.label('GGqqGq')
+             , self.tridiscriminant2(pars)
 
              , ssteps.filters.label('genTop')
              , steps.top.kinFitLook('genTopRecoIndex')
@@ -348,19 +345,12 @@ class topAsymm(supy.analysis) :
                                                        correlations = pars['discriminant2DPlots'],
                                                        dists = { "fitTopPtPlusSumPt" : (20,0,600),
                                                                  "fitTopPtOverSumPt" : (20,0,1),
-                                                                 "fitTopSqrtPtOverSumPt" : (10,0,1),
-                                                                 "fitTopSumP4AbsEta" : (20,0,6),
-                                                                 #"fitTopAbsSumRapidities" : (20, 0, 4),
-                                                                 #"M3".join(jets) : (20,0,600),
-                                                                 #"fitTopPtSum" : (30, 0, 150), # extra jet
+                                                                 "fitTopAbsSumRapidities" : (20, 0, 4),
+                                                                 #"fitTopSqrtPtOverSumPt" : (10,0,1),
+                                                                 #"fitTopSumP4AbsEta" : (20,0,6),
                                                                  #"fitTopPartonLo" : (20,-0.2,0.2),
                                                                  #"fitTopPartonHi" : (20,0,0.4),
-                                                                 #"fitTopMassSum" : (30, 300, 900), # pdf sum
-                                                                 #"fitTopRapiditySum" : (20, 0, 2), # pdf difference
-                                                                 #"fitTopNtracksExtra" : (20,0,160),
-                                                                 #"tracksCountwithPrimaryHighPurityTracks" :  (20,0,250),               # 0.049
                                                                  #"fitTopPartonXlo" : (20,0,0.12),              # 0.036
-                                                                 #"fitTopBMomentsSum2" : (20,0,0.2),           # 0.004
                                                                  #"fitTopPartonXhi" : (20,0.04,0.4),           # 0.003
                                                                  })
     ########################################################################################
@@ -388,7 +378,7 @@ class topAsymm(supy.analysis) :
         else:
             org.mergeSamples(targetSpec = {"name":"El.2012", "color":r.kBlack, "markerStyle":20}, sources = self.electrons())
             
-        org.mergeSamples(targetSpec = {"name":"t#bar{t}", "color":r.kViolet}, sources=["ttj_%s.%s.%s"%(tt,s,rw) for s in ['wQQ','wQG','wAG','wGG']])#, keepSources = True)
+        org.mergeSamples(targetSpec = {"name":"t#bar{t}", "color":r.kViolet}, sources=["ttj_%s.%s.%s"%(tt,s,rw) for s in ['wQQ','wQG','wAG','wGG']], keepSources = True)
         org.mergeSamples(targetSpec = {"name":"W+jets", "color":28}, allWithPrefix = 'w')
         org.mergeSamples(targetSpec = {"name":"DY+jets", "color":r.kYellow}, allWithPrefix="dy")
         org.mergeSamples(targetSpec = {"name":"Single top", "color":r.kGray}, sources = ["%s.%s"%(s,rw) for s in self.single_top()])
@@ -477,7 +467,6 @@ class topAsymm(supy.analysis) :
             org.mergeSamples(targetSpec = {"name":"DY", "color":28}, allWithPrefix = "dy")
             org.mergeSamples(targetSpec = {"name":"Single", "color":r.kGray}, sources = ["%s.%s"%(s,rw) for s in self.single_top()], keepSources = False )
             org.mergeSamples(targetSpec = {"name":"Data 2012", "color":r.kBlack, "markerStyle":20}, sources={'mu':self.muons(),'el':self.electrons()}[lname])
-            org.mergeSamples(targetSpec = {"name":"Multi", "color":9}, allWithPrefix = "qcd_")
             org.scale()
             if "QCD_" in org.tag :
                 org.mergeSamples(targetSpec = {"name":"multijet","color":r.kBlue},
@@ -539,14 +528,13 @@ class topAsymm(supy.analysis) :
             org.scaleOneRaw(iSample, f * sum(cs.observed) / n )
 
         org.mergeSamples(targetSpec = {"name":"bg", "color":r.kBlack,"fillColor":r.kGray, "markerStyle":1, "goptions":"hist"}, sources = set(baseSamples + templateSamples) - set(['top.t#bar{t}']), keepSources = True, force = True)
-        templateSamples = ['top.ttj_%s.%s.%s'%(tt,s,rw) for s in ['wQQ','wQG','wAG','wGG']]
         baseSamples = ['bg']
-        #distTup,cs = map(measureFractions,["fitTopPtOverSumPt","fitTopPtPlusSumPt","fitTopSumP4AbsEta","TridiscriminantGGqqGq"])[-1]
-        #org.mergeSamples(targetSpec = {"name":'qgqqbar'}, sources = templateSamples[:-1], keepSources = True, force = True)
-        #templateSamples = ['qgqqbar', templateSamples[-1]]
-        #distTup,cs = map(measureFractions,["fitTopPtOverSumPt","fitTopPtPlusSumPt","fitTopSumP4AbsEta","TridiscriminantGGqqGq"])[-1]
+        templateSamples = ['top.ttj_%s.%s.%s'%(tt,s,rw) for s in ['wGG','wQQ','wQG','wAG']]
+        org.mergeSamples(targetSpec = {"name":'qgag'}, sources = templateSamples[2:], keepSources = True, force = True)
+        templateSamples = templateSamples[:-2] + ['qgag']
+        distTup,cs = map(measureFractions,["fitTopPtOverSumPt","fitTopPtPlusSumPt","fitTopAbsSumRapidities","TridiscriminantGGqqGq"])[-1]
         supy.utils.tCanvasPrintPdf( mfCanvas, mfFileName, option = ']')
-        #org.drop('qgqqbar')
+        org.drop('qgag')
 
         templateSamples = ['top.t#bar{t}'] # hack !!
         org.mergeSamples(targetSpec = {"name":"S.M.", "color":r.kGreen+2}, sources = templateSamples + baseSamples , keepSources = True, force = True)
