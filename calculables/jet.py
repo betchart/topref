@@ -49,6 +49,19 @@ class IndicesBtagged(wrappedChain.calculable) :
         self.value = sorted(self.source[self.Indices],
                             key = self.source[self.Tag].__getitem__, reverse = True )
 ###################################
+class GenIndex(wrappedChain.calculable) :
+    def __init__(self,collection) :
+        self.fixes = collection
+        self.stash(["AdjustedP4","GenFlavor"])
+
+    def genIndex(self,jet,jflav) :
+        id = self.source['genPdgId']
+        p4 = self.source['genP4']
+        return next((i for i in range(len(id)) if id[i]==jflav and r.Math.VectorUtil.DeltaR(p4[i],jet)<0.5), None)
+
+    def update(self,_) :
+        self.value = utils.hackMap(self.genIndex, self.source[self.AdjustedP4], self.source[self.GenFlavor])
+###################################
 class IndicesGenB(wrappedChain.calculable) :
     def __init__(self,collection) :
         self.fixes = collection
@@ -147,15 +160,140 @@ class ProbabilityGivenBQN(calculables.secondary) :
             if missing: print self.name, "-- no such samples :\n", missing
             org.mergeSamples( targetSpec = {'name':self.samples[0]}, sources = self.samples[1] )
         else: org.mergeSamples( targetSpec = {'name':self.samples[0]}, allWithPrefix = self.samples[0] )
+
+    def reportCache(self) :
+        optStat = r.gStyle.GetOptStat()
+        r.gStyle.SetOptStat(0)
+        self.setup(None)
+        if None in self.histsBQN :
+            print '%s.setup() failed'%self.name
+            r.gStyle.SetOptStat(optStat)
+            return
+        fileName = '/'.join(self.outputFileName.split('/')[:-1]+[self.name]) + '.pdf'
+        c = r.TCanvas()
+        c.Print(fileName +'[')
+        leg = r.TLegend(0.4,0.55,0.7,0.85)
+        leg.SetHeader("jet flavor")
+        for h in self.histsBQN :
+            h.Fill(h.GetBinCenter(1), h.GetBinContent(0))
+            h.SetBinContent(0,0)
+        height = 1.1 * max(h.GetMaximum() for h in self.histsBQN)
+        for i,(f,color) in enumerate(zip('BQN',[r.kRed,r.kBlue,r.kGreen])) :
+            h = self.histsBQN[i]
+            h.SetTitle(";%s;"%h.GetXaxis().GetTitle().split()[0])
+            h.SetLineColor(color)
+            h.SetLineWidth(2)
+            h.SetMarkerColor(color)
+            h.SetMaximum(height)
+            h.SetMinimum(0)
+            h.Draw("hist" + ("same" if i else ""))
+            leg.AddEntry(h,{"B":"B jets","Q":"jets from W","N":"other (gluon)"}[f],'l')
+        leg.Draw()
+        c.Print(fileName)
+        c.Print(fileName +']')
+        print 'Wrote : %s'%fileName
+        r.gStyle.SetOptStat(optStat)
 ######################################
-class BScaling(wrappedChain.calculable) :
-    def __init__(self, collection = None) :
+class ScalingBQN(calculables.secondary) :
+    def __init__(self, collection = None , samples = [], tag = None) :
         self.fixes = collection
-        self.stash(["AdjustedP4"])
-        self.factor = 1.1
-        self.moreName = "Uniform factor %.1f"%self.factor
+        self.stash(['Indices','IndicesGenB','IndicesGenWqq','AdjustedP4','GenIndex'])
+        self.samples = samples
+        self.tag = tag
+        self.etasMax = sorted([ 1.131, 1.653, 2.51 ])
+
+    def etaBin(self,absEta) : return next( j for j,eMax in enumerate(self.etasMax) if absEta<eMax)
+
     def update(self,_) :
-        self.value = [self.factor] * len(self.source[self.AdjustedP4])
+        jets = self.source[self.AdjustedP4]
+        def scales(p4) :
+            etaBin = self.etaBin( abs(p4.eta()) )
+            pt = p4.pt()
+            lRs = (self.hists[f+str(etaBin)].Interpolate(pt) for f in 'BQN')
+            return [math.exp(lR) for lR in lRs]
+
+        self.value = dict(zip('BQN', zip(*[scales(jets[i]) for i in range(len(jets))]) ) )
+
+    def uponAcceptance(self,ev) :
+        if ev['isRealData'] : return
+        indices = ev[self.Indices]
+        iB = ev[self.IndicesGenB]
+        iQ = ev[self.IndicesGenWqq]
+        p4 = ev[self.AdjustedP4]
+        iGen = ev[self.GenIndex]
+        genP4 = ev['genP4']
+        for i in indices :
+            if iGen[i] == None : continue
+            jetType = "B" if i in iB else "Q" if i in iQ else "N"
+            etaBin = self.etaBin( abs(p4[i].eta()) )
+            ptRatio = math.log( genP4[iGen[i]].E() / p4[i].E() )
+            binPt = min( 300-1e-6, p4[i].pt())
+            self.book.fill( (binPt,ptRatio), jetType+str(etaBin), 50, 0, 300, title = "%s, %.3f<|#eta|<%.3f;pt;<log(E.parton/E.jet)>"%(jetType,
+                                                                                                                                       self.etasMax[etaBin-1] if etaBin else 0,
+                                                                                                                                       self.etasMax[etaBin]))
+            self.book.fill( (binPt,ptRatio), jetType+str(etaBin)+'_2', (50,80), (0,-0.4), (300,0.4), title = "%s, %.3f<|#eta|<%.3f;pt;<log(E.parton/E.jet)>"%(jetType,
+                                                                                                                                                              self.etasMax[etaBin-1] if etaBin else 0,
+                                                                                                                                                              self.etasMax[etaBin]))
+    def setup(self,*_) :
+        names = [f+str(i) for f in "BQN" for i in range(len(self.etasMax))]
+        names2 = [n+"_2" for n in names]
+        hists = self.fromCache(['merged'],names+names2, tag = self.tag)['merged']
+        if None in hists.values() :
+            print self.name, ": Histograms not found."
+            self.hists = {}
+            return
+
+        def median(h) :
+            if not h.Integral() : return 0
+            q = np.array([0.5],'d')
+            v = np.array([-100.0],'d')
+            h.GetQuantiles(1,v,q)
+            return v[0]
+
+        self.hists = {}
+        for n,n2 in zip(names,names2) :
+            h = hists[n]
+            self.hists[n] = r.TH1D(n,';'.join([h.GetTitle(),h.GetXaxis().GetTitle(),h.GetYaxis().GetTitle()]), h.GetNbinsX(), h.GetBinLowEdge(1), h.GetBinLowEdge(1+h.GetNbinsX()))
+            for i in range(1,1+h.GetNbinsX()) :
+                bins = ("",i,i) if i < 15 else ("",i-1,i+1)
+                self.hists[n].SetBinContent(i, median(hists[n2].ProjectionY(*bins)))
+                self.hists[n].SetBinError(i, h.GetBinError(i))
+
+    def reportCache(self) :
+        optStat = r.gStyle.GetOptStat()
+        r.gStyle.SetOptStat(0)
+        self.setup(None)
+        if not self.hists :
+            print '%s.setup() failed'%self.name
+            r.gStyle.SetOptStat(optStat)
+            return
+        fileName = '/'.join(self.outputFileName.split('/')[:-1]+[self.name]) + '.pdf'
+        c = r.TCanvas()
+        c.Print(fileName +'[')
+        for f in 'BQN' :
+            leg = r.TLegend(0.6,0.6,0.9,0.9)
+            leg.SetHeader("#eta range")
+            for i,color in enumerate([r.kRed,r.kBlue,r.kGreen]) :
+                h = self.hists[f+str(i)]
+                label = h.GetTitle().split(',')[1]
+                h.SetTitle(h.GetTitle().split(',')[0])
+                h.SetLineColor(color)
+                h.SetMarkerColor(color)
+                h.SetMaximum(0.4)
+                h.SetMinimum(-0.4)
+                h.Draw("same" if i else "")
+                leg.AddEntry(h,label,'l')
+            leg.Draw()
+            c.Print(fileName)
+        c.Print(fileName +']')
+        print 'Wrote : %s'%fileName
+        r.gStyle.SetOptStat(optStat)
+
+    def onlySamples(self) : return ['merged']
+    def baseSamples(self) : return self.samples
+    def organize(self,org) :
+        if org.tag == self.tag :
+            org.mergeSamples(targetSpec = {"name":'merged'}, sources = self.samples )
 ######################################
 
 class __value__(wrappedChain.calculable) :

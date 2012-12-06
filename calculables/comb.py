@@ -81,10 +81,10 @@ class RawMassWTopPQB(wrappedChain.calculable) :
     def update(self,_) :
         jets = self.source['TopJets']
         p4 = self.source['AdjustedP4'.join(jets)]
-        bscale = self.source['BScaling'.join(jets)]
+        scale = self.source['ScalingBQN'.join(jets)]
         self.value = {}
         for iPQB in self.source['HTopCandidateIndices'] :
-            _,W,t = np.cumsum([p4[i]*(bscale[i] if i==2 else 1) for i in iPQB])
+            _,W,t = np.cumsum([p4[i]*(scale['B' if j==2 else 'Q'][i]) for j,i in enumerate(iPQB)])
             self.value[iPQB] = (W.M(),t.M())
 
 class RawMassWTopCorrectPQB(wrappedChain.calculable) :
