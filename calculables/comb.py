@@ -66,7 +66,7 @@ class LTopUnfitSqrtChi2(wrappedChain.calculable) :
     def update(self,_) :
         jets = self.source['TopJets']
         jP4s = self.source['AdjustedP4'.join(jets)]
-        bscale = self.source['BScaling'.join(jets)]
+        bscale = self.source['ScalingBQN'.join(jets)]['B']
         lP4 = self.source['P4'.join(self.source['TopLeptons'])][self.source['SemileptonicTopIndex']]
         met = self.source['metAdjustedP4']
         nuXY = np.array([met.px(),met.py()])
