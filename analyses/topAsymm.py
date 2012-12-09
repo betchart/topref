@@ -239,10 +239,11 @@ class topAsymm(supy.analysis) :
              , ssteps.histos.multiplicity('Indices'.join(jet))
 
              , ssteps.filters.label("secondaries")
-             , supy.calculables.other.TwoDChiSquared('RawMassWTopCorrectPQB', samples = topSamples[1], tag = topTag)
+             , calculables.jet.ProbabilityGivenBQN(jet, pars['bVar'], binning=(51,-0.02,1), samples = topSamples, tag = topTag)
+             , calculables.jet.ScalingBQN(jet, samples = topSamples[1], tag = topTag)
+             , supy.calculables.other.TwoDChiSquared('RawMassWTopCorrectPQB', samples = topSamples[1], tag = topTag, binningX = (300,0,600), binningY = (300,0,1200), labelsXY = ("Raw Hadronic m_{W}","Raw Hadronic m_{top}"), tailSuppression=0.01)
              , supy.calculables.other.CombinationsLR( var = 'HTopSigmasPQB', varMax = 5, trueKey = 'IndicesGenTopPQH', samples = topSamples[1], tag = topTag)
              , supy.calculables.other.CombinationsLR( var = 'LTopUnfitSqrtChi2',varMax = 10, trueKey = 'IndexGenTopL', samples = topSamples[1], tag = topTag)
-             , calculables.jet.ProbabilityGivenBQN(jet, pars['bVar'], binning=(51,-0.02,1), samples = topSamples, tag = topTag)
              , self.tridiscriminant(pars)
 
              , ssteps.filters.label('finegrain')
@@ -329,7 +330,6 @@ class topAsymm(supy.analysis) :
                                                        otherSamplesToKeep = datas,
                                                        dists = {"TopRatherThanWProbability" : (20,0,1),
                                                                 'ProbabilityHTopMasses' : (20,0,1),
-                                                                "B0pt".join(pars['objects']["jet"]) : (20,20,100),
                                                                 "MetMt".join(pars['objects'][lname]) : (20,0,100),
                                                                 })
     @staticmethod
@@ -378,7 +378,7 @@ class topAsymm(supy.analysis) :
         else:
             org.mergeSamples(targetSpec = {"name":"El.2012", "color":r.kBlack, "markerStyle":20}, sources = self.electrons())
             
-        org.mergeSamples(targetSpec = {"name":"t#bar{t}", "color":r.kViolet}, sources=["ttj_%s.%s.%s"%(tt,s,rw) for s in ['wQQ','wQG','wAG','wGG']], keepSources = True)
+        org.mergeSamples(targetSpec = {"name":"t#bar{t}", "color":r.kViolet}, sources=["ttj_%s.%s.%s"%(tt,s,rw) for s in ['wQQ','wQG','wAG','wGG']])#, keepSources = True)
         org.mergeSamples(targetSpec = {"name":"W+jets", "color":28}, allWithPrefix = 'w')
         org.mergeSamples(targetSpec = {"name":"DY+jets", "color":r.kYellow}, allWithPrefix="dy")
         org.mergeSamples(targetSpec = {"name":"Single top", "color":r.kGray}, sources = ["%s.%s"%(s,rw) for s in self.single_top()])
@@ -435,7 +435,7 @@ class topAsymm(supy.analysis) :
         melded = copy.deepcopy(self.orgMelded[(lname,rw,tt)])
         for s in ['top.ttj_%s.%s.%s'%(tt,s,rw) for s in ['wQQ','wQG','wAG','wGG']] :
             melded.drop(s)
-        for log,label in [(False,""),(True,"_log")] : 
+        for log,label in [(False,""),(True,"_log")][:1] : 
             pl = supy.plotter(melded, pdfFileName = self.pdfFileName(melded.tag + label),
                               doLog = log,
                               blackList = ["lumiHisto","xsHisto","nJobsHisto"],
@@ -554,7 +554,7 @@ class topAsymm(supy.analysis) :
         supy.utils.tCanvasPrintPdf( canvas, maFileName, option = '[', verbose = False)
         with open(maFileName+'.txt','w') as file : print >> file, ""
 
-        def BV(h, rebin=4) :
+        def BV(h, rebin=10) :
             contents = supy.utils.binValues(h)
             if rebin!=1 : contents = contents[:1] + [sum(bins) for bins in zip(*[contents[1:-1][i::rebin] for i in range(rebin)])] + contents[-1:]
             return contents
@@ -577,13 +577,13 @@ class topAsymm(supy.analysis) :
             if sumTemplates : templates = [np.sum(templates, axis=0)]
             cs = componentSolver(observed, templates, 1e4, base = np.sum(bases, axis=0) , normalize = False )
             stuff = drawComponentSolver(cs, canvas, distName = fitvar, showDifference = True,
-                                        templateNames = ["antisymmetric %s-->t#bar{t}"%('(qg|q#bar{q})' if sumTemplates else "qg" if 'QG' in t else "q#bar{q}" if 'QQ' in t else '') for t in antisamples])
+                                        templateNames = ["anti %s-->t#bar{t}"%('q*' if sumTemplates else "qg" if 'QG' in t else "q#bar{q}" if 'QQ' in t else '') for t in antisamples][:1 if sumTemplates else None])
             supy.utils.tCanvasPrintPdf( canvas, maFileName, verbose = False)
             with open(maFileName+'.txt','a') as file : print >> file, "\n",fitvar+"\n", cs
             return steps,cs
 
         samples = ['top.ttj_%s.%s.%s'%(tt,w,rw) for w in ['wQQ','wQG','wAG']]
-        measure('fitTopCosPhiBoost','genTopCosPhiBoost', samples[1:], sumTemplates=True) #qg only
+        measure('fitTopCosPhiBoost','genTopCosPhiBoost', samples[1:], sumTemplates=True)
         measure('fitTopDeltaBetazRel','genTopDeltaBetazRel', samples, sumTemplates=True)
         #measure('fitTopDeltaBetazRel','genTopDeltaBetazRel', samples)
         measure('fitTopCosThetaBoostAlt','genTopCosThetaBoostAlt', samples, sumTemplates=True)

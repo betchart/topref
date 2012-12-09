@@ -633,7 +633,7 @@ class TopReconstruction(wrappedChain.calculable) :
     def update(self,_) :
         
         jets = dict( (item, self.source[item.join(self.source["TopJets"])] )
-                     for item in ["AdjustedP4","BScaling","Indices","Resolution","CovariantResolution2"] )
+                     for item in ["AdjustedP4","Indices","Resolution","CovariantResolution2","ScalingBQN"] )
 
         lepton = dict( (item, self.source[item.join(self.source['TopLeptons'])][self.source["SemileptonicTopIndex"]])
                        for item in ["Charge","P4"])
@@ -647,8 +647,8 @@ class TopReconstruction(wrappedChain.calculable) :
                                                           reverse = True)[:self.maxFits] ),
                                            key = lambda x: x[:3]) :
 
-            hadFit = utils.fitKinematic.leastsqHadronicTop2(*zip(*((jets["AdjustedP4"][i]*(jets["BScaling"][i] if i==2 else 1), jets["Resolution"][i]) for i in iPQH)) ) if self.v2had else \
-                     utils.fitKinematic.leastsqHadronicTop( *zip(*((jets["AdjustedP4"][i]*(jets["BScaling"][i] if i==2 else 1), jets["Resolution"][i]) for i in iPQH)), widthW = 4./2 ) #tuned w width
+            hadFit = utils.fitKinematic.leastsqHadronicTop2(*zip(*((jets["AdjustedP4"][i]*jets["ScalingBQN"]['B' if t==2 else 'Q'][i], jets["Resolution"][i]) for t,i in enumerate(iPQH))) ) if self.v2had else \
+                     utils.fitKinematic.leastsqHadronicTop( *zip(*((jets["AdjustedP4"][i]*jets["ScalingBQN"]['B' if t==2 else 'Q'][i], jets["Resolution"][i]) for t,i in enumerate(iPQH))), widthW = 4./2 ) #tuned w width
 
             metP4 = self.source["metAdjustedP4"] + hadFit.rawT - hadFit.fitT
             nuXY = np.array([metP4.x(), metP4.y()])
@@ -658,7 +658,7 @@ class TopReconstruction(wrappedChain.calculable) :
                 iL = iPQHL[3]
                 iQQBB = iPQHL[:2]+tuple(sorted(iPQHL[2:]))
                 b = jets["AdjustedP4"][iL]
-                bscale = jets['BScaling'][iL]
+                bscale = jets['ScalingBQN']['B'][iL]
                 nuXY_b = nuXY - (bscale - 1)*np.array([b.y(),b.y()])
                 nuErr2_b = nuErr2-self.eCoupling*jets["CovariantResolution2"][iL]
                 lepFit = utils.fitKinematic.leastsqLeptonicTop2( b*bscale, jets["Resolution"][iL], lepton["P4"], nuXY_b, nuErr2_b)
