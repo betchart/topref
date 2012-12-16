@@ -134,7 +134,7 @@ class topAsymm(supy.analysis) :
                      "el" : supy.samples.specify( names = self.electrons()),
                      }[pars['lepton']['name']]
 
-        return  ( data() + ewk() + ttbar(8e4) + single_top() ) #+ qcd() )
+        return  ( data() + ewk() + ttbar() + single_top() ) #+ qcd() )
 
     ########################################################################################
     def listOfCalculables(self, pars) :
@@ -208,17 +208,15 @@ class topAsymm(supy.analysis) :
              , ssteps.histos.value("genQ",200,0,1000,xtitle="#hat{Q} (GeV)").onlySim()
              #, steps.top.fractions().disable(saDisable)
              #, getattr(self,pars['reweights']['func'])(pars)
-             , supy.calculables.other.SymmAnti(pars['sample'],"genTopCosPhiBoost",1, inspect=True, nbins=160, weights = saWeights,
-                                               funcEven = r.TF1('phiboost',"[0]*(1+[1]*x**2)/sqrt(1-x**2)",-1,1),
-                                               funcOdd = r.TF1('phiboostodd','[0]*x/sqrt(1-x**2)',-1,1)).disable(saDisable)
-             , supy.calculables.other.SymmAnti(pars['sample'],"genTopCosThetaBoostAlt",1, inspect=True, weights = saWeights,
-                                               funcEven = '++'.join('x**%d'%(2*d) for d in range(5)),
-                                               funcOdd = '++'.join('x**%d'%(2*d+1) for d in range(5))).disable(saDisable)
-             , supy.calculables.other.SymmAnti(pars['sample'],"genTopDeltaBetazRel",1, inspect=True, weights = saWeights,
-                                               funcEven = '++'.join(['(1-abs(x))']+['x**%d'%d for d in [0,2,4,6,8,10,12,14,16,18]]),
-                                               funcOdd = '++'.join(['x**%d'%d for d in [1,3,5,7,9,11,13]])).disable(saDisable)
+             #, supy.calculables.other.SymmAnti(pars['sample'],"genTopCosPhiBoost",1, inspect=True, nbins=160, weights = saWeights,
+             #                                  funcEven = r.TF1('phiboost',"[0]*(1+[1]*x**2)/sqrt(1-x**2)",-1,1),
+             #                                  funcOdd = r.TF1('phiboostodd','[0]*x/sqrt(1-x**2)',-1,1)).disable(saDisable)
+             #, supy.calculables.other.SymmAnti(pars['sample'],"genTopDeltaBetazRel",1, inspect=True, weights = saWeights,
+             #                                  funcEven = '++'.join(['(1-abs(x))']+['x**%d'%d for d in [0,2,4,6,8,10,12,14,16,18]]),
+             #                                  funcOdd = '++'.join(['x**%d'%d for d in [1,3,5,7,9,11,13]])).disable(saDisable)
+             , calculables.top.ttSymmAnti(pars['sample'], inspect=True).disable(saDisable)
              ####################################
-             , ssteps.filters.label('selection'),
+             , ssteps.filters.label('selection').invert(),
              ssteps.filters.value("muHandleValid",min=True),
              ssteps.filters.multiplicity( max=1, min=1, var = "Charge".join(lepton)),
              ssteps.filters.multiplicity( max=0, var = "Charge".join(otherLepton)),
@@ -291,10 +289,8 @@ class topAsymm(supy.analysis) :
              , ssteps.filters.label('signal distributions')
              , ssteps.histos.symmAnti('genTopCosPhiBoost','genTopCosPhiBoost',100,-1,1).disable(saDisable)
              , ssteps.histos.symmAnti('genTopDeltaBetazRel','genTopDeltaBetazRel',100,-1,1).disable(saDisable)
-             , ssteps.histos.symmAnti('genTopCosThetaBoostAlt','genTopCosThetaBoostAlt',100,-1,1).disable(saDisable)
 
              , ssteps.histos.symmAnti('genTopCosPhiBoost','fitTopCosPhiBoost',100,-1,1, other = ('TridiscriminantWTopQCD',100,-1,1))
-             , ssteps.histos.symmAnti('genTopCosThetaBoostAlt','fitTopCosThetaBoostAlt',100,-1,1, other = ('TridiscriminantWTopQCD',100,-1,1))
              , ssteps.histos.symmAnti('genTopDeltaBetazRel','fitTopDeltaBetazRel',100,-1,1, other = ('TridiscriminantWTopQCD',100,-1,1))
 
              ])
@@ -378,7 +374,7 @@ class topAsymm(supy.analysis) :
         else:
             org.mergeSamples(targetSpec = {"name":"El.2012", "color":r.kBlack, "markerStyle":20}, sources = self.electrons())
             
-        org.mergeSamples(targetSpec = {"name":"t#bar{t}", "color":r.kViolet}, sources=["ttj_%s.%s.%s"%(tt,s,rw) for s in ['wQQ','wQG','wAG','wGG']])#, keepSources = True)
+        #org.mergeSamples(targetSpec = {"name":"t#bar{t}", "color":r.kViolet}, sources=["ttj_%s.%s.%s"%(tt,s,rw) for s in ['wQQ','wQG','wAG','wGG']])#, keepSources = True)
         org.mergeSamples(targetSpec = {"name":"W+jets", "color":28}, allWithPrefix = 'w')
         org.mergeSamples(targetSpec = {"name":"DY+jets", "color":r.kYellow}, allWithPrefix="dy")
         org.mergeSamples(targetSpec = {"name":"Single top", "color":r.kGray}, sources = ["%s.%s"%(s,rw) for s in self.single_top()])
@@ -397,7 +393,7 @@ class topAsymm(supy.analysis) :
                   "detailedCalculables" : True,
                   "rowColors" : self.rowcolors,
                   "rowCycle" : 100,
-                  "omit2D" : True,
+                  "omit2D" : False,
                   }
         
         #supy.plotter(org, pdfFileName = self.pdfFileName(org.tag+"_log"),  doLog = True, pegMinimum = 0.01, **kwargs ).plotAll()
@@ -440,8 +436,8 @@ class topAsymm(supy.analysis) :
                               doLog = log,
                               blackList = ["lumiHisto","xsHisto","nJobsHisto"],
                               rowColors = self.rowcolors,
-                              samplesForRatios = ("top.Data 2012","S.M."),
-                              sampleLabelsForRatios = ('data','s.m.'),
+                              #samplesForRatios = ("top.Data 2012","S.M."),
+                              #sampleLabelsForRatios = ('data','s.m.'),
                               rowCycle = 100,
                               omit2D = True,
                               pageNumbers = False,
