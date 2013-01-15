@@ -4,4 +4,5 @@ for module in [
     "ewk112",
     "top112",
     "top118",
+    "ewk118",
     ] : exec("from __%s__ import %s"%(module,module))
