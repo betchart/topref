@@ -17,13 +17,13 @@ def useCachedFileLists() :
     return True
 
 def cppFiles() :
-    return ["cpp/linkdef.cxx"]
+    return []
 
 def hadd() :
     return ['hadd', whereami()+'/bin/phaddy'][1]
 
 def cppROOTDictionariesToGenerate() :
-    return [("vector<ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<double> > >", "vector;Math/LorentzVector.h")]
+    return [("vector<ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<Double32_t> > >", "vector;Math/LorentzVector.h")]
 
 def detectorSpecs() :
     return {
