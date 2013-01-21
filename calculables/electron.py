@@ -28,12 +28,13 @@ class SignalID(wrappedChain.calculable) :
         self.fixes = collection
         self.stashed = ['Dxy',
                         'SuperClusterEta',
-                        'GsfTrackInnerHits']
+                        'GsfTrackInnerHits',
+                        'mvaTrigV0']
         self.stash(self.stashed)
 
     @staticmethod
-    def passID(dxy, scEta, mHits) :
-        return all([dxy < 0.02,  mHits <=0,
+    def passID(dxy, scEta, mHits, mva) :
+        return all([dxy < 0.02,  mHits <= 0, mva > 0.5,
                     not (barrelEtaMax < abs(scEta) < endcapEtaMin ) ])
 
     def update(self,ignored) :

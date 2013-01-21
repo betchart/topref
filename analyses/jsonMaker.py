@@ -1,7 +1,5 @@
 import supy,steps,samples,calculables
 
-#supy.utils.luminosity.recordedInvMicrobarns({})
-
 class jsonMaker(supy.analysis) :
     def parameters(self) :
 
@@ -10,13 +8,15 @@ class jsonMaker(supy.analysis) :
         group['SingleMu'] = [(["MuHad.2012A_1",
                                "MuHad.2012A_2",
                                "SingleMu.2012B",
-                               "SingleMu.2012C"
+                               "SingleMu.2012C",
+                               "SingleMu.2012D"
                                ], [])]
 
         group['SingleEl'] = [(["ElHad.2012A_1",
                                "ElHad.2012A_2",
                                "SingleEl.2012B",
-                               "SingleEl.2012C"
+                               "SingleEl.2012C",
+                               "SingleEl.2012D"
                                ], [])]
 
         return {'group':group}
@@ -33,7 +33,7 @@ class jsonMaker(supy.analysis) :
         return sum([supy.samples.specify(names = samps, weights = jw) for samps,jw in pars['group']],[])
 
     def listOfSampleDictionaries(self) :
-        return [samples.lepton112]
+        return [samples.lepton118]
 
     def mainTree(self) :
         return ("lumiTree","tree")
