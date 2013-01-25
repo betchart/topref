@@ -11,35 +11,16 @@ class pthatLess(wrappedChain.calculable) :
         self.maxPtHat = maxPtHat
     def update(self,ignored) : self.value = None if self.maxPtHat < self.source["genpthat"] else 1
 ##############################
-class jsonWeight(wrappedChain.calculable) :
-    def __init__(self, fileName = "", acceptFutureRuns = False) :
+class jw(wrappedChain.calculable) :
+    def __init__(self, fileName = "") :
         self.moreName = "run:ls in %s"%fileName
-        self.acceptFutureRuns = acceptFutureRuns
-        if self.acceptFutureRuns : self.moreName += " OR future runs"
-
-        self.json = {}
-        self.runs = []
-        self.maxRunInJson = -1
-        if fileName :
-            file = open(fileName)
-            self.makeIntJson(eval(file.readlines()[0].replace("\n","")))
-            file.close()
-
-    def makeIntJson(self, json) :
-        for key,value in json.iteritems() :
-            self.json[int(key)] = value
-        self.maxRunInJson = max(self.json.keys())
-        self.runs = self.json.keys()
+        with open(fileName) as jsonFile :
+            json = eval(''.join(l.strip() for l in jsonFile.readlines()))
+        self.json = dict([(int(k),sorted(v)) for k,v in json.items()])
 
     def inJson(self) :
-        run = self.source["run"]
-        if self.acceptFutureRuns and run>self.maxRunInJson : return True
-        if not (run in self.runs) : return False
-        lumiRanges = self.json[run]
-        ls = self.source["lumiSection"]
-        for lumiRange in lumiRanges :
-            if (ls>=lumiRange[0] and ls<=lumiRange[1]) : return True
-        return False
+        run,ls = self.source["run"],self.source['lumiSection']
+        return run in self.json and next( ( lo<=ls for lo,hi in self.json[run] if ls<=hi) , False)
 
     def update(self, ignored) :
         self.value = 1.0 if self.inJson() else None
