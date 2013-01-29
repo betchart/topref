@@ -1,5 +1,32 @@
 import math,collections,re, ROOT as r
-from supy import analysisStep,utils
+from supy import analysisStep,utils,calculables
+#####################################
+class singleLepton(analysisStep) :
+    def __init__(self, lepIsMu ) :
+        self.lepIsMu = lepIsMu
+        self.pattern = 'HLT_IsoMu24_eta2p1_v' if lepIsMu else 'HLT_Ele27_WP80_v'
+        self.moreName = self.pattern + "*"
+    def select(self,ev) :
+        return any( self.pattern in full for full,p in ev['prescaled'] if p==1 )
+#####################################
+class efficiencyRatios(analysisStep) :
+    def __init__(self, lepIsMu, jets) :
+        self.lepIsMu = lepIsMu
+        self.jets = jets
+        self.lepPtBins = [20, 26, 30, 35, 40, 50, 60, 80, 120, 170] if lepIsMu else [30, 35, 40, 45, 50, 55, 65, 90, 250]
+        self.lepEtaBins = [-2.1, -1.2, -0.9, 0, 0.9, 1.2, 2.1] if lepIsMu else [-2.5, -2.0, -1.566, -1.4442, -0.9, -0.3, 0.3, 0.9, 1.4442, 1.566, 2.0, 2.5]
+        self.jetPtBins = [20, 22.5, 25, 27.5, 30, 32.5, 35, 37.5, 40, 42.5, 45, 100]
+        self.jetEtaBins = [-2.5, -1.5, -0.50, 0.50, 1.50, 2.5 ]
+        self.lepPtMax = 0.9999*max(self.lepPtBins)
+        self.jetPtMax = 0.9999*max(self.jetPtBins)
+    def uponAcceptance(self,ev) :
+        run = ev['run']
+        letter = 'A' if run<193622 else 'B' if run<196532 else 'C' if run < 203747 else 'D' 
+        indices = ev['Indices'.join(self.jets)]
+        jet = ev['AdjustedP4'.join(self.jets)][ev['Indices'.join(self.jets)][3]]
+        lep = ev['muP4' if self.lepIsMu else 'elP4'][0]
+        self.book.fillVarBin( (lep.eta(),min(lep.pt(),self.lepPtMax)), 'lepPtEta%s'%letter, (self.lepEtaBins,self.lepPtBins), title=';%s #eta;%s p_{T};events'%tuple(['mu' if self.lepIsMu else 'el']*2) )
+        self.book.fillVarBin( (jet.eta(),min(jet.pt(),self.jetPtMax)), 'jetPtEta%s%d'%(letter,min(7,len(indices))), (self.jetEtaBins,self.jetPtBins), title=';jet #eta;jet p_{T} %s%d;events'%(letter,min(7,len(indices)) ))
 #####################################
 class hltKeys(analysisStep) :
     def setup(self,*_) : self.keys = collections.defaultdict(lambda : collections.defaultdict(set) )
@@ -148,8 +175,8 @@ class hltPrescaleHistogrammer(analysisStep) :
 #####################################
 class hltTurnOnHistogrammer(analysisStep) :
 
-    def __init__(self, var = None, binsMinMax = None, probe = None, tags = None, permissive = False) :
-        for item in ["var","binsMinMax","probe","tags","permissive"] :
+    def __init__(self, var = None, binsMinMax = None, probe = None, tags = None) :
+        for item in ["var","binsMinMax","probe","tags"] :
             setattr(self,item,eval(item))
 
         tags = "{%s}"%(','.join([t.replace("HLT_","") for t in self.tags]))
@@ -163,10 +190,10 @@ class hltTurnOnHistogrammer(analysisStep) :
 
     def uponAcceptance(self,eventVars) :
         if not any([eventVars["prescaled"][t] for t in self.tags]) : return
-        if (not self.permissive) and 1 != eventVars["prescaled"][self.probe] : return
         
         for t in ([self.tagTitle] if not eventVars["prescaled"][self.probe] else [self.tagTitle,self.probeTitle]) :
-            self.book.fill( eventVars[self.var], t[0], self.binsMinMax[0],self.binsMinMax[1],self.binsMinMax[2], title = t[1] )
+            self.book.fill( eventVars[self.var], t[0], *self.binsMinMax, title = t[1] )
+            #self.book.fill( eventVars[self.var], t[0], self.binsMinMax[0],self.binsMinMax[1],self.binsMinMax[2], title = t[1] )
     
     def mergeFunc(self, products) :
         probe = r.gDirectory.Get(self.probeTitle[0])
@@ -194,10 +221,7 @@ class triggerScan(analysisStep) :
     def uponAcceptance(self,eventVars) :
         key = (eventVars["run"],eventVars["lumiSection"])
         self.counts[key] += 1
-        if key not in self.triggerNames :
-            for name,prescale in eventVars["prescaled"] :
-                if re.match(self.pattern,name) and eval(self.prescaleRequirement) :
-                    self.triggerNames[key].add(name)
+        self.triggerNames[key] |= set([name for name,prescale in eventVars['prescaled'] if re.match(self.pattern,name) and eval(self.prescaleRequirement)])
 
     def varsToPickle(self) : return ["triggerNames","counts"]
         

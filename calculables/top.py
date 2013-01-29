@@ -1,5 +1,5 @@
 from supy import wrappedChain,utils,calculables
-import math,operator,itertools,ROOT as r
+import math,operator,itertools,collections,ROOT as r
 try: import numpy as np
 except: pass
 
@@ -242,8 +242,7 @@ class WqqDeltaR(TopP4Calculable) :
 ######################################
 class DeltaBetazRel(TopP4Calculable) :
     def update(self,_) :
-        betazTop,betazTbar = [abs(self.source[self.P4][item].BoostToCM().z()) for item in ['t','tbar']]
-        self.value = (betazTop - betazTbar) / (1-betazTop*betazTbar)
+        self.value = math.tanh(self.source['DeltaAbsYttbar'.join(self.fixes)])
 ######################################
 class DeltaAbsYttbar(TopP4Calculable) :
     def update(self,_) :
@@ -275,6 +274,11 @@ class CosPhiBoost(TopP4Calculable) :
         boost = r.Math.Boost(*betaXYZM[:-1])
 
         self.value = math.cos(boost(p4['t']).phi() - beta.phi())
+######################################
+class PhiBoost(TopP4Calculable) :
+    def update(self,_) :
+        c = self.source['CosPhiBoost'.join(self.fixes)]
+        self.value = 1 - 2 * math.acos(c) / math.pi
 ######################################
 class CosThetaBoost(TopP4Calculable) :
     def update(self,_) :
@@ -628,7 +632,7 @@ class TopReconstruction(wrappedChain.calculable) :
                      'v2had',     # v2 (1parameter,3residuals) is twice as fast as v1 (3parameters,5residuals) but 5% less accurate
                      ] : setattr(self,item,eval(item))
         self.moreName = "eCoupl:%.2f; v%dhad; v2lep"%(eCoupling,v2had+1)
-        self.maxFits = 4 # if the correct combo is after index 3, we won't choose it anyway.
+        self.maxFits = 1
 
     def update(self,_) :
         
@@ -792,3 +796,198 @@ class pqDeltaRTopRecoGen(wrappedChain.calculable) :
                      for reco in self.source['TopReconstruction']]
 class qDeltaRTopRecoGen(wrappedChain.calculable) :
     def update(self,_): self.value = [pq[1] for pq in self.source['pqDeltaRTopRecoGen']]
+
+######################################
+
+class ttSymmAnti(calculables.secondary) :
+    def __init__(self, thisSample, inspect = False, weights = ['weight']) :
+        collection = ('genTop','')
+        self.varX = 'PhiBoost'.join(collection)
+        self.varY = 'DeltaBetazRel'.join(collection)
+        for item in ['thisSample','inspect','weights'] : setattr(self,item,eval(item))
+        self.__symm, self.__anti = None,None
+
+    def uponAcceptance(self,ev) :
+        w = reduce(operator.mul, [ev[W] for W in self.weights], 1)
+
+        x,y = ev[self.varX],ev[self.varY]
+        self.book.fill(x, self.varX, 100, -1, 1, title = ";%s"%self.varX, w = w)
+        self.book.fill(y, self.varY, 100, -1, 1, title = ";%s"%self.varY, w = w)
+        self.book.fill((x,y), '2_x_y', (100,100), (-1,-1), (1,1), title=";%s;%s"%(self.varX,self.varY), w = w)
+        if not self.inspect : return
+        symmanti = ev[self.name]
+        if not symmanti : return
+        sumsymmanti = sum(symmanti)
+        symm,anti = symmanti
+
+        self.book.fill(x, 'x_0symm', 50, -1, 1, w = w * symm / sumsymmanti, title = ';(symm) %s;events / bin'%self.varX)
+        self.book.fill(x, 'x_1anti', 50, -1, 1, w = w * anti / sumsymmanti, title = ';(anti) %s;events / bin'%self.varX)
+        self.book.fill(x, 'x_2flat', 50, -1, 1, w = w * 0.5  / max(1e-6,sumsymmanti), title = ';(flat) %s;events / bin'%self.varX)
+
+        self.book.fill(y, 'y_0symm', 100, -1, 1, w = w * symm / sumsymmanti, title = ';(symm) %s;events / bin'%self.varY)
+        self.book.fill(y, 'y_1anti', 100, -1, 1, w = w * anti / sumsymmanti, title = ';(anti) %s;events / bin'%self.varY)
+        self.book.fill(y, 'y_2flat', 100, -1, 1, w = w * 0.5  / max(1e-6,sumsymmanti), title = ';(flat) %s;events / bin'%self.varY)
+
+        self.book.fill((x,y), '2_x_y_0symm', (50,100), (-1,-1), (1,1), w = w * symm / sumsymmanti, title = 'symm;%s;%s;'%(self.varX,self.varY))
+        self.book.fill((x,y), '2_x_y_1anti', (50,100), (-1,-1), (1,1), w = w * anti / sumsymmanti, title = 'anti;%s;%s;'%(self.varX,self.varY))
+        self.book.fill((x,y), '2_x_y_2flat', (50,100), (-1,-1), (1,1), w = w * 0.5  / max(1e-6,sumsymmanti), title = 'flat;%s;%s;'%(self.varX,self.varY))
+
+    def update(self,_) :
+        self.value = ()
+        if not self.__symm : return
+        x = np.array([self.source[self.varX]],'d')
+        y = self.source[self.varY]
+
+        anti = self.__anti[0].EvalPar(x, np.array([f.Eval(y) for f in self.__anti[1:]],'d'))
+        symm = max(self.__symm[0].EvalPar(x, np.array([f.Eval(y) for f in self.__symm[1:]],'d')), 1.1*abs(anti))
+        self.value = (symm,anti) if symm else (1,0)
+
+    def setup(self,*_) :
+        hist = self.fromCache([self.thisSample], ['2_x_y'])[self.thisSample]['2_x_y']
+        if not hist : print "cannot find cache:", self.name ; return
+        self.__stashsymmanti = self.prep(hist)
+        self.__symm,self.__anti = [[next(iter(h.GetListOfFunctions())) for h in hs] for hs in self.__stashsymmanti]
+
+    @staticmethod
+    def prep(hist) :
+        r.gStyle.SetLineStyleString(11,"0 20000"); # "invisible"
+        hist.Scale(1./hist.Integral())
+        symm,anti = utils.symmAnti2(hist)
+        symmSliceX = r.TF1('func','[0] + [1]*x*(1-x**2/3) + [2]*x**2/2 * (1-x**2/2)',-1,1)
+        symmSliceX.SetLineWidth(0)
+        symmSliceX.SetLineStyle(11)
+        symm.FitSlicesX(symmSliceX)
+        symm.GetListOfFunctions().Add(symmSliceX)
+        symmHists = [symm] + [r.gDirectory.Get("%s_%d"%(symm.GetName(),i)) for i in range(3)]
+        symmHists[1].Fit('++'.join(['(1-abs(x))']+['x**%d'%d for d in [0,2,4,6,8,10,12,14,16,18]]),'Q')
+        symmHists[2].Fit('++'.join('x**%d'%d for d in [1,3,5,7,9,11,13,15,17]),'Q')
+        symmHists[3].Fit('++'.join('x**%d'%d for d in [0,2,4,6,8,10,12,14,16]),'Q')
+        antiSliceX = r.TF1('func','[0] + [1]*x*(1-x**2/3)',-1,1)
+        antiSliceX.SetLineWidth(0)
+        antiSliceX.SetLineStyle(11)
+        anti.FitSlicesX(antiSliceX)
+        anti.GetListOfFunctions().Add(antiSliceX)
+        antiHists = [anti] + [r.gDirectory.Get("%s_%d"%(anti.GetName(),i)) for i in range(2)]
+        antiHists[1].Fit('++'.join('x**%d'%d for d in [1,3,5,7,9,11]),'Q')
+        antiHists[2].Fit('++'.join('x**%d'%d for d in [0,2,4,6,8,10]),'Q')
+        return symmHists,antiHists
+        
+    def reportCache(self) :
+        fileName = '/'.join(self.outputFileName.split('/')[:-1]+[self.name])
+        optstat = r.gStyle.GetOptStat()
+        r.gStyle.SetOptStat(0)
+
+        names = ['%s#rightarrow^{}t#bar{t} '%i for i in ['gg','qg','q#bar{q}','#bar{q}g']]
+        samples = ['ttj_ph.w%s.pu'%s for s in ['GG','QG','QQ','AG']]
+        colors = [r.kBlack,r.kBlue,r.kRed,r.kGreen]
+
+        hists = [self.fromCache(samples, ['2_x_y'])[s]['2_x_y'] for s in samples]
+        symmHists,antiHists = zip(*[self.prep(h) for h in hists])
+        symm,symm0,symm1,symm2 = zip(*symmHists)
+        anti,anti0,anti1 = zip(*antiHists)
+
+        for h,n in zip(symm,names) : h.SetTitle(n + ' (symmetric)')
+        for h,n in zip(anti,names) : h.SetTitle(n + ' (antisymmetric)')
+
+        height = max(h.GetBinContent(h.GetMaximumBin()) for h in symm)
+        c = r.TCanvas()
+        c.Print(fileName+'.pdf[')
+        c.Divide(2,2)
+        for i,h in enumerate(symm) :
+            c.cd(i+1)
+            h.SetMaximum(height)
+            h.SetMinimum(0)
+            h.Draw('colz')
+        c.Print(fileName+'.pdf')
+        for i,h in enumerate(symm) :
+            c.cd(i+1)
+            h.Draw('surf2')
+        c.Print(fileName+'.pdf')
+
+        c.Clear()
+        c.cd(0)
+
+        for par in range(3) :
+            hists = eval('symm%d'%par)
+            height = 1.05*max(h.GetBinContent(h.GetMaximumBin()) for h in hists)
+            for i,h in enumerate(hists) :
+                fit = next(iter(h.GetListOfFunctions()),None)
+                if fit :
+                    fit.SetLineColor(colors[i])
+                    fit.SetLineWidth(1)
+                h.SetLineColor(colors[i])
+                h.SetMaximum(height)
+                h.SetMinimum(-height)
+                h.Draw('same' if i else '')
+            c.Print(fileName+'.pdf')
+
+
+        c.Clear()
+        c.Divide(2,2)
+        height = max(h.GetBinContent(h.GetMaximumBin()) for h in anti)
+        for i,h in enumerate(anti) :
+            c.cd(i+1)
+            h.SetMaximum(height)
+            h.SetMinimum(-height)
+            h.Draw('colz')
+        c.Print(fileName+'.pdf')
+        for i,h in enumerate(anti) :
+            c.cd(i+1)
+            h.Draw('surf2')
+        c.Print(fileName+'.pdf')
+
+        c.Clear()
+        c.cd(0)
+
+        for par in range(2) :
+            hists = eval('anti%d'%par)
+            height = 1.05*max([h.GetBinContent(h.GetMaximumBin()) for h in hists]+[abs(h.GetMinimum()) for h in hists])
+            for i,h in enumerate(hists) :
+                fit = next(iter(h.GetListOfFunctions()),None)
+                if fit :
+                    fit.SetLineColor(colors[i])
+                    fit.SetLineWidth(1)
+                h.SetLineColor(colors[i])
+                h.SetMaximum(height)
+                h.SetMinimum(-height)
+                h.Draw('same' if i else '')
+            c.Print(fileName+'.pdf')
+
+        c.Clear()
+
+        height = 1.1*max(h.GetMaximum() for h in symm)
+        funcs = [next(iter(s.GetListOfFunctions()),None) for s in symm]
+        [(func.SetLineStyle(1),func.SetLineWidth(1),func.SetLineColor(colors[i])) for i,func in enumerate(funcs)]
+        for iY in range(1,1+symm[0].GetNbinsY()) :
+            projs = []
+            for i,(s,func) in enumerate(zip(symm,funcs)) :
+                proj = s.ProjectionX('%s_%d'%(s.GetName(),iY),iY,iY)
+                proj.SetLineColor(colors[i])
+                proj.SetMinimum(0)
+                proj.SetMaximum(height)
+                proj.Fit(func,'QR')
+                projs.append(proj)
+            for p in projs : p.Draw('same' if i else '')
+            c.Print(fileName+'.pdf')
+
+        c.Clear()
+
+
+        height = 1.1*max([h.GetMaximum() for h in anti]+[abs(h.GetMinimum()) for y in anti])
+        funcs = [next(iter(s.GetListOfFunctions()),None) for s in anti]
+        [(func.SetLineStyle(1),func.SetLineWidth(1),func.SetLineColor(colors[i])) for i,func in enumerate(funcs)]
+        for iY in range(1,1+anti[0].GetNbinsY()) :
+            projs = []
+            for i,(s,func) in enumerate(zip(anti,funcs)) :
+                proj = s.ProjectionX('%s_%d'%(s.GetName(),iY),iY,iY)
+                proj.SetLineColor(colors[i])
+                proj.SetMinimum(-height)
+                proj.SetMaximum(height)
+                proj.Fit(func,'QR')
+                projs.append(proj)
+            for p in projs : p.Draw('same' if i else '')
+            c.Print(fileName+'.pdf')
+
+        c.Print(fileName+'.pdf]')
+        r.gStyle.SetOptStat(optstat)
+        print "Wrote file: %s.pdf"%fileName

@@ -2,11 +2,12 @@
 #include "Math/VectorUtil.h"
 #include "Math/BoostZ.h"
 #include "Math/RotationZ.h"
+#include "Rtypes.h"
 #ifdef __CINT__
-typedef ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<double> > LV;
-#pragma link C++ function ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<double> >::operator+(LV);
-#pragma link C++ function ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<double> >::operator-(LV);
-#pragma link C++ function ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<double> >::Dot(LV);
+typedef ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<Double32_t> > LV;
+#pragma link C++ function ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<Double32_t> >::operator+(LV);
+#pragma link C++ function ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<Double32_t> >::operator-(LV);
+#pragma link C++ function ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<Double32_t> >::Dot(LV);
 #pragma link C++ function ROOT::Math::BoostZ::operator()(LV);
 #pragma link C++ function ROOT::Math::Boost::operator()(LV);
 #pragma link C++ function ROOT::Math::RotationZ::operator()(LV);
