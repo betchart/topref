@@ -23,17 +23,18 @@ currentLumiJSON = '/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collision
 
 
 hists = []
+os.system('which pileupCalc.py')
 for label,factor in [('',0),('_down',-systematics),('_up',systematics)] :
     rootName = sys.argv[1].rstrip('/')+label+'_pileup.root'
-    #os.system(' '.join(["pileupCalc.py",
-    #                    "-i %s"%outJsonName,
-    #                    "--inputLumiJSON %s"%currentLumiJSON,
-    #                    "--calcMode true",
-    #                    "--minBiasXsec %f"%(xsInelastic * 1.0+factor),
-    #                    "--maxPileupBin 50",
-    #                    "--numPileupBins 100",
-    #                    rootName])
-    #          )
+    os.system(' '.join(["pileupCalc.py",
+                        "-i %s"%outJsonName,
+                        "--inputLumiJSON %s"%currentLumiJSON,
+                        "--calcMode true",
+                        "--minBiasXsec %f"%(xsInelastic * 1.0+factor),
+                        "--maxPileupBin 50",
+                        "--numPileupBins 100",
+                        rootName])
+              )
 
     tfile = r.TFile.Open(rootName,'READ')
     hists.append( tfile.Get('pileup').Clone(rootName) )
