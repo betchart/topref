@@ -17,7 +17,7 @@ def useCachedFileLists() :
     return True
 
 def cppFiles() :
-    return []
+    return ["cpp/linkdef.cxx"]
 
 def hadd() :
     return ['hadd', whereami()+'/bin/phaddy'][1]
