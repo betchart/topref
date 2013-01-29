@@ -1,63 +1,13 @@
 import math,collections,re, ROOT as r
 from supy import analysisStep,utils,calculables
 #####################################
-class lPlusJetsTopLoose(analysisStep) :
-    def __init__(self, lepIsMu, jets ) :
-        self.lepIsMu = lepIsMu
-        self.jets = jets
-        self.table = ( [ ('HLT_IsoMu17_eta2p1_TriCentralPFNoPUJet45_35_25',55,45,35),
-                         ('HLT_IsoMu17_eta2p1_TriCentralPFNoPUJet30_30_20',45,45,35),
-                         ('HLT_IsoMu17_eta2p1_TriCentralPFNoPUJet30',      45,45,45),
-                         ('HLT_IsoMu17_eta2p1_TriCentralPFJet30',          45,45,45)] if lepIsMu else
-                       [('HLT_Ele25_CaloIdVT_CaloIsoVL_TrkIdVL_TrkIsoT_TriCentralPFNoPUJet45_35_25',55,45,35),
-                        ('HLT_Ele25_CaloIdVT_CaloIsoT_TrkIdT_TrkIsoT_TriCentralPFNoPUJet30_30_20',  45,45,35),
-                        ('HLT_Ele25_CaloIdVT_CaloIsoT_TrkIdT_TrkIsoT_TriCentralPFNoPUJet30',        45,45,45),
-                        ('HLT_Ele25_CaloIdVT_CaloIsoT_TrkIdT_TrkIsoT_TriCentralPFJet30',            45,45,45)]
-                       )
-
-    def select(self,ev) :
-        jet = ev['AdjustedP4'.join(self.jets)]
-        indices = ev['Indices'.join(self.jets)]
-        if ev['isRealData'] :
-            return any( ( any(name in full for full,p in ev['prescaled'] if p==1) and
-                          jet[indices[0]].pt()> j1 and
-                          jet[indices[1]].pt()> j2 and
-                          jet[indices[2]].pt()> j3 )
-                        for name,j1,j2,j3 in self.table )
-        else: return 1
-
-class lPlusJetsTopReference(analysisStep) :
-    def __init__(self, lepIsMu, jets ) :
-        self.lepIsMu = lepIsMu
-        self.jets = jets
-        self.table =( [ (199698,'HLT_IsoMu17_eta2p1_TriCentralPFNoPUJet45_35_25',55,45,35),
-                        (196532,'HLT_IsoMu17_eta2p1_TriCentralPFNoPUJet30_30_20',55,45,35), # misaligned
-                        (194270,'HLT_IsoMu17_eta2p1_TriCentralPFNoPUJet30_30_20',45,45,45), # misaligned
-                        (193834,'HLT_IsoMu17_eta2p1_TriCentralPFNoPUJet30',      45,45,45),
-                        (None,  'HLT_IsoMu17_eta2p1_TriCentralPFJet30',          45,45,45)] if lepIsMu else
-                      [ (199608,'HLT_Ele25_CaloIdVT_CaloIsoVL_TrkIdVL_TrkIsoT_TriCentralPFNoPUJet45_35_25',55,45,35),
-                        (196532,'HLT_Ele25_CaloIdVT_CaloIsoT_TrkIdT_TrkIsoT_TriCentralPFNoPUJet30_30_20',  55,45,35), # misaligned
-                        (194226,'HLT_Ele25_CaloIdVT_CaloIsoT_TrkIdT_TrkIsoT_TriCentralPFNoPUJet30_30_20',  45,45,45), # misaligned
-                        (191691,'HLT_Ele25_CaloIdVT_CaloIsoT_TrkIdT_TrkIsoT_TriCentralPFNoPUJet30',        45,45,45),
-                        (None,  'HLT_Ele25_CaloIdVT_CaloIsoT_TrkIdT_TrkIsoT_TriCentralPFJet30',            45,45,45)] )
-
-    def select(self,ev) :
-        jet = ev['AdjustedP4'.join(self.jets)]
-        indices = ev['Indices'.join(self.jets)]
-        if ev['isRealData'] :
-            return next( ( any( name in full for full,p in ev['prescaled']) and
-                           jet[indices[0]].pt()> j1 and
-                           jet[indices[1]].pt()> j2 and
-                           jet[indices[2]].pt()> j3 )
-                         for runmin,name,j1,j2,j3 in self.table if ev['run']>=runmin )
-        else: return 1
-
 class singleLepton(analysisStep) :
     def __init__(self, lepIsMu ) :
         self.lepIsMu = lepIsMu
-        self.patterns = ['HLT_IsoMu24_v','HLT_IsoMu24_eta2p1_v'] if lepIsMu else ['happy bunnies']
+        self.pattern = 'HLT_IsoMu24_eta2p1_v' if lepIsMu else 'HLT_Ele27_WP80_v'
+        self.moreName = self.pattern + "*"
     def select(self,ev) :
-        return any( any(pat in full for pat in self.patterns) for full,p in ev['prescaled'] if p==1) if ev['isRealData'] else 1
+        return any( self.pattern in full for full,p in ev['prescaled'] if p==1 )
 #####################################
 class efficiencyRatios(analysisStep) :
     def __init__(self, lepIsMu, jets) :
