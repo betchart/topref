@@ -3,13 +3,13 @@ import supy,steps,samples,calculables
 class jsonMaker(supy.analysis) :
     def parameters(self) :
         jf = [
-            'json/Cert_190456-196531_8TeV_13Jul2012ReReco_Collisions12_JSON.txt',             #A1
-            'json/Cert_190782-190949_8TeV_06Aug2012ReReco_Collisions12_JSON.txt',             #A2
-            'json/Cert_190456-196531_8TeV_13Jul2012ReReco_Collisions12_JSON.txt',             #B1
-            'json/Cert_198022-198523_8TeV_24Aug2012ReReco_Collisions12_JSON.txt',             #C1
-            'json/Cert_190456-208686_8TeV_PromptReco-NoReprocessing_Collisions12CD_JSON.txt', #C2
-            'json/Cert_201191-201191_8TeV_11Dec2012ReReco-recover_Collisions12_JSON.txt',     #C3
-            'json/Cert_190456-208686_8TeV_PromptReco-NoReprocessing_Collisions12CD_JSON.txt', #D1
+            'lumi/json/Cert_190456-196531_8TeV_13Jul2012ReReco_Collisions12_JSON.txt',             #A1
+            'lumi/json/Cert_190782-190949_8TeV_06Aug2012ReReco_Collisions12_JSON.txt',             #A2
+            'lumi/json/Cert_190456-196531_8TeV_13Jul2012ReReco_Collisions12_JSON.txt',             #B1
+            'lumi/json/Cert_198022-198523_8TeV_24Aug2012ReReco_Collisions12_JSON.txt',             #C1
+            'lumi/json/Cert_190456-208686_8TeV_PromptReco-NoReprocessing_Collisions12CD_JSON.txt', #C2
+            'lumi/json/Cert_201191-201191_8TeV_11Dec2012ReReco-recover_Collisions12_JSON.txt',     #C3
+            'lumi/json/Cert_190456-208686_8TeV_PromptReco-NoReprocessing_Collisions12CD_JSON.txt', #D1
             ]
 
         group = self.vary()

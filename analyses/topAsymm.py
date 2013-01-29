@@ -63,13 +63,13 @@ class topAsymm(supy.analysis) :
     @staticmethod
     def electrons(suffix="") : return [f+suffix for f in ['El.A.1','El.A.2','El.B.1','El.C.1','El.C.2','El.C.3','El.D.1']]
     @staticmethod
-    def jsonFiles() : return ['json/'+f for f in ['Cert_190456-196531_8TeV_13Jul2012ReReco_Collisions12_JSON.txt',
-                                                  'Cert_190782-190949_8TeV_06Aug2012ReReco_Collisions12_JSON.txt',
-                                                  'Cert_190456-196531_8TeV_13Jul2012ReReco_Collisions12_JSON.txt',
-                                                  'Cert_198022-198523_8TeV_24Aug2012ReReco_Collisions12_JSON.txt',
-                                                  'Cert_190456-208686_8TeV_PromptReco-NoReprocessing_Collisions12CD_JSON.txt',
-                                                  'Cert_201191-201191_8TeV_11Dec2012ReReco-recover_Collisions12_JSON.txt',
-                                                  'Cert_190456-208686_8TeV_PromptReco-NoReprocessing_Collisions12CD_JSON.txt']]
+    def jsonFiles() : return ['lumi/json/'+f for f in ['Cert_190456-196531_8TeV_13Jul2012ReReco_Collisions12_JSON.txt',
+                                                       'Cert_190782-190949_8TeV_06Aug2012ReReco_Collisions12_JSON.txt',
+                                                       'Cert_190456-196531_8TeV_13Jul2012ReReco_Collisions12_JSON.txt',
+                                                       'Cert_198022-198523_8TeV_24Aug2012ReReco_Collisions12_JSON.txt',
+                                                       'Cert_190456-208686_8TeV_PromptReco-NoReprocessing_Collisions12CD_JSON.txt',
+                                                       'Cert_201191-201191_8TeV_11Dec2012ReReco-recover_Collisions12_JSON.txt',
+                                                       'Cert_190456-208686_8TeV_PromptReco-NoReprocessing_Collisions12CD_JSON.txt']]
     @staticmethod
     def single_top() : return ['top_s_ph','top_t_ph','top_tW_ph','tbar_s_ph','tbar_t_ph','tbar_tW_ph']
     @staticmethod
