@@ -7,4 +7,6 @@ for module in [
     "ewk118",
     "lepton118",
     "lepton119",
+    "top119",
+    "ewk119",
     ] : exec("from __%s__ import %s"%(module,module))
