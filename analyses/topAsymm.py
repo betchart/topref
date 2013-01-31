@@ -47,7 +47,7 @@ class topAsymm(supy.analysis) :
                                           "QCD" : {"bCut":bCut["normal"],  "iso":"isoInvert"}
                                           }),
                  "toptype" : self.vary({"ph":"ph"}),
-                 "putarget" : self.vary({"c":"","u":"_up","d":"_down"}),
+                 "putarget" : self.vary({"c":""}),#,"u":"_up","d":"_down"}),
                  "topBsamples": ("ttj_%s",['ttj_%s.wGG.%s','ttj_%s.wQG.%s','ttj_%s.wAG.%s','ttj_%s.wQQ.%s']),
                  "smear" : "Smear",
                  }
@@ -173,7 +173,7 @@ class topAsymm(supy.analysis) :
         tt = pars['toptype']
         topSamples = (pars['topBsamples'][0]%tt,[s%(tt,rw) for s in pars['topBsamples'][1]])
         topTag = pars['tag'].replace("QCD","top")
-        
+
         ssteps = supy.steps
 
         saDisable = 'ttj' not in pars['sample'] or not any(w in pars['sample'].split('.') for w in ['wQQ','wQG','wAG','wGG'])
@@ -214,7 +214,7 @@ class topAsymm(supy.analysis) :
              , supy.calculables.other.CombinationsLR( var = 'LTopUnfitSqrtChi2',varMax = 10, trueKey = 'IndexGenTopL', samples = topSamples[1], tag = topTag)
              , self.tridiscriminant(pars)
 
-             , ssteps.filters.label('finegrain').invert()
+             , ssteps.filters.label('finegrain')
              , ssteps.histos.value('MetMt'.join(lepton), 120, 0, 120)
              , ssteps.histos.value('ProbabilityHTopMasses', 100,0,1)
              , ssteps.histos.value("TopRatherThanWProbability", 100,0,1)
@@ -289,10 +289,13 @@ class topAsymm(supy.analysis) :
         datas = {"mu" : self.muons('.jw'),
                  "el": self.electrons('.jw')}[lname]
         sf = self.scaleFactor()
+        topTag = pars['tag'].replace("QCD","top")
+        qcdTag = pars['tag'].replace("top","QCD")
+
         return supy.calculables.other.Tridiscriminant( fixes = ("","WTopQCD"),
-                                                       zero = {"pre":"ttj_%s"%tt, "tag":"top_%s_%s"%(lname,tt), "samples": tops},
-                                                       pi23 = {"pre":"Multijet", "tag":"QCD_%s_%s"%(lname,tt), "samples":['data']+tops+others, 'sf':[1] + [-sf]*len(tops+others)},
-                                                       pi43 = {"pre":"wj", "tag":"top_%s_%s"%(lname,tt), "samples":['w%dj_mg.%s'%(n,rw) for n in [1,2,3,4]]},
+                                                       zero = {"pre":"ttj_%s"%tt, "tag":topTag, "samples": tops},
+                                                       pi23 = {"pre":"Multijet",  "tag":qcdTag, "samples":['data']+tops+others, 'sf':[1] + [-sf]*len(tops+others)},
+                                                       pi43 = {"pre":"wj",        "tag":topTag, "samples":['w%dj_mg.%s'%(n,rw) for n in [1,2,3,4]]},
                                                        correlations = pars['discriminant2DPlots'],
                                                        otherSamplesToKeep = datas,
                                                        dists = {"TopRatherThanWProbability" : (20,0,1),
@@ -366,7 +369,7 @@ class topAsymm(supy.analysis) :
                   "detailedCalculables" : True,
                   "rowColors" : self.rowcolors,
                   "rowCycle" : 100,
-                  "omit2D" : False,
+                  "omit2D" : True,
                   }
         
         #supy.plotter(org, pdfFileName = self.pdfFileName(org.tag+"_log"),  doLog = True, pegMinimum = 0.01, **kwargs ).plotAll()
