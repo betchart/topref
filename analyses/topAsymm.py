@@ -37,7 +37,7 @@ class topAsymm(supy.analysis) :
         bCut = {"normal"   : {"index":0, "min":csvWP['CSVM']},
                 "inverted" : {"index":0, "min":csvWP['CSVL'], "max":csvWP['CSVM']}}
 
-        return { "vary" : ['selection','lepton','toptype'],
+        return { "vary" : ['selection','lepton','toptype','putarget'],
                  "discriminant2DPlots": True,
                  "bVar" : "CSV", # "Combined Secondary Vertex"
                  "objects" : dict([(item,(item,'')) for item in ['jet','mu','el','met']]),
@@ -47,6 +47,7 @@ class topAsymm(supy.analysis) :
                                           "QCD" : {"bCut":bCut["normal"],  "iso":"isoInvert"}
                                           }),
                  "toptype" : self.vary({"ph":"ph"}),
+                 "putarget" : self.vary({"c":"","u":"_up","d":"_down"}),
                  "topBsamples": ("ttj_%s",['ttj_%s.wGG.%s','ttj_%s.wQG.%s','ttj_%s.wAG.%s','ttj_%s.wQQ.%s']),
                  "smear" : "Smear",
                  }
@@ -154,9 +155,7 @@ class topAsymm(supy.analysis) :
 
             supy.calculables.other.pt( "AdjustedP4".join(met) ),
             supy.calculables.other.size( "Indices".join(jet) ),
-            #supy.calculables.other.abbreviation( pars['reweights']['var'], pars['reweights']['abbr'] ),
-            supy.calculables.other.fixedValue('one',1),
-            supy.calculables.other.abbreviation( 'one', pars['reweights']['abbr'] ),
+            supy.calculables.other.abbreviation( pars['reweights']['var'], pars['reweights']['abbr'] ),
             ]
         return calcs
     ########################################################################################
@@ -184,13 +183,7 @@ class topAsymm(supy.analysis) :
              , ssteps.histos.value("genQ",200,0,1000,xtitle="#hat{Q} (GeV)").onlySim()
              #, steps.top.subProcessClassification(40).onlySim()
              #, steps.top.fractions().disable(saDisable)
-             #, getattr(self,pars['reweights']['func'])(pars)
-             #, supy.calculables.other.SymmAnti(pars['sample'],"genTopCosPhiBoost",1, inspect=True, nbins=160, weights = saWeights,
-             #                                  funcEven = r.TF1('phiboost',"[0]*(1+[1]*x**2)/sqrt(1-x**2)",-1,1),
-             #                                  funcOdd = r.TF1('phiboostodd','[0]*x/sqrt(1-x**2)',-1,1)).disable(saDisable)
-             #, supy.calculables.other.SymmAnti(pars['sample'],"genTopDeltaBetazRel",1, inspect=True, weights = saWeights,
-             #                                  funcEven = '++'.join(['(1-abs(x))']+['x**%d'%d for d in [0,2,4,6,8,10,12,14,16,18]]),
-             #                                  funcOdd = '++'.join(['x**%d'%d for d in [1,3,5,7,9,11,13]])).disable(saDisable)
+             , getattr(self,pars['reweights']['func'])(pars)
              , calculables.top.ttSymmAnti(pars['sample'], inspect=True).disable(saDisable)
              ####################################
              , ssteps.filters.label('selection'),
@@ -201,8 +194,6 @@ class topAsymm(supy.analysis) :
              ssteps.filters.multiplicity( min=1, var = 'Indices'.join(lepton)),
              ssteps.filters.value('PassConversionVeto'.join(lepton), min=True, indices='Indices'.join(lepton), index=0) if lname=='el' else supy.steps.filters.label('empty'),
              ssteps.filters.value("Pt".join(jet), min = 45, indices = "Indices".join(jet), index=0),
-             #ssteps.filters.value("Pt".join(jet), min = 45, indices = "Indices".join(jet), index=1),
-             #ssteps.filters.value("Pt".join(jet), min = 35, indices = "Indices".join(jet), index=2),
              ssteps.filters.value("Pt".join(jet), min = 35, indices = "Indices".join(jet), index=1),
              ssteps.filters.value("Pt".join(jet), min = 20, indices = "Indices".join(jet), index=2),
              ssteps.filters.value("Pt".join(jet), min = 20, indices = "Indices".join(jet), index=3),
@@ -211,7 +202,7 @@ class topAsymm(supy.analysis) :
              steps.trigger.singleLepton(lname=='mu')
              #steps.trigger.efficiencyRatios(lname=='mu', jet)
              ####################################
-             , ssteps.filters.label("selection complete").invert()
+             , ssteps.filters.label("selection complete")
              , steps.top.channelClassification().onlySim()
              , ssteps.histos.multiplicity('Indices'.join(jet))
 
@@ -223,7 +214,7 @@ class topAsymm(supy.analysis) :
              , supy.calculables.other.CombinationsLR( var = 'LTopUnfitSqrtChi2',varMax = 10, trueKey = 'IndexGenTopL', samples = topSamples[1], tag = topTag)
              , self.tridiscriminant(pars)
 
-             , ssteps.filters.label('finegrain')
+             , ssteps.filters.label('finegrain').invert()
              , ssteps.histos.value('MetMt'.join(lepton), 120, 0, 120)
              , ssteps.histos.value('ProbabilityHTopMasses', 100,0,1)
              , ssteps.histos.value("TopRatherThanWProbability", 100,0,1)
@@ -279,14 +270,15 @@ class topAsymm(supy.analysis) :
     def pileup(cls,pars) :
         rw = pars['reweights']['abbr']
         tt = pars['toptype']
+        targetFile = 'lumi/dsets_%s%s_pileup.root'%(pars['lepton']['name'],pars['putarget'])
         return supy.calculables.other.Target("pileupTrueNumInteractionsBX0", thisSample = pars['baseSample'],
-                                             target = ("data/pileup_true_Cert_160404-180252_7TeV_ReRecoNov08_Collisions11_JSON.root","pileup"),
+                                             target = (targetFile,"pileup"),
                                              groups = [('qcd_mu',[]),
-                                                       ('dy1j_ll_mg',[]),
-                                                       ("w2j_mg",[]),("w3j_mg",[]),("w4j_mg",[]),
+                                                       ('dy1j_mg',[]),('dy2j_mg',[]),('dy3j_mg',[]),('dy4j_mg',[]),
+                                                       ("w1j_mg",[]), ("w2j_mg",[]), ("w3j_mg",[]), ("w4j_mg",[]),
                                                        ('single_top', ['%s.%s'%(s,rw) for s in cls.single_top()]),
                                                        ('ttj_%s'%tt,['ttj_%s.%s.%s'%(tt,s,rw) for s in ['',
-                                                                                                           'wGG','wQG','wAG','wQQ']])]).onlySim()
+                                                                                                        'wGG','wQG','wAG','wQQ']])]).onlySim()
 
     def tridiscriminant(self,pars) :
         rw = pars['reweights']['abbr']
