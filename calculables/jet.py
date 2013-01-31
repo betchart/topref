@@ -210,7 +210,7 @@ class ScalingBQN(calculables.secondary) :
             etaBin = self.etaBin( abs(p4.eta()) )
             pt = p4.pt()
             lRs = (self.hists[f+str(etaBin)].Interpolate(pt) for f in 'BQN')
-            return [math.exp(lR) for lR in lRs]
+            return [math.exp(lR) for lR in lRs] if self.hists else [1,1,1]
 
         self.value = dict(zip('BQN', zip(*[scales(jets[i]) for i in range(len(jets))]) ) )
 
