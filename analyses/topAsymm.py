@@ -53,7 +53,7 @@ class topAsymm(supy.analysis) :
                  }
 
     @staticmethod
-    def scaleFactor() : return 0.9
+    def scaleFactor() : return 1.0
 
     ########################################################################################
 
