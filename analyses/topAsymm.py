@@ -156,6 +156,16 @@ class topAsymm(supy.analysis) :
             supy.calculables.other.pt( "AdjustedP4".join(met) ),
             supy.calculables.other.size( "Indices".join(jet) ),
             supy.calculables.other.abbreviation( pars['reweights']['var'], pars['reweights']['abbr'] ),
+
+            supy.calculables.other.QueuedBin( 3, ("fitTopDeltaBetazRel", "fitTopPhiBoost"), (1,1), 'fitTop'),
+            supy.calculables.other.QueuedBin( 4, ("fitTopDeltaBetazRel", "fitTopPhiBoost"), (1,1), 'fitTop'),
+            supy.calculables.other.QueuedBin( 5, ("fitTopDeltaBetazRel", "fitTopPhiBoost"), (1,1), 'fitTop'),
+            supy.calculables.other.QueuedBin( 7, ("fitTopDeltaBetazRel", "fitTopPhiBoost"), (1,1), 'fitTop'),
+
+            supy.calculables.other.QueuedBin( 3, ("genTopDeltaBetazRel", "genTopPhiBoost"), (1,1), 'genTop'),
+            supy.calculables.other.QueuedBin( 4, ("genTopDeltaBetazRel", "genTopPhiBoost"), (1,1), 'genTop'),
+            supy.calculables.other.QueuedBin( 5, ("genTopDeltaBetazRel", "genTopPhiBoost"), (1,1), 'genTop'),
+            supy.calculables.other.QueuedBin( 7, ("genTopDeltaBetazRel", "genTopPhiBoost"), (1,1), 'genTop'),
             ]
         return calcs
     ########################################################################################
@@ -185,6 +195,11 @@ class topAsymm(supy.analysis) :
              #, steps.top.fractions().disable(saDisable)
              , getattr(self,pars['reweights']['func'])(pars)
              , calculables.top.ttSymmAnti(pars['sample'], inspect=True).disable(saDisable)
+             , ssteps.histos.symmAnti('tt','genTopQueuedBin3',9,-1,1).disable(saDisable)
+             , ssteps.histos.symmAnti('tt','genTopQueuedBin4',16,-1,1).disable(saDisable)
+             , ssteps.histos.symmAnti('tt','genTopQueuedBin5',25,-1,1).disable(saDisable)
+             , ssteps.histos.symmAnti('tt','genTopQueuedBin7',49,-1,1).disable(saDisable)
+
              ####################################
              , ssteps.filters.label('selection'),
              ssteps.filters.value("mvaTrigV0Exists",min=True),
@@ -257,11 +272,21 @@ class topAsymm(supy.analysis) :
              ####################################
 
              , ssteps.filters.label('signal distributions')
-             , ssteps.histos.symmAnti('genTopCosPhiBoost','genTopCosPhiBoost',100,-1,1).disable(saDisable)
-             , ssteps.histos.symmAnti('genTopDeltaBetazRel','genTopDeltaBetazRel',100,-1,1).disable(saDisable)
+             #, ssteps.histos.symmAnti('tt','genTopPhiBoost',100,-1,1).disable(saDisable)
+             #, ssteps.histos.symmAnti('tt','genTopDeltaBetazRel',100,-1,1).disable(saDisable)
+             #
+             #, ssteps.histos.symmAnti('tt','fitTopPhiBoost',100,-1,1, other = ('TridiscriminantWTopQCD',100,-1,1))
+             #, ssteps.histos.symmAnti('tt','fitTopDeltaBetazRel',100,-1,1, other = ('TridiscriminantWTopQCD',100,-1,1))
 
-             , ssteps.histos.symmAnti('genTopCosPhiBoost','fitTopCosPhiBoost',100,-1,1, other = ('TridiscriminantWTopQCD',100,-1,1))
-             , ssteps.histos.symmAnti('genTopDeltaBetazRel','fitTopDeltaBetazRel',100,-1,1, other = ('TridiscriminantWTopQCD',100,-1,1))
+             , ssteps.histos.symmAnti('tt','genTopQueuedBin3',9,-1,1).disable(saDisable)
+             , ssteps.histos.symmAnti('tt','genTopQueuedBin4',16,-1,1).disable(saDisable)
+             , ssteps.histos.symmAnti('tt','genTopQueuedBin5',25,-1,1).disable(saDisable)
+             , ssteps.histos.symmAnti('tt','genTopQueuedBin7',49,-1,1).disable(saDisable)
+
+             , ssteps.histos.symmAnti('tt','fitTopQueuedBin3',9,-1,1)
+             , ssteps.histos.symmAnti('tt','fitTopQueuedBin4',16,-1,1)
+             , ssteps.histos.symmAnti('tt','fitTopQueuedBin5',25,-1,1)
+             , ssteps.histos.symmAnti('tt','fitTopQueuedBin7',49,-1,1)
 
              ])
     ########################################################################################
@@ -412,22 +437,23 @@ class topAsymm(supy.analysis) :
                               doLog = log,
                               blackList = ["lumiHisto","xsHisto","nJobsHisto"],
                               rowColors = self.rowcolors,
-                              #samplesForRatios = ("top.Data 2012","S.M."),
-                              #sampleLabelsForRatios = ('data','s.m.'),
+                              samplesForRatios = ("top.Data 2012","S.M."),
+                              sampleLabelsForRatios = ('data','s.m.'),
                               rowCycle = 100,
                               omit2D = True,
                               pageNumbers = False,
                               ).plotAll()
 
     def meldScale(self,rw,lname,tt) :
-        meldSamples = {"top_%s_%s"%(lname,tt) :( { 'mu': self.muons('.jw'),
-                                                    'el': self.electrons('.jw')}[lname]+
-                                                 ["ttj_%s"%tt]+self.single_top()+
-                                                 ["dy%dj_mg"%n for n in [1,2,3,4]]+
-                                                 ["w%dj_mg"%n for n in [1,2,3,4]]),
-                       "QCD_%s_%s"%(lname,tt) : ( { 'mu':self.muons('.jw'),
-                                                   'el':self.electrons('.jw')}[lname] +
-                                                  ["ttj_%s"%tt] ) }
+        # Fix hardcoded pileup tag
+        meldSamples = {"top_%s_%s_c"%(lname,tt) :( { 'mu': self.muons('.jw'),
+                                                     'el': self.electrons('.jw')}[lname]+
+                                                   ["ttj_%s"%tt]+self.single_top()+
+                                                   ["dy%dj_mg"%n for n in [1,2,3,4]]+
+                                                   ["w%dj_mg"%n for n in [1,2,3,4]]),
+                       "QCD_%s_%s_c"%(lname,tt) : ( { 'mu':self.muons('.jw'),
+                                                      'el':self.electrons('.jw')}[lname] +
+                                                    ["ttj_%s"%tt] ) }
 
         organizers = [supy.organizer(tag, [s for s in self.sampleSpecs(tag) if any(item in s['name'] for item in meldSamples[tag])])
                       for tag in [p['tag'] for p in self.readyConfs if p["tag"] in meldSamples]]
@@ -504,7 +530,7 @@ class topAsymm(supy.analysis) :
         templateSamples = ['top.ttj_%s.%s.%s'%(tt,s,rw) for s in ['wGG','wQQ','wQG','wAG']]
         org.mergeSamples(targetSpec = {"name":'qgag'}, sources = templateSamples[2:], keepSources = True, force = True)
         templateSamples = templateSamples[:-2] + ['qgag']
-        distTup,cs = map(measureFractions,["fitTopPtOverSumPt","fitTopPtPlusSumPt","fitTopAbsSumRapidities","TridiscriminantGGqqGq"])[-1]
+        #distTup,cs = map(measureFractions,["fitTopPtOverSumPt","fitTopPtPlusSumPt","fitTopAbsSumRapidities","TridiscriminantGGqqGq"])[-1]
         supy.utils.tCanvasPrintPdf( mfCanvas, mfFileName, option = ']')
         org.drop('qgag')
 
