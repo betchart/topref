@@ -552,38 +552,39 @@ class topAsymm(supy.analysis) :
         supy.utils.tCanvasPrintPdf( canvas, maFileName, option = '[', verbose = False)
         with open(maFileName+'.txt','w') as file : print >> file, ""
 
-        def BV(h, rebin=10) :
+        def BV(h, rebin=1) :
             contents = supy.utils.binValues(h)
             if rebin!=1 : contents = contents[:1] + [sum(bins) for bins in zip(*[contents[1:-1][i::rebin] for i in range(rebin)])] + contents[-1:]
             return contents
 
         SA = supy.utils.symmAnti
         def measure(fitvar,genvar, antisamples, sumTemplates = False) :
-            steps = [org.steps[ next(org.indicesOfStep('symmAnti','%s in (anti)symm parts of %s'%(fitvar,genvar))) ] for org in orgMuEl]
-            templatess = [[ BV( SA(step[fitvar+'_anti'][org.indexOfSampleWithName(sample)])[1]) for sample in antisamples ] for step,org in zip(steps,orgMuEl)]
-            basess = [ [ BV( SA(step[fitvar+'_symm'][org.indexOfSampleWithName(sample)])[0]) for sample in antisamples ] +
-                       [ BV( step[fitvar][i]) for i,ss in enumerate(org.samples) if ss['name'] not in antisamples+omitSamples ]
-                       for step,org in zip(steps,orgMuEl)]
-            observeds = [ BV( step[fitvar][org.indexOfSampleWithName("top.Data 2012")] ) for step,org in zip(steps,orgMuEl) ]
-
-            def stack(Lists) : return [sum(lists,[]) for lists in zip(*Lists)]
-            templates = stack(templatess)
-            bases = stack(basess)
-            observed = sum(observeds,[])
-
-            from supy.utils.fractions import componentSolver,drawComponentSolver
-            if sumTemplates : templates = [np.sum(templates, axis=0)]
-            cs = componentSolver(observed, templates, 1e4, base = np.sum(bases, axis=0) , normalize = False )
-            stuff = drawComponentSolver(cs, canvas, distName = fitvar, showDifference = True,
-                                        templateNames = ["anti %s-->t#bar{t}"%('q*' if sumTemplates else "qg" if 'QG' in t else "q#bar{q}" if 'QQ' in t else '') for t in antisamples][:1 if sumTemplates else None])
-            supy.utils.tCanvasPrintPdf( canvas, maFileName, verbose = False)
-            with open(maFileName+'.txt','a') as file : print >> file, "\n",fitvar+"\n", cs
-            return steps,cs
-
+            try:
+                steps = [org.steps[ next(org.indicesOfStep('symmAnti','%s in (anti)symm parts of %s'%(fitvar,genvar))) ] for org in orgMuEl]
+                templatess = [[ BV( SA(step[fitvar+'_anti'][org.indexOfSampleWithName(sample)])[1]) for sample in antisamples ] for step,org in zip(steps,orgMuEl)]
+                basess = [ [ BV( SA(step[fitvar+'_symm'][org.indexOfSampleWithName(sample)])[0]) for sample in antisamples ] +
+                           [ BV( step[fitvar][i]) for i,ss in enumerate(org.samples) if ss['name'] not in antisamples+omitSamples ]
+                           for step,org in zip(steps,orgMuEl)]
+                observeds = [ BV( step[fitvar][org.indexOfSampleWithName("top.Data 2012")] ) for step,org in zip(steps,orgMuEl) ]
+                
+                def stack(Lists) : return [sum(lists,[]) for lists in zip(*Lists)]
+                templates = stack(templatess)
+                bases = stack(basess)
+                observed = sum(observeds,[])
+                
+                from supy.utils.fractions import componentSolver,drawComponentSolver
+                if sumTemplates : templates = [np.sum(templates, axis=0)]
+                cs = componentSolver(observed, templates, 1e4, base = np.sum(bases, axis=0) , normalize = False )
+                stuff = drawComponentSolver(cs, canvas, distName = fitvar, showDifference = True,
+                                            templateNames = ["anti %s-->t#bar{t}"%('q*' if sumTemplates else "qg" if 'QG' in t else "q#bar{q}" if 'QQ' in t else '') for t in antisamples][:1 if sumTemplates else None])
+                supy.utils.tCanvasPrintPdf( canvas, maFileName, verbose = False)
+                with open(maFileName+'.txt','a') as file : print >> file, "\n",fitvar+"\n", cs
+                return steps,cs
+            except: print "measure() failed"
+            
         samples = ['top.ttj_%s.%s.%s'%(tt,w,rw) for w in ['wQQ','wQG','wAG']]
-        measure('fitTopCosPhiBoost','genTopCosPhiBoost', samples[1:], sumTemplates=True)
-        measure('fitTopDeltaBetazRel','genTopDeltaBetazRel', samples, sumTemplates=True)
-        #measure('fitTopDeltaBetazRel','genTopDeltaBetazRel', samples)
-        measure('fitTopCosThetaBoostAlt','genTopCosThetaBoostAlt', samples, sumTemplates=True)
-        #measure('fitTopCosThetaBoostAlt','genTopCosThetaBoostAlt', samples)
+        measure('fitTopQueuedBin3','tt', samples[1:], sumTemplates=True)
+        measure('fitTopQueuedBin4','tt', samples[1:], sumTemplates=True)
+        measure('fitTopQueuedBin5','tt', samples[1:], sumTemplates=True)
+        measure('fitTopQueuedBin7','tt', samples[1:], sumTemplates=True)
         supy.utils.tCanvasPrintPdf( canvas, maFileName, option = ']')
