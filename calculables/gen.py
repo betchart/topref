@@ -1,21 +1,31 @@
 from supy import wrappedChain,utils,calculables
 import ROOT as r
 ##############################
+class qPtMin(wrappedChain.calculable) :
+    value = 40 #GeV
+    def update(self,_) : pass
+##############################
 class wGG(wrappedChain.calculable) :
     def update(self,_) :
         self.value = None if any(self.source[g] for g in ['wQQ','wQG','wAG']) else 1
-##############################
 class wQQ(wrappedChain.calculable) :
     def update(self,_) :
-        self.value = 1 if self.source['genQQbar'] else None
-##############################
-class wQG(wrappedChain.calculable) :
+        self.value = ( 1 if self.source['genQQbar'] else
+                       None if any(self.source[g] for g in ['genGG','wAG','wQG']) else
+                       self.resumToQQ() )
+    def resumToQQ(self) :
+        p4 = self.source['genP4']
+        iEx = self.source['genIndexTtbarExtraJet']
+        dPq,dPg = [ (p4[i]-p4[iEx]).P() for i in max(self.source[g] for g in ['genQG','genAG'])]
+        return 1 if dPg<dPq else None
+
+class w_G(wrappedChain.calculable) :
     def update(self,_) :
-        self.value = 1 if self.source['genQG'] else None
-##############################
-class wAG(wrappedChain.calculable) :
-    def update(self,_) :
-        self.value = 1 if self.source['genAG'] else None
+        self.value = ( 1 if self.source[self.qtype]
+                       and self.source['genP4'][self.source['genIndexTtbarExtraJet']].pt() > self.source['qPtMin']
+                       else None )
+class wQG(w_G) : qtype = 'genQG'
+class wAG(w_G) : qtype = 'genAG'
 ##############################
 class genIndicesHardPartons(wrappedChain.calculable) :
     def __init__(self, ttType ) :
@@ -45,11 +55,12 @@ class gen_G(wrappedChain.calculable) :
         if self.source['isRealData'] : self.value = (); return
         ids = self.source['genPdgId']
         iHard = self.source['genIndicesHardPartons']
-        iQg = (next((i for i in iHard if self.lo<ids[i]<self.up ), None),
+        iQg = (next((i for i in iHard if self.lo <= ids[i] <= self.up ), None),
                next((i for i in iHard if ids[i]==21), None))
         self.value = iQg if None not in iQg else ()
-class genQG(gen_G) : self.lo,self.up = 0,7
-class genAG(gen_G) : self.lo,self.up = -7,0
+class genQG(gen_G) : lo,up = 1,6
+class genAG(gen_G) : lo,up = -6,1
+class genGG(gen_G) : lo,up = 21,21
 ##############################
 class qDir(wrappedChain.calculable) :
     def update(self,_) :
