@@ -7,7 +7,9 @@ class qPtMin(wrappedChain.calculable) :
 ##############################
 class wGG(wrappedChain.calculable) :
     def update(self,_) :
-        self.value = None if any(self.source[g] for g in ['wQQ','wQG','wAG']) else 1
+        wOther = [self.source[g] for g in ['wQQ','wQG','wAG']]
+        self.value = None if any(wOther) else 1
+        if not self.value : assert wOther.count(None)==2
 class wQQ(wrappedChain.calculable) :
     def update(self,_) :
         self.value = ( 1 if self.source['genQQbar'] else
@@ -59,7 +61,7 @@ class gen_G(wrappedChain.calculable) :
                next((i for i in iHard if ids[i]==21), None))
         self.value = iQg if None not in iQg else ()
 class genQG(gen_G) : lo,up = 1,6
-class genAG(gen_G) : lo,up = -6,1
+class genAG(gen_G) : lo,up = -6,-1
 class genGG(wrappedChain.calculable) :
     def update(self,_) :
         self.value = self.source['genIndicesHardPartons'] if not any(self.source[g] for g in ['genQQbar','genQG','genAG']) else tuple()
