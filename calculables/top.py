@@ -526,11 +526,9 @@ class genTopP4(wrappedChain.calculable) :
     def update(self,_) :
         indices = self.source['genTTbarIndices']
         p4 = self.source['genP4']
-        qqbar = self.source['genQQbar']
         qg = max(self.source['genQG'],self.source['genAG'])
         self.value = { 't':p4[indices['t']],
                        'tbar':p4[indices['tbar']],
-                       'quark':p4[qqbar[0] if qqbar else qg[0] if qg else self.source['genIndicesHardPartons'][0]],
                        'lepton': p4[indices['lplus']] if indices['lplus'] else p4[indices['lminus']] if indices['lminus'] else None,
                        'neutrino': None,
                        'p' : p4[indices['q'][0]] if indices['q'] else None,
