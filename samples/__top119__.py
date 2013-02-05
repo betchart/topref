@@ -7,7 +7,7 @@ singleT = srm_burt + '/2013_01_25_01_59_33/%s_%s_TuneZ2star_8TeV-powheg-tauola.S
 ttj_ph = '2013_01_25_01_25_48/TT_CT10_TuneZ2star_8TeV-powheg-tauola.Summer12_DR53X-PU_S10_START53_V7A-v%d.AODSIM'
 
 top119.add("ttj_ph", '+'.join(['%s/%s")'%(srm_burt,ttj_ph%v) for v in [1,2]]), xs = 211.0 )
-#top119.add("ttj_mn", '%s/2013_01_15_05_49_45/")'%srm_burt, xs = 211.1 )
+top119.add("ttj_mn", '%s/2013_02_04_22_38_13/")'%srm_burt, xs = 211.1 )
 
 top119.add("top_s_ph", singleT%('T','s-channel'), xs = 2.82 )
 top119.add("top_t_ph", singleT%('T','t-channel'), xs = 47.0 )
