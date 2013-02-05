@@ -136,7 +136,8 @@ class topAsymm(supy.analysis) :
             calculables.muon.Indices(mu),
             calculables.electron.Indices(el),
 
-            calculables.gen.genIndicesHardPartons(),
+            calculables.gen.genIndicesHardPartons({'ph':'POWHEG','mn':'MC@NLO'}[pars['toptype']]),
+            calculables.gen.genIndexTtbarExtraJet({'ph':'POWHEG','mn':'MC@NLO'}[pars['toptype']]),
             calculables.top.TopJets( jet ),
             calculables.top.TopLeptons( lepton ),
             calculables.top.TopReconstruction(),

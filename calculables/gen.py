@@ -34,12 +34,12 @@ class genIndicesHardPartons(wrappedChain.calculable) :
     def update(self,_) : pass
 ##############################
 class genIndexTtbarExtraJet(wrappedChain.calculable) :
-    def __init__(self, ttType ) :
-        self.vFunc = {'POWHEG':self.powhegValue,
-                      'MC@NLO':self.mcanloValue}[ttType]
+    def __init__(self, ttType ) : self.ttType = ttType
     def powhegValue(self) : return 8 if self.source['genMotherIndex'][8]==4 else None
     def mcanloValue(self) : return 2 if abs(self.source['genPdgId'][2])!=6 else None
-    def update(self,_) : self.value = self.vFunc()
+    def update(self,_) :
+        self.value = {'POWHEG':self.powhegValue,
+                      'MC@NLO':self.mcanloValue}[self.ttType]()
 ##############################
 class genQQbar(wrappedChain.calculable) :
     '''Indices of quark and antiquark in hard collision'''
@@ -47,7 +47,7 @@ class genQQbar(wrappedChain.calculable) :
         if self.source['isRealData'] : self.value = (); return
         ids = list(self.source['genPdgId'])
         iQQ = tuple(sorted(self.source['genIndicesHardPartons'],key = ids.__getitem__,reverse = True))
-        self.value = iQQ if not sum(iQQ) else tuple()
+        self.value = iQQ if not sum(ids[i] for i in iQQ) else tuple()
 ##############################
 class gen_G(wrappedChain.calculable) :
     '''Indices of (anti)quark and gluon in hard collision.'''
@@ -60,7 +60,9 @@ class gen_G(wrappedChain.calculable) :
         self.value = iQg if None not in iQg else ()
 class genQG(gen_G) : lo,up = 1,6
 class genAG(gen_G) : lo,up = -6,1
-class genGG(gen_G) : lo,up = 21,21
+class genGG(wrappedChain.calculable) :
+    def update(self,_) :
+        self.value = self.source['genIndicesHardPartons'] if not any(self.source[g] for g in ['genQQbar','genQG','genAG']) else tuple()
 ##############################
 class qDir(wrappedChain.calculable) :
     def update(self,_) :
