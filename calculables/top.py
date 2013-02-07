@@ -875,6 +875,9 @@ class ttSymmAnti(calculables.secondary) :
         optstat = r.gStyle.GetOptStat()
         r.gStyle.SetOptStat(0)
 
+        if 'ttj_' not in self.outputFileName :
+            print "Run just tt samples for ttSymmAnti report"
+            return
         ttname,_,weight = '_'.join(self.outputFileName.split('/')[-1].split('_')[:-1]).split('.')
         samples = ['%s.w%s.%s'%(ttname,s,weight) for s in ['GG','QG','QQ','AG']]
         names = ['%s#rightarrow^{}t#bar{t} '%i for i in ['gg','qg','q#bar{q}','#bar{q}g']]
