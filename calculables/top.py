@@ -526,11 +526,9 @@ class genTopP4(wrappedChain.calculable) :
     def update(self,_) :
         indices = self.source['genTTbarIndices']
         p4 = self.source['genP4']
-        qqbar = self.source['genQQbar']
         qg = max(self.source['genQG'],self.source['genAG'])
         self.value = { 't':p4[indices['t']],
                        'tbar':p4[indices['tbar']],
-                       'quark':p4[qqbar[0] if qqbar else qg[0] if qg else self.source['genIndicesHardPartons'][0]],
                        'lepton': p4[indices['lplus']] if indices['lplus'] else p4[indices['lminus']] if indices['lminus'] else None,
                        'neutrino': None,
                        'p' : p4[indices['q'][0]] if indices['q'] else None,
@@ -607,13 +605,13 @@ class ttDecayMode(wrappedChain.calculable) :
 class genTTbarIndices(wrappedChain.calculable) :
     def update(self,_) :
         ids = [i for i in self.source['genPdgId']]
-        mom = self.source['genMotherIndex']
+        mom = self.source['genMotherPdgId']
         self.value = dict([(name, ids.index(i)) for name,i in [('t',6),
                                                                ('tbar',-6),
                                                                ('wplus',24),
                                                                ('wminus',-24)
                                                                ]])
-        self.value.update(dict([ (w+"Child",filter(lambda i: mom[i]==self.value[w],range(len(ids)))) for w in ['wplus','wminus','t','tbar']]))
+        self.value.update(dict([ (w+"Child",filter(lambda i: mom[i]==ids[self.value[w]],range(len(ids)))) for w in ['wplus','wminus','t','tbar']]))
         self.value['b'] = next(i for i in self.value['tChild'] if abs(ids[i])!=24)
         self.value['bbar'] = next(i for i in self.value['tbarChild'] if abs(ids[i])!=24)
         self.value['lplus'] = next((i for i in self.value['wplusChild'] if ids[i] in [-11,-13]),None)
@@ -877,8 +875,12 @@ class ttSymmAnti(calculables.secondary) :
         optstat = r.gStyle.GetOptStat()
         r.gStyle.SetOptStat(0)
 
+        if 'ttj_' not in self.outputFileName :
+            print "Run just tt samples for ttSymmAnti report"
+            return
+        ttname,_,weight = '_'.join(self.outputFileName.split('/')[-1].split('_')[:-1]).split('.')
+        samples = ['%s.w%s.%s'%(ttname,s,weight) for s in ['GG','QG','QQ','AG']]
         names = ['%s#rightarrow^{}t#bar{t} '%i for i in ['gg','qg','q#bar{q}','#bar{q}g']]
-        samples = ['ttj_ph.w%s.pu'%s for s in ['GG','QG','QQ','AG']]
         colors = [r.kBlack,r.kBlue,r.kRed,r.kGreen]
 
         hists = [self.fromCache(samples, ['2_x_y'])[s]['2_x_y'] for s in samples]

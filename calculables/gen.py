@@ -1,73 +1,70 @@
 from supy import wrappedChain,utils,calculables
 import ROOT as r
 ##############################
-class wGG(wrappedChain.calculable) :
-    def update(self,_) :
-        self.value = None if any(self.source[g] for g in ['genQG','genQQbar','genAG']) else 1
-##############################
-class wQQ(wrappedChain.calculable) :
-    def update(self,_) :
-        self.value = 1 if self.source['genQQbar'] else None
-##############################
-class wQG(wrappedChain.calculable) :
-    def update(self,_) :
-        self.value = 1 if self.source['genQG'] else None
-##############################
-class wAG(wrappedChain.calculable) :
-    def update(self,_) :
-        self.value = 1 if self.source['genAG'] else None
-##############################
-class genIndicesHardPartons(wrappedChain.calculable) :
-    def __init__(self,indices = (4,5)) : self.value = indices
+class qPtMin(wrappedChain.calculable) :
+    def __init__(self,ptMin) : self.value = ptMin
     def update(self,_) : pass
 ##############################
+class wGG(wrappedChain.calculable) :
+    def update(self,_) :
+        wOther = [self.source[g] for g in ['wQQ','wQG','wAG']]
+        self.value = None if any(wOther) else 1
+        if not self.value : assert wOther.count(None)==2
+class wQQ(wrappedChain.calculable) :
+    def update(self,_) :
+        self.value = ( 1 if self.source['genQQbar'] else
+                       None if any(self.source[g] for g in ['genGG','wAG','wQG']) else
+                       self.resumToQQ() )
+    def resumToQQ(self) :
+        p4 = self.source['genP4']
+        iEx = self.source['genIndexTtbarExtraJet']
+        dPq,dPg = [ (p4[i]-p4[iEx]).P() for i in max(self.source[g] for g in ['genQG','genAG'])]
+        return 1 if dPg<dPq else None
+
+class w_G(wrappedChain.calculable) :
+    def update(self,_) :
+        self.value = ( 1 if self.source[self.qtype]
+                       and self.source['genP4'][self.source['genIndexTtbarExtraJet']].pt() > self.source['qPtMin']
+                       else None )
+class wQG(w_G) : qtype = 'genQG'
+class wAG(w_G) : qtype = 'genAG'
+##############################
+class genIndicesHardPartons(wrappedChain.calculable) :
+    def __init__(self, ttType ) :
+        self.value = {'POWHEG':(4,5),
+                      'MC@NLO':(0,1)}[ttType]
+    def update(self,_) : pass
+##############################
+class genIndexTtbarExtraJet(wrappedChain.calculable) :
+    def __init__(self, ttType ) : self.ttType = ttType
+    def powhegValue(self) : return 8 if self.source['genMotherIndex'][8]==4 else None
+    def mcanloValue(self) : return 2 if abs(self.source['genPdgId'][2])!=6 else None
+    def update(self,_) :
+        self.value = {'POWHEG':self.powhegValue,
+                      'MC@NLO':self.mcanloValue}[self.ttType]()
+##############################
 class genQQbar(wrappedChain.calculable) :
-    '''Index of quark and of antiquark with hard collision'''
+    '''Indices of quark and antiquark in hard collision'''
     def update(self,_) :
         if self.source['isRealData'] : self.value = (); return
         ids = list(self.source['genPdgId'])
-        iHard = self.source['genIndicesHardPartons']
-        self.value = tuple(sorted(iHard,key = ids.__getitem__,reverse = True)) \
-                     if not sum([ids[i] for i in iHard]) else tuple()
+        iQQ = tuple(sorted(self.source['genIndicesHardPartons'],key = ids.__getitem__,reverse = True))
+        self.value = iQQ if not sum(ids[i] for i in iQQ) else tuple()
 ##############################
-class genQG(wrappedChain.calculable) :
-    '''Index of (anti)quark and of gluon with hard collision.'''
+class gen_G(wrappedChain.calculable) :
+    '''Indices of (anti)quark and gluon in hard collision.'''
     def update(self,_) :
         if self.source['isRealData'] : self.value = (); return
         ids = self.source['genPdgId']
         iHard = self.source['genIndicesHardPartons']
-        iQg = (next((i for i in iHard if ids[i] in range(1,7)), None),
+        iQg = (next((i for i in iHard if self.lo <= ids[i] <= self.up ), None),
                next((i for i in iHard if ids[i]==21), None))
         self.value = iQg if None not in iQg else ()
-##############################
-class genAG(wrappedChain.calculable) :
-    '''Index of (anti)quark and of gluon with hard collision.'''
+class genQG(gen_G) : lo,up = 1,6
+class genAG(gen_G) : lo,up = -6,-1
+class genGG(wrappedChain.calculable) :
     def update(self,_) :
-        if self.source['isRealData'] : self.value = (); return
-        ids = self.source['genPdgId']
-        iHard = self.source['genIndicesHardPartons']
-        iAg = (next((i for i in iHard if ids[i] in range(-6,0)), None),
-               next((i for i in iHard if ids[i]==21), None))
-        self.value = iAg if None not in iAg else ()
-##############################
-class genQuark(wrappedChain.calculable) :
-    '''Indices of non-top quarks resulting from hard interaction.'''
-    def update(self,_) :
-        iHard = self.source["genIndicesHardPartons"]
-        moms = self.source['genMotherIndex']
-        iHardMax = max(iHard)
-        self.value = sorted([i for i,(id,imom) in enumerate(zip(self.source['genPdgId'],
-                                                                self.source['genMotherIndex']))
-                             if iHardMax<i and imom in iHard and abs(id) in range(1,6)])
-##############################
-class genGlu(wrappedChain.calculable) :
-    '''Indices of gluons resulting from hard interaction.'''
-    def update(self,_) :
-        iHardMax = max(self.source["genIndicesHardPartons"])
-        self.value = sorted([i for i,(id,s) in enumerate(zip(self.source['genPdgId'],
-                                                             self.source['genStatus'])) if id==21 and s==3 and iHardMax<i],
-                            reverse=True,
-                            key = lambda i: self.source['genP4'].at(i).Pt() )
+        self.value = self.source['genIndicesHardPartons'] if not any(self.source[g] for g in ['genQQbar','genQG','genAG']) else tuple()
 ##############################
 class qDir(wrappedChain.calculable) :
     def update(self,_) :
@@ -80,67 +77,6 @@ class genSumP4(wrappedChain.calculable) :
         iHard = self.source['genIndicesHardPartons']
         self.value = genP4.at(iHard[0]) + genP4.at(iHard[1])
 ##############################
-class genIndices(wrappedChain.calculable) :
-    @property
-    def name(self) : return "genIndices" + self.label
-
-    def __init__(self, pdgs = [], label = None, status = [], motherPdgs = []) :
-        self.label = label
-        self.PDGs = frozenset(pdgs)
-        self.status = frozenset(status)
-        self.motherPdgs = frozenset(motherPdgs)
-        self.moreName = "; ".join(["pdgId in %s" %str(list(self.PDGs)),
-                                   "status in %s"%str(list(self.status)),
-                                   "motherPdg in %s"%str(list(self.motherPdgs))
-                                   ])
-
-    def update(self,_) :
-        pdg = self.source["genPdgId"]
-        status = self.source["genStatus"]
-        motherPdg = self.source["genMotherPdgId"]
-        self.value = filter( lambda i: ( (not self.PDGs) or (pdg.at(i) in self.PDGs) ) and \
-                                 ( (not self.status) or (status.at(i) in self.status) ) and \
-                                 ( (not self.motherPdgs) or (motherPdg.at(i) in self.motherPdgs) ),
-                             range(pdg.size()) )
-
-class genIndicesPtSorted(wrappedChain.calculable) :
-    @property
-    def name(self) :
-        return "%sPtSorted"%self.label
-
-    def __init__(self, label = "") :
-        self.label = "genIndices"+label
-
-    def update(self,_) :
-        p4 = self.source["genP4"]
-        self.value = sorted(self.source[self.label], key = lambda i:p4.at(i).pt(), reverse = True)
-
-class genRootSHat(wrappedChain.calculable) :
-    def update(self,_) :
-        iHard = self.source["genIndicesHardPartons"]
-        p4s = self.source["genP4"]
-        self.value = None if not iHard else (p4s.at(iHard[0])+p4s.at(iHard[1])).mass()
-
-class genSumPt(wrappedChain.calculable) :
-    @property
-    def name(self) :
-        return "_".join(["genSumPt"]+self.indexLabels)
-
-    def __init__(self, indexLabels = []) :
-        self.indexLabels = map(lambda s:s.replace("genIndices",""), indexLabels)
-
-    def update(self,_) :
-        indices = []
-        for label in self.indexLabels :
-            indices += self.source["genIndices"+label]
-        indices = set(indices)
-
-        self.value = 0.0
-        p4 = self.source["genP4"]
-        for i in indices :
-            self.value += p4.at(i).pt()
-
-##############################
 class genIndicesB(wrappedChain.calculable) :
     def update(self,_) :
         ids = self.source['genPdgId']
@@ -151,15 +87,6 @@ class genIndicesWqq(wrappedChain.calculable) :
         ids = self.source['genPdgId']
         mom = self.source['genMotherPdgId']
         self.value = filter(lambda i: abs(mom[i]) is 24 and abs(ids[i]) < 5, range(len(ids)))
-##############################
-class genIndicesStatus3NoStatus3Daughter(wrappedChain.calculable) :
-    def update(self,_) :
-        status = self.source["genStatus"]
-        mother = self.source["genMotherIndex"]
-
-        status3List = filter( lambda i: status.at(i)==3, range(status.size()) )
-        motherIndices = set([mother[i] for i in status3List])
-        self.value = filter( lambda i: i not in motherIndices, status3List )
 ##############################
 class qDirExpectation(calculables.secondary) :
     var = ""
