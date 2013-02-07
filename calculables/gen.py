@@ -2,7 +2,7 @@ from supy import wrappedChain,utils,calculables
 import ROOT as r
 ##############################
 class qPtMin(wrappedChain.calculable) :
-    value = 40 #GeV
+    def __init__(self,ptMin) : self.value = ptMin
     def update(self,_) : pass
 ##############################
 class wGG(wrappedChain.calculable) :

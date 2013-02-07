@@ -37,7 +37,7 @@ class topAsymm(supy.analysis) :
         bCut = {"normal"   : {"index":0, "min":csvWP['CSVM']},
                 "inverted" : {"index":0, "min":csvWP['CSVL'], "max":csvWP['CSVM']}}
 
-        return { "vary" : ['selection','lepton','toptype','putarget'],
+        return { "vary" : ['selection','lepton','toptype','putarget','ptscale'],
                  "discriminant2DPlots": True,
                  "bVar" : "CSV", # "Combined Secondary Vertex"
                  "objects" : dict([(item,(item,'')) for item in ['jet','mu','el','met']]),
@@ -46,7 +46,8 @@ class topAsymm(supy.analysis) :
                  "selection" : self.vary({"top" : {"bCut":bCut["normal"],  "iso":"isoNormal"},
                                           "QCD" : {"bCut":bCut["normal"],  "iso":"isoInvert"}
                                           }),
-                 "toptype" : self.vary({"ph":"ph"}),
+                 "toptype" : self.vary({"ph":"ph",'mn':'mn'}),
+                 "ptscale" : self.vary({"40":40,"80":80}),
                  "putarget" : self.vary({"c":""}),#,"u":"_up","d":"_down"}),
                  "topBsamples": ("ttj_%s",['ttj_%s.wGG.%s','ttj_%s.wQG.%s','ttj_%s.wAG.%s','ttj_%s.wQQ.%s']),
                  "smear" : "Smear",
@@ -138,6 +139,7 @@ class topAsymm(supy.analysis) :
 
             calculables.gen.genIndicesHardPartons({'ph':'POWHEG','mn':'MC@NLO'}[pars['toptype']]),
             calculables.gen.genIndexTtbarExtraJet({'ph':'POWHEG','mn':'MC@NLO'}[pars['toptype']]),
+            calculables.gen.qPtMin(pars['ptscale']),
             calculables.top.TopJets( jet ),
             calculables.top.TopLeptons( lepton ),
             calculables.top.TopReconstruction(),
@@ -192,7 +194,6 @@ class topAsymm(supy.analysis) :
         return (
             [ssteps.printer.progressPrinter()
              , ssteps.histos.value("genQ",200,0,1000,xtitle="#hat{Q} (GeV)").onlySim()
-             #, steps.top.subProcessClassification(40).onlySim()
              #, steps.top.fractions().disable(saDisable)
              , getattr(self,pars['reweights']['func'])(pars)
              , calculables.top.ttSymmAnti(pars['sample'], inspect=True).disable(saDisable)
@@ -202,7 +203,7 @@ class topAsymm(supy.analysis) :
              , ssteps.histos.symmAnti('tt','genTopQueuedBin7',49,-1,1).disable(saDisable)
 
              ####################################
-             , ssteps.filters.label('selection'),
+             , ssteps.filters.label('selection').invert(),
              ssteps.filters.value("mvaTrigV0Exists",min=True),
              ssteps.filters.value("muHandleValid",min=True),
              ssteps.filters.multiplicity( max=1, min=1, var = "Charge".join(lepton)),
@@ -376,7 +377,7 @@ class topAsymm(supy.analysis) :
         else:
             org.mergeSamples(targetSpec = {"name":"El.2012", "color":r.kBlack, "markerStyle":20}, sources = self.electrons('.jw'))
             
-        org.mergeSamples(targetSpec = {"name":"t#bar{t}", "color":r.kViolet}, sources=["ttj_%s.%s.%s"%(tt,s,rw) for s in ['wQQ','wQG','wAG','wGG']])#, keepSources = True)
+        #org.mergeSamples(targetSpec = {"name":"t#bar{t}", "color":r.kViolet}, sources=["ttj_%s.%s.%s"%(tt,s,rw) for s in ['wQQ','wQG','wAG','wGG']])#, keepSources = True)
         org.mergeSamples(targetSpec = {"name":"W+jets", "color":28}, allWithPrefix = 'w')
         org.mergeSamples(targetSpec = {"name":"DY+jets", "color":r.kYellow}, allWithPrefix="dy")
         org.mergeSamples(targetSpec = {"name":"Single top", "color":r.kGray}, sources = ["%s.%s"%(s,rw) for s in self.single_top()])
