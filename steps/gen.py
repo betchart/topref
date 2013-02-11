@@ -44,3 +44,12 @@ class topPrinter(analysisStep) :
         print
         if abs(tt.E() - (p4s[4]+p4s[5]).E())>0.5 : print (50*' '), "2 -> 3+"
 #####################################
+class qRecoilKinematics(analysisStep) :
+    def uponAcceptance(self,ev) :
+        index = ev["genIndexTtbarExtraJet"]
+        if index==None : return
+        p4 = ev['genP4'][index]
+        id = ev['genPdgId'][index]
+        label = ('g' if id==21 else 'q' if id>0 else 'qbar')
+        self.book.fill(p4.pt(), label + 'RecoilPt', 100, 0, 200, title = ';recoil %s.pt;events/bin'%label)
+        self.book.fill(p4.eta(),label + 'RecoilEta', 50, -5, 5, title = ';recoil %s.eta;events/bin'%label)

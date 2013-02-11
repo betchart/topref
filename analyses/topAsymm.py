@@ -47,7 +47,7 @@ class topAsymm(supy.analysis) :
                                           "QCD" : {"bCut":bCut["normal"],  "iso":"isoInvert"}
                                           }),
                  "toptype" : self.vary({"ph":"ph",'mn':'mn'}),
-                 "ptscale" : self.vary({"40":40,"80":80}),
+                 "ptscale" : self.vary({"20":20,"40":40}),
                  "putarget" : self.vary({"c":""}),#,"u":"_up","d":"_down"}),
                  "topBsamples": ("ttj_%s",['ttj_%s.wGG.%s','ttj_%s.wQG.%s','ttj_%s.wAG.%s','ttj_%s.wQQ.%s']),
                  "smear" : "Smear",
@@ -195,6 +195,7 @@ class topAsymm(supy.analysis) :
             [ssteps.printer.progressPrinter()
              , ssteps.histos.value("genQ",200,0,1000,xtitle="#hat{Q} (GeV)").onlySim()
              #, steps.top.fractions().disable(saDisable)
+             ,steps.gen.qRecoilKinematics().disable(saDisable)
              , getattr(self,pars['reweights']['func'])(pars)
              , calculables.top.ttSymmAnti(pars['sample'], inspect=True).disable(saDisable)
              , ssteps.histos.symmAnti('tt','genTopQueuedBin3',9,-1,1).disable(saDisable)
@@ -290,6 +291,11 @@ class topAsymm(supy.analysis) :
              , ssteps.histos.symmAnti('tt','fitTopQueuedBin5',25,-1,1)
              , ssteps.histos.symmAnti('tt','fitTopQueuedBin7',49,-1,1)
 
+             , ssteps.histos.symmAnti('tt','fitTopQueuedBin3',9,-1,1 , other = ('TridiscriminantWTopQCD',100,-1,1))
+             , ssteps.histos.symmAnti('tt','fitTopQueuedBin4',16,-1,1, other = ('TridiscriminantWTopQCD',100,-1,1))
+             , ssteps.histos.symmAnti('tt','fitTopQueuedBin5',25,-1,1, other = ('TridiscriminantWTopQCD',100,-1,1))
+             , ssteps.histos.symmAnti('tt','fitTopQueuedBin7',49,-1,1, other = ('TridiscriminantWTopQCD',100,-1,1))
+
              ])
     ########################################################################################
 
@@ -374,7 +380,7 @@ class topAsymm(supy.analysis) :
         else:
             org.mergeSamples(targetSpec = {"name":"El.2012", "color":r.kBlack, "markerStyle":20}, sources = self.electrons('.jw'))
             
-        #org.mergeSamples(targetSpec = {"name":"t#bar{t}", "color":r.kViolet}, sources=["ttj_%s.%s.%s"%(tt,s,rw) for s in ['wQQ','wQG','wAG','wGG']])#, keepSources = True)
+        org.mergeSamples(targetSpec = {"name":"t#bar{t}", "color":r.kViolet}, sources=["ttj_%s.%s.%s"%(tt,s,rw) for s in ['wQQ','wQG','wAG','wGG']], keepSources = True)
         org.mergeSamples(targetSpec = {"name":"W+jets", "color":28}, allWithPrefix = 'w')
         org.mergeSamples(targetSpec = {"name":"DY+jets", "color":r.kYellow}, allWithPrefix="dy")
         org.mergeSamples(targetSpec = {"name":"Single top", "color":r.kGray}, sources = ["%s.%s"%(s,rw) for s in self.single_top()])
@@ -415,12 +421,12 @@ class topAsymm(supy.analysis) :
 
         fileName = '%s/stats_%s.root'%(self.globalStem,org.tag)
         tfile = r.TFile.Open(fileName,'RECREATE')
-        grab = ['beamHaloCSCLooseHaloId', 'triD_v_sqtsumptopt']
+        grab = ['allweighted', 'TridiscriminantWTopQCD']
         for g in grab :
             tfile.mkdir(g).cd()
             for ss,hist in zip( org.samples,
                                 org.steps[next(org.indicesOfStepsWithKey(g))][g] ) :
-                if not hist or ss['name']=='Standard Model': continue
+                if not hist or ss['name']=='St.Model': continue
                 h = hist.Clone(statsname[ss['name']] if ss['name'] in statsname else ss['name'])
                 h.Write()
         tfile.Close()
