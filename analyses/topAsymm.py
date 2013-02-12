@@ -218,7 +218,6 @@ class topAsymm(supy.analysis) :
              ssteps.filters.value(bVar, indices = "IndicesBtagged".join(jet), **pars["selection"]["bCut"]),
              ssteps.filters.value('RelIso'.join(lepton), indices='Indices'.join(lepton), index=0, **lIsoMinMax),
              steps.trigger.singleLepton(lname=='mu')
-             #steps.trigger.efficiencyRatios(lname=='mu', jet)
              ####################################
              , ssteps.filters.label("selection complete")
              , steps.top.channelClassification().onlySim()
@@ -252,6 +251,9 @@ class topAsymm(supy.analysis) :
              , ssteps.histos.absEta("AdjustedP4".join(jet), 100,0,4, indices = "Indices".join(jet), index = 2)
              , ssteps.histos.absEta("AdjustedP4".join(jet), 100,0,4, indices = "Indices".join(jet), index = 3)
 
+             , ssteps.histos.value( 'RelIso'.join(lepton), 100,0,0.2, indices='Indices'.join(lepton), index=0 )
+             , ssteps.histos.value( bVar, 100,0,1, indices='IndicesBtagged'.join(jet), index=0 )
+
              ####################################
              #, steps.displayer.ttbar(jets=jet, met=obj['met'], muons = obj['mu'], electrons = obj['el'])
              , ssteps.filters.label('top reco')
@@ -275,21 +277,11 @@ class topAsymm(supy.analysis) :
              ####################################
 
              , ssteps.filters.label('signal distributions')
-             #, ssteps.histos.symmAnti('tt','genTopPhiBoost',100,-1,1).disable(saDisable)
-             #, ssteps.histos.symmAnti('tt','genTopDeltaBetazRel',100,-1,1).disable(saDisable)
-             #
-             #, ssteps.histos.symmAnti('tt','fitTopPhiBoost',100,-1,1, other = ('TridiscriminantWTopQCD',100,-1,1))
-             #, ssteps.histos.symmAnti('tt','fitTopDeltaBetazRel',100,-1,1, other = ('TridiscriminantWTopQCD',100,-1,1))
 
              , ssteps.histos.symmAnti('tt','genTopQueuedBin3',9,-1,1).disable(saDisable)
              , ssteps.histos.symmAnti('tt','genTopQueuedBin4',16,-1,1).disable(saDisable)
              , ssteps.histos.symmAnti('tt','genTopQueuedBin5',25,-1,1).disable(saDisable)
              , ssteps.histos.symmAnti('tt','genTopQueuedBin7',49,-1,1).disable(saDisable)
-
-             , ssteps.histos.symmAnti('tt','fitTopQueuedBin3',9,-1,1)
-             , ssteps.histos.symmAnti('tt','fitTopQueuedBin4',16,-1,1)
-             , ssteps.histos.symmAnti('tt','fitTopQueuedBin5',25,-1,1)
-             , ssteps.histos.symmAnti('tt','fitTopQueuedBin7',49,-1,1)
 
              , ssteps.histos.symmAnti('tt','fitTopQueuedBin3',9,-1,1 , other = ('TridiscriminantWTopQCD',100,-1,1))
              , ssteps.histos.symmAnti('tt','fitTopQueuedBin4',16,-1,1, other = ('TridiscriminantWTopQCD',100,-1,1))
@@ -386,7 +378,7 @@ class topAsymm(supy.analysis) :
         org.mergeSamples(targetSpec = {"name":"Single top", "color":r.kGray}, sources = ["%s.%s"%(s,rw) for s in self.single_top()])
         org.mergeSamples(targetSpec = {"name":"St.Model", "color":r.kGreen+2}, sources = ["t#bar{t}","W+jets","DY+jets","Single top","Multijet"], keepSources = True)
 
-        #self.skimStats(org)
+        self.skimStats(org)
 
         org.scale( lumiToUseInAbsenceOfData = 19590 )
 
@@ -421,7 +413,7 @@ class topAsymm(supy.analysis) :
 
         fileName = '%s/stats_%s.root'%(self.globalStem,org.tag)
         tfile = r.TFile.Open(fileName,'RECREATE')
-        grab = ['allweighted', 'TridiscriminantWTopQCD']
+        grab = ['allweighted'] + [p+suf for p in ['fitTopQueuedBin%dTridiscriminantWTopQCD'%d for d in [3,4,5,7]] for suf in ['','_symm','_anti']]
         for g in grab :
             tfile.mkdir(g).cd()
             for ss,hist in zip( org.samples,
@@ -487,7 +479,7 @@ class topAsymm(supy.analysis) :
         baseSamples = ['top.Single','top.DY']
 
         mfCanvas = r.TCanvas()
-        mfFileName = "%s/%s_measuredFractions"%(self.globalStem, lname )
+        mfFileName = "%s/measuredFractions_%s"%(self.globalStem, tagSuffix )
         supy.utils.tCanvasPrintPdf( mfCanvas, mfFileName, option = '[', verbose = False)
         with open(mfFileName+'.txt','w') as file : print >> file, ""
         
@@ -547,6 +539,7 @@ class topAsymm(supy.analysis) :
         org.drop('bg')
 
     def measureAmplitudes(self,tagsSuffix) :
+        tt,pu,ptMin = tagsSuffix.split('_')
         tags = ['%s_%s'%(lname,tagsSuffix) for lname in ['mu','el']]
         if not all( tag in self.orgMelded for tag in tags ):
             print next(tag for tag in tags if tag not in self.orgMelded ), "not in", self.orgMelded.keys()
@@ -557,7 +550,7 @@ class topAsymm(supy.analysis) :
         for org in orgMuEl :
             print ", ".join(ss["name"] for ss in org.samples if ss["name"] not in omitSamples)
         canvas = r.TCanvas()
-        maFileName = "%s/measuredAmplitudes"%(self.globalStem)
+        maFileName = "%s/measuredAmplitudes_%s"%(self.globalStem,tagsSuffix)
         supy.utils.tCanvasPrintPdf( canvas, maFileName, option = '[', verbose = False)
         with open(maFileName+'.txt','w') as file : print >> file, ""
 
@@ -591,7 +584,7 @@ class topAsymm(supy.analysis) :
                 return steps,cs
             except: print "measure() failed"
             
-        samples = ['top.ttj_%s.%s.%s'%(tt,w,rw) for w in ['wQQ','wQG','wAG']]
+        samples = ['top.ttj_%s.%s.%s'%(tt,w,pu) for w in ['wQQ','wQG','wAG']]
         measure('fitTopQueuedBin3','tt', samples[1:], sumTemplates=True)
         measure('fitTopQueuedBin4','tt', samples[1:], sumTemplates=True)
         measure('fitTopQueuedBin5','tt', samples[1:], sumTemplates=True)
