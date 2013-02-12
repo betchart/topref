@@ -146,7 +146,7 @@ class kinematics(analysisStep) :
         topReco = ev["TopReconstruction"]
         self.book.fill(ev[self.moreName+"TtxMass"], "TTX.mass", 50,300,1300, title = ";ttx invariant mass;events / bin")
         self.book.fill(ev[self.moreName+"PtSum"],   "TT.pt",   100,  0, 200, title = ";ttbar.pt;events / bin")
-        self.book.fill(ev[self.moreName+"RapiditySum"], "TT.y", 50, 0, 8, title = ";ttbar.rapidity;events / bin" )
+        self.book.fill(ev[self.moreName+"RapiditySum"], "TT.y", 50, 0, 3, title = ";ttbar.rapidity;events / bin" )
         self.book.fill( topReco[index]['hadTraw'].mass(), "rawHadTopMass", 100, 100,300, title = ";%s raw hadronic top mass;events / bin"%self.moreName)
         self.book.fill( topReco[index]['hadWraw'].mass(), "rawHadWMass", 100, 0,200, title = ";%s raw hadronic W mass;events / bin"%self.moreName)
 
