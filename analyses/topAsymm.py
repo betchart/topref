@@ -378,8 +378,6 @@ class topAsymm(supy.analysis) :
         org.mergeSamples(targetSpec = {"name":"Single top", "color":r.kGray}, sources = ["%s.%s"%(s,rw) for s in self.single_top()])
         org.mergeSamples(targetSpec = {"name":"St.Model", "color":r.kGreen+2}, sources = ["t#bar{t}","W+jets","DY+jets","Single top","Multijet"], keepSources = True)
 
-        self.skimStats(org)
-
         org.scale( lumiToUseInAbsenceOfData = 19590 )
 
         names = [ss["name"] for ss in org.samples]
@@ -398,17 +396,17 @@ class topAsymm(supy.analysis) :
         supy.plotter(org, pdfFileName = self.pdfFileName(org.tag+"_nolog"), doLog = False, **kwargs ).plotAll()
 
     def skimStats(self,org) :
-        statsname = {'DY+jets':'dy',
-                     'W+jets': 'wj',
-                     'Mullijet': 'qcd',
-                     't#bar{t}':'tt',
-                     'ttj_ph.wGG.pu':'ttgg',
-                     'ttj_ph.wQG.pu':'ttqg',
-                     'ttj_ph.wAG.pu':'ttag',
-                     'ttj_ph.wQQ.pu':'ttqq',
-                     'Single top' : 'st',
-                     'Mu.2012': 'mu',
-                     'El.2012': 'el'
+        _,lepton,tt,pu,pt = org.tag.split('_')
+        statsname = {'top.DY':'dy',
+                     'top.W': 'wj',
+                     'QCD.multijet': 'qcd',
+                     'top.t#bar{t}':'tt',
+                     'top.ttj_%s.wGG.pu'%tt:'ttgg',
+                     'top.ttj_%s.wQG.pu'%tt:'ttqg',
+                     'top.ttj_%s.wAG.pu'%tt:'ttag',
+                     'top.ttj_%s.wQQ.pu'%tt:'ttqq',
+                     'top.Single' : 'st',
+                     'top.Data 2012': 'data'
                      }
 
         fileName = '%s/stats_%s.root'%(self.globalStem,org.tag)
@@ -418,7 +416,7 @@ class topAsymm(supy.analysis) :
             tfile.mkdir(g).cd()
             for ss,hist in zip( org.samples,
                                 org.steps[next(org.indicesOfStepsWithKey(g))][g] ) :
-                if not hist or ss['name']=='St.Model': continue
+                if not hist or ss['name'] in ['St.Model','S.M.']: continue
                 h = hist.Clone(statsname[ss['name']] if ss['name'] in statsname else ss['name'])
                 h.Write()
         tfile.Close()
@@ -474,7 +472,7 @@ class topAsymm(supy.analysis) :
 
         self.orgMelded[tagSuffix] = supy.organizer.meld(organizers = organizers)
         org = self.orgMelded[tagSuffix]
-        #self.skimStats(org)
+        self.skimStats(org)
         templateSamples = ['top.t#bar{t}','top.W','QCD.multijet']
         baseSamples = ['top.Single','top.DY']
 
