@@ -452,7 +452,9 @@ class topAsymm(supy.analysis) :
                                            ["w%dj_mg"%n for n in [1,2,3,4]]),
                        "QCD_"+tagSuffix : ( { 'mu':self.muons('.jw'),
                                               'el':self.electrons('.jw')}[lname] +
-                                            ["ttj_%s"%tt] ) }
+                                            ["ttj_%s"%tt]+self.single_top()+
+                                            ["w%dj_mg"%n for n in [1,2,3,4]]),
+                       }
 
         organizers = [supy.organizer(tag, [s for s in self.sampleSpecs(tag) if any(item in s['name'] for item in meldSamples[tag])])
                       for tag in [p['tag'] for p in self.readyConfs if p["tag"] in meldSamples]]
@@ -466,9 +468,10 @@ class topAsymm(supy.analysis) :
             org.mergeSamples(targetSpec = {"name":"Data 2012", "color":r.kBlack, "markerStyle":20}, sources={'mu':self.muons('.jw'),'el':self.electrons('.jw')}[lname])
             org.scale()
             if "QCD_" in org.tag :
+                sm = ['t#bar{t}','W','Single']
                 org.mergeSamples(targetSpec = {"name":"multijet","color":r.kBlue},
-                                 sources=["Data 2012",'t#bar{t}'],
-                                 scaleFactors = [1,-self.scaleFactor()],
+                                 sources=["Data 2012"]+sm,
+                                 scaleFactors = [1]+len(sm)*[-self.scaleFactor()],
                                  force=True, keepSources = False)
 
         self.orgMelded[tagSuffix] = supy.organizer.meld(organizers = organizers)
