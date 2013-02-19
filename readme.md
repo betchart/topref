@@ -4,7 +4,12 @@ This project is a satellite of [supy](https://github.com/elaird/supy) for [TopRe
 [GPLv3](http://www.gnu.org/licenses/gpl.html)
 
 ## Dependencies
-[supy](https://github.com/elaird/supy) dependencies: [ROOT](http://root.cern.ch) (>=5.27.06) and Python (2.x, x>=6) with ROOT bindings.
+[supy](https://github.com/elaird/supy) dependencies: 
+* Python (2.x, x>=6)
+* [ROOT](http://root.cern.ch) (>=5.27.06) with PyROOT enabled
+
+Further dependencies:
+* NumPy and [SciPy](http://www.scipy.org)
 
 CMSSW is not required, but is often the easiest way to get functioning PyROOT.
 
