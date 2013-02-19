@@ -1,10 +1,10 @@
-This project is a satellite of [supy](github.com/elaird/supy) for [TopRef](http://cmssw.cvs.cern.ch/cgi-bin/cmssw.cgi/UserCode/Betchart/TopRefTuple/) format TTrees.
+This project is a satellite of [supy](https://github.com/elaird/supy) for [TopRef](http://cmssw.cvs.cern.ch/cgi-bin/cmssw.cgi/UserCode/Betchart/TopRefTuple/) format TTrees.
 
 # License
 GPLv3 (http://www.gnu.org/licenses/gpl.html)
 
 # Dependencies
-[supy](github.com/elaird/supy) dependencies: [ROOT](http://root.cern.ch) (>=5.27.06) and python (2.x, x>=6).
+[supy](https://github.com/elaird/supy) dependencies: [ROOT](http://root.cern.ch) (>=5.27.06) and python (2.x, x>=6) with ROOT bindings.
 CMSSW is not required, but is often the easiest way to get functioning PyROOT.
 
 # Quickstart
