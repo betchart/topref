@@ -20,6 +20,18 @@ class AdjustedP4(wrappedChain.calculable) :
         self.value = ( utils.hackMap(self.jes, self.source[self.P4], self.source[self.JecFactor], self.source[self.JecUnc]) if self.source['isRealData'] else
                        utils.hackMap(self.smear, self.source[self.P4], self.source[self.Smear]) )
 ##############################
+class DeltaMETJEC(wrappedChain.calculable) :
+    def __init__(self, collection = None) :
+        self.fixes = collection
+        self.stashed = ['P4','JecFactor','JecUnc']
+        self.stash(self.stashed)
+
+    @staticmethod
+    def delta(p4,fac,unc) : return p4 * (-unc/fac)
+
+    def update(self,_) :
+        self.value = sum(utils.hackMap(self.delta, *[self.source[item] for item in self.stashed]), utils.LorentzV())
+##############################
 class Pt(wrappedChain.calculable) :
     def __init__(self,collection=None) :
         self.fixes = collection
