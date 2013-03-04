@@ -30,7 +30,7 @@ class DeltaMETJEC(wrappedChain.calculable) :
     def delta(p4,fac,unc) : return p4 * (-unc/fac)
 
     def update(self,_) :
-        self.value = sum(utils.hackMap(self.delta, *[self.source[item] for item in self.stashed]), utils.LorentzV())
+        self.value = sum(utils.hackMap(self.delta, *[self.source[getattr(self,item)] for item in self.stashed]), utils.LorentzV())
 ##############################
 class Pt(wrappedChain.calculable) :
     def __init__(self,collection=None) :
