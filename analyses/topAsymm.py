@@ -12,7 +12,6 @@ class topAsymm(supy.analysis) :
     1: ^finegrain : prime top.top : RawMassWTopCorrectPQBTwoDChiSquared,jetCSVProbabilityGivenBQN,LTopUnfitSqrtChi2CombinationsLR
     2: ^finegrain : prime top.top : HTopSigmasPQBCombinationsLR
     3: ^finegrain : prime needed  : TridiscriminantWTopQCD
-    4: ^genTop    : prime top.top : TridiscriminantGGqqGq
     5.            : *
     '''
 
@@ -196,7 +195,7 @@ class topAsymm(supy.analysis) :
         return (
             [ssteps.printer.progressPrinter()
              , ssteps.histos.value("genQ",200,0,1000,xtitle="#hat{Q} (GeV)").onlySim()
-             ,steps.gen.qRecoilKinematics().disable(saDisable)
+             , steps.gen.qRecoilKinematics().disable(saDisable)
              , getattr(self,pars['reweights']['func'])(pars)
              , calculables.top.ttSymmAnti(pars['sample'], inspect=True).disable(saDisable)
              , ssteps.histos.symmAnti('tt','genTopQueuedBin7',49,-1,1).disable(saDisable)
@@ -378,7 +377,7 @@ class topAsymm(supy.analysis) :
 
         fileName = '%s/stats_%s.root'%(self.globalStem,org.tag)
         tfile = r.TFile.Open(fileName,'RECREATE')
-        grab = (['lumiHisto','xsHisto','allweighted'] +
+        grab = (['lumiHisto','xsHisto','allweighted','2_x_y','fitTopPtOverSumPt_triD','fitTopTanhRapiditySum_triD','fitTopTanhAvgAbsSumRapidities_triD'] +
                 [p+suf for p in ['fitTopQueuedBin%dTridiscriminantWTopQCD'%d for d in [7]] for suf in ['','_symm','_anti']])
         for g in grab :
             tfile.mkdir(g).cd()
@@ -499,7 +498,6 @@ class topAsymm(supy.analysis) :
         templateSamples = ['top.ttj_%s.%s.pu'%(tt,s) for s in ['wGG','wQQ','wQG','wAG']]
         org.mergeSamples(targetSpec = {"name":'qgag'}, sources = templateSamples[2:], keepSources = True, force = True)
         templateSamples = templateSamples[:-2] + ['qgag']
-        #distTup,cs = map(measureFractions,["fitTopPtOverSumPt","fitTopPtPlusSumPt","fitTopAbsSumRapidities","TridiscriminantGGqqGq"][:-1])[0]
         supy.utils.tCanvasPrintPdf( mfCanvas, mfFileName, option = ']')
         org.drop('qgag')
 
