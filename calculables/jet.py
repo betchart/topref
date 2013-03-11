@@ -240,9 +240,6 @@ class ScalingBQN(calculables.secondary) :
             etaBin = self.etaBin( abs(p4[i].eta()) )
             ptRatio = math.log( genP4[iGen[i]].E() / p4[i].E() )
             binPt = min( 300-1e-6, p4[i].pt())
-            self.book.fill( (binPt,ptRatio), jetType+str(etaBin), 50, 0, 300, title = "%s, %.3f<|#eta|<%.3f;pt;<log(E.parton/E.jet)>"%(jetType,
-                                                                                                                                       self.etasMax[etaBin-1] if etaBin else 0,
-                                                                                                                                       self.etasMax[etaBin]))
             self.book.fill( (binPt,ptRatio), jetType+str(etaBin)+'_2', (50,80), (0,-0.4), (300,0.4), title = "%s, %.3f<|#eta|<%.3f;pt;<log(E.parton/E.jet)>"%(jetType,
                                                                                                                                                               self.etasMax[etaBin-1] if etaBin else 0,
                                                                                                                                                               self.etasMax[etaBin]))
