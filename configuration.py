@@ -35,3 +35,6 @@ def detectorSpecs() :
 
 def LorentzVectorType() :
     return ('PtEtaPhiM4D','Double32_t')
+
+def computeEntriesForReport() :
+    return False
