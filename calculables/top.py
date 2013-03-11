@@ -162,23 +162,6 @@ class SignQuarkZ(wrappedChain.calculable) :
     def update(self,_) :
         self.value = 0 if not self.source['wQQ'] else self.source['qDir']
 ######################################
-class RadiativeCoherence(wrappedChain.calculable) :
-    def __init__(self, collection = None ) :
-        self.fixes = collection
-        self.stash(['BoostZAlt','RecoIndex','SignQuarkZ'])
-
-    def update(self,_) :
-        jets = self.source["TopJets"]
-        topReco = self.source["TopReconstruction"][self.source[self.RecoIndex]]
-        boost = self.source[self.BoostZAlt]
-        thetaTop = boost(topReco['top' if self.source[self.SignQuarkZ]>0 else 'tbar']).theta()
-        p4 = self.source["AdjustedP4".join(jets)]
-        extraPtTheta = [ ( p4[i].pt(), boost(p4[i]).theta() )  for i in (set(self.source["Indices".join(jets)]) - set(topReco['iPQHL']))]
-        sumPtExtra = sum( pt for pt,theta in extraPtTheta )
-        sumPtExtraInCones = (sum( pt for pt,theta in extraPtTheta if theta < thetaTop ) +
-                             sum( pt for pt,theta in extraPtTheta if theta > math.pi - thetaTop ) )
-        self.value = None if not sumPtExtra else sumPtExtraInCones/sumPtExtra - 1
-######################################
 ######################################
 
 class genTopP4(wrappedChain.calculable) :
