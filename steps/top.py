@@ -146,15 +146,18 @@ class kinematics(analysisStep) :
         topReco = ev["TopReconstruction"]
         self.book.fill(ev[self.moreName+"TtxMass"], "TTX.mass", 50,300,1300, title = ";ttx invariant mass;events / bin")
         self.book.fill(ev[self.moreName+"PtSum"],   "TT.pt",   100,  0, 200, title = ";ttbar.pt;events / bin")
-        self.book.fill(ev[self.moreName+"RapiditySum"], "TT.y", 50, 0, 3, title = ";ttbar.rapidity;events / bin" )
+        self.book.fill(ev[self.moreName+"RapiditySum"], "TT.y", 50, 0, 3, title = ";|ttbar.y|;events / bin" )
+        self.book.fill(ev[self.moreName+"AbsSumRapidities"], "TT.y", 50, 0, 3, title = ";|t.y|+|tbar.y|;events / bin" )
         self.book.fill( topReco[index]['hadTraw'].mass(), "rawHadTopMass", 100, 100,300, title = ";%s raw hadronic top mass;events / bin"%self.moreName)
         self.book.fill( topReco[index]['hadWraw'].mass(), "rawHadWMass", 100, 0,200, title = ";%s raw hadronic W mass;events / bin"%self.moreName)
 
-        lo = (-1,0)
-        up = (1,1)
-        v = tuple( max(L,min(val,U-1e-6)) for val,L,U  in zip((ev['TridiscriminantWTopQCD'],
-                                                               ev[self.moreName+'SqrtPtOverSumPt']), lo, up) )
-        self.book.fill( v, 'triD_v_sqtsumptopt', (100,100), lo, up, title = ""  )
+        for var in  ["fitTopPtOverSumPt", "fitTopTanhRapiditySum", "fitTopTanhAvgAbsSumRapidities"] :
+            lo = (0,-1)
+            up = (1, 1)
+            v = tuple( max(L,min(val,U-1e-6)) for val,L,U  in zip((ev[var],ev['TridiscriminantWTopQCD']),lo, up) )
+            self.book.fill( v, '%s_triD'%var, (100,100), lo, up, title = ""  )
+            self.book.fill( v[0], var, (100), lo[0], up[0], title = ';%s;events / bin'%var )
+
 #####################################
 class resolutions(analysisStep) :
     def __init__(self,indexName) : self.moreName = indexName

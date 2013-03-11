@@ -67,12 +67,36 @@ class jsonMaker(analysisStep) :
         print "Wrote %.4f/pb json to : %s"%(self.lumi(json),self.outputFileName)
         print utils.hyphens
 #####################################
-class duplicateEventCheck(analysisStep) :
+class duplicateFileRunLumiCheck(analysisStep) :
     def __init__(self) :
-        self.events = collections.defaultdict(list)
+        self.runLumis = collections.defaultdict(set)
 
     def uponAcceptance(self,ev) :
-        self.events[(ev["run"], ev["lumiSection"])].append(ev["event"])
+        self.runLumis[ev['treeFileName']].add((ev['run'],ev['lumiSection']))
+
+    def varsToPickle(self) : return ["runLumis"]
+
+    def mergeFunc(self, products) :
+        for runLumis in products['runLumis'] : self.runLumis.update(runLumis)
+
+        runLumis = sorted(sum([list(runLumis) for runLumis in self.runLumis.values()],[]))
+        for key in sorted(set(runLumis)) :
+            runLumis.remove(key)
+        dups = set(runLumis)
+        print "N duplicate lumis", len(dups)
+        for dup in sorted(dups) :
+            print dup, [f for f,runLumis in self.runLumis.iteritems() if dup in runLumis]
+        print
+        print sorted(dups)
+
+class duplicateEventCheck(analysisStep) :
+    def __init__(self, onlyKeys = []) :
+        self.events = collections.defaultdict(list)
+        self.onlyKeys = onlyKeys
+
+    def uponAcceptance(self,ev) :
+        key = (ev['run'],ev['lumiSection'])
+        if key in self.onlyKeys or not self.onlyKeys:  self.events[key].append(ev["event"])
 
     def varsToPickle(self) : return ["events"]
 

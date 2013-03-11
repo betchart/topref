@@ -5,20 +5,32 @@ except: np = None
 
 ##############################
 class AdjustedP4(wrappedChain.calculable) :
-    def __init__(self, collection = None, smear = "", jesAbs = 1, jesRel = 0) :
+    def __init__(self, collection = None, smear = "", jec = 0 ) :
         self.fixes = collection
-        self.jesAbs,self.jesRel = jesAbs,jesRel
         self.Smear = smear.join(collection)
-        self.stash(['P4'])
-        self.moreName = "p4 * %s * %.2f * (1 + %.2f|eta|)" % (smear, jesAbs, jesRel)
+        self.jec = jec
+        self.stash(['P4','JecUnc','JecFactor'])
+        self.moreName = "p4 * %s * (1 + %d * jecUnc/jecFac)" % (smear, jec)
 
     @staticmethod
     def smear(p4,smear) : return p4*smear
-    def jes(self,p4) : return p4 * (self.jesAbs * (1+self.jesRel*abs(p4.eta())))
+    def jes(self,p4,fac,unc) : return p4 * ( 1 + self.jec * unc / fac )
 
     def update(self,_) :
-        self.value = ( utils.hackMap(self.jes, self.source[self.P4]) if self.source['isRealData'] else
+        self.value = ( utils.hackMap(self.jes, self.source[self.P4], self.source[self.JecFactor], self.source[self.JecUnc]) if self.source['isRealData'] else
                        utils.hackMap(self.smear, self.source[self.P4], self.source[self.Smear]) )
+##############################
+class DeltaMETJEC(wrappedChain.calculable) :
+    def __init__(self, collection = None) :
+        self.fixes = collection
+        self.stashed = ['P4','JecFactor','JecUnc']
+        self.stash(self.stashed)
+
+    @staticmethod
+    def delta(p4,fac,unc) : return p4 * (-unc/fac)
+
+    def update(self,_) :
+        self.value = sum(utils.hackMap(self.delta, *[self.source[getattr(self,item)] for item in self.stashed]), utils.LorentzV())
 ##############################
 class Pt(wrappedChain.calculable) :
     def __init__(self,collection=None) :

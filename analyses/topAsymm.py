@@ -12,7 +12,6 @@ class topAsymm(supy.analysis) :
     1: ^finegrain : prime top.top : RawMassWTopCorrectPQBTwoDChiSquared,jetCSVProbabilityGivenBQN,LTopUnfitSqrtChi2CombinationsLR
     2: ^finegrain : prime top.top : HTopSigmasPQBCombinationsLR
     3: ^finegrain : prime needed  : TridiscriminantWTopQCD
-    4: ^genTop    : prime top.top : TridiscriminantGGqqGq
     5.            : *
     '''
 
@@ -37,7 +36,8 @@ class topAsymm(supy.analysis) :
         bCut = {"normal"   : {"index":0, "min":csvWP['CSVM']},
                 "inverted" : {"index":0, "min":csvWP['CSVL'], "max":csvWP['CSVM']}}
 
-        return { "vary" : ['selection','lepton','toptype','putarget','ptscale'],
+        return { "vary" : ['selection','lepton','toptype','putarget','smear','jec','ptscale'],
+                 "nullvary": list(itertools.combinations(['pu','pd','ju','jd','su','sd','mn','40'],2)),
                  "discriminant2DPlots": True,
                  "bVar" : "CSV", # "Combined Secondary Vertex"
                  "objects" : dict([(item,(item,'')) for item in ['jet','mu','el','met']]),
@@ -48,9 +48,10 @@ class topAsymm(supy.analysis) :
                                           }),
                  "toptype" : self.vary({"ph":"ph",'mn':'mn'}),
                  "ptscale" : self.vary({"20":20,"40":40}),
-                 "putarget" : self.vary({"c":""}),#,"u":"_up","d":"_down"}),
+                 "putarget" : self.vary({"pn":"","pu":"_up","pd":"_down"}),
+                 "smear" : self.vary({'sn':"Smear",'su':'SmearUp','sd':'SmearDown'}),
+                 "jec" : self.vary({'jn':0,'ju':1,'jd':-1}),
                  "topBsamples": ("ttj_%s",['ttj_%s.wGG.%s','ttj_%s.wQG.%s','ttj_%s.wAG.%s','ttj_%s.wQQ.%s']),
-                 "smear" : "Smear",
                  }
 
     @staticmethod
@@ -129,7 +130,7 @@ class topAsymm(supy.analysis) :
                       for item,it in  [('jet','jet'),('electron','el'),('muon','mu')]], [])
         calcs += supy.calculables.fromCollections(calculables.top,[('genTop',""),('fitTop',"")])
         calcs += [
-            calculables.met.AdjustedP4(met, jet, pars['smear']),
+            calculables.met.AdjustedP4(met, jet, pars['smear'], djec=pars['jec']),
             calculables.jet.AdjustedP4(jet, pars['smear']),
             calculables.jet.Indices(jet,ptMin = 20 ),
             calculables.jet.IndicesBtagged(jet,pars["bVar"]),
@@ -194,15 +195,11 @@ class topAsymm(supy.analysis) :
         return (
             [ssteps.printer.progressPrinter()
              , ssteps.histos.value("genQ",200,0,1000,xtitle="#hat{Q} (GeV)").onlySim()
-             #, steps.top.fractions().disable(saDisable)
-             ,steps.gen.qRecoilKinematics().disable(saDisable)
+             , steps.gen.qRecoilKinematics().disable(saDisable)
              , getattr(self,pars['reweights']['func'])(pars)
              , calculables.top.ttSymmAnti(pars['sample'], inspect=True).disable(saDisable)
-             , ssteps.histos.symmAnti('tt','genTopQueuedBin3',9,-1,1).disable(saDisable)
-             , ssteps.histos.symmAnti('tt','genTopQueuedBin4',16,-1,1).disable(saDisable)
-             , ssteps.histos.symmAnti('tt','genTopQueuedBin5',25,-1,1).disable(saDisable)
              , ssteps.histos.symmAnti('tt','genTopQueuedBin7',49,-1,1).disable(saDisable)
-
+             , ssteps.histos.symmAnti('tt','genTopTanhDirectedDeltaYttbar', 100, -1, 1).disable(saDisable)
              ####################################
              , ssteps.filters.label('selection'),
              ssteps.filters.value("mvaTrigV0Exists",min=True),
@@ -263,9 +260,6 @@ class topAsymm(supy.analysis) :
              , ssteps.histos.value('TopFitLikelihoodIndex',10,-1.5,8.5)
              , ssteps.histos.value('TopFitLikelihoodCorrectIndex',10,-1.5,8.5)
 
-             , ssteps.filters.label('GGqqGq')
-             , self.tridiscriminant2(pars)
-
              , ssteps.filters.label('genTop')
              , steps.top.kinFitLook('genTopRecoIndex')
              , steps.top.resolutions('genTopRecoIndex')
@@ -277,15 +271,7 @@ class topAsymm(supy.analysis) :
              ####################################
 
              , ssteps.filters.label('signal distributions')
-
-             , ssteps.histos.symmAnti('tt','genTopQueuedBin3',9,-1,1).disable(saDisable)
-             , ssteps.histos.symmAnti('tt','genTopQueuedBin4',16,-1,1).disable(saDisable)
-             , ssteps.histos.symmAnti('tt','genTopQueuedBin5',25,-1,1).disable(saDisable)
              , ssteps.histos.symmAnti('tt','genTopQueuedBin7',49,-1,1).disable(saDisable)
-
-             , ssteps.histos.symmAnti('tt','fitTopQueuedBin3',9,-1,1 , other = ('TridiscriminantWTopQCD',100,-1,1))
-             , ssteps.histos.symmAnti('tt','fitTopQueuedBin4',16,-1,1, other = ('TridiscriminantWTopQCD',100,-1,1))
-             , ssteps.histos.symmAnti('tt','fitTopQueuedBin5',25,-1,1, other = ('TridiscriminantWTopQCD',100,-1,1))
              , ssteps.histos.symmAnti('tt','fitTopQueuedBin7',49,-1,1, other = ('TridiscriminantWTopQCD',100,-1,1))
 
              ])
@@ -327,27 +313,6 @@ class topAsymm(supy.analysis) :
                                                                 'ProbabilityHTopMasses' : (20,0,1),
                                                                 "MetMt".join(pars['objects'][lname]) : (20,0,100),
                                                                 })
-    @staticmethod
-    def tridiscriminant2(pars) :
-        rw = pars['reweights']['abbr']
-        lname = pars['lepton']['name']
-        tt = pars['toptype']
-        jets = pars["objects"]['jet']
-        return supy.calculables.other.Tridiscriminant( fixes = ("","GGqqGq"),
-                                                       zero = {"pre":"gg", "tag":"top_%s_%s"%(lname,tt), "samples":['ttj_%s.wGG.%s'%(tt,rw)]},
-                                                       pi23 = {"pre":"qq", "tag":"top_%s_%s"%(lname,tt), "samples":['ttj_%s.wQQ.%s'%(tt,rw)]},
-                                                       pi43 = {"pre":"qg", "tag":"top_%s_%s"%(lname,tt), "samples":['ttj_%s.%s.%s'%(tt,s,rw) for s in ['wQG','wAG']]},
-                                                       correlations = pars['discriminant2DPlots'],
-                                                       dists = { "fitTopPtPlusSumPt" : (20,0,600),
-                                                                 "fitTopPtOverSumPt" : (20,0,1),
-                                                                 "fitTopAbsSumRapidities" : (20, 0, 4),
-                                                                 #"fitTopSqrtPtOverSumPt" : (10,0,1),
-                                                                 #"fitTopSumP4AbsEta" : (20,0,6),
-                                                                 #"fitTopPartonLo" : (20,-0.2,0.2),
-                                                                 #"fitTopPartonHi" : (20,0,0.4),
-                                                                 #"fitTopPartonXlo" : (20,0,0.12),              # 0.036
-                                                                 #"fitTopPartonXhi" : (20,0.04,0.4),           # 0.003
-                                                                 })
     ########################################################################################
     def concludeAll(self) :
         self.orgMelded = {}
@@ -396,7 +361,8 @@ class topAsymm(supy.analysis) :
         supy.plotter(org, pdfFileName = self.pdfFileName(org.tag+"_nolog"), doLog = False, **kwargs ).plotAll()
 
     def skimStats(self,org) :
-        _,lepton,tt,pu,pt = org.tag.split('_')
+        _,lepton,tt,pu,smear,jec,pt = org.tag.split('_')
+        print org.tag
         statsname = {'top.DY':'dy',
                      'top.W': 'wj',
                      'QCD.multijet': 'qcd',
@@ -411,8 +377,8 @@ class topAsymm(supy.analysis) :
 
         fileName = '%s/stats_%s.root'%(self.globalStem,org.tag)
         tfile = r.TFile.Open(fileName,'RECREATE')
-        grab = (['lumiHisto','xsHisto','allweighted'] +
-                [p+suf for p in ['fitTopQueuedBin%dTridiscriminantWTopQCD'%d for d in [3,4,5,7]] for suf in ['','_symm','_anti']])
+        grab = (['lumiHisto','xsHisto','allweighted','2_x_y','fitTopPtOverSumPt_triD','fitTopTanhRapiditySum_triD','fitTopTanhAvgAbsSumRapidities_triD'] +
+                [p+suf for p in ['fitTopQueuedBin%dTridiscriminantWTopQCD'%d for d in [7]] for suf in ['','_symm','_anti']])
         for g in grab :
             tfile.mkdir(g).cd()
             for ss,hist in zip( org.samples,
@@ -428,7 +394,7 @@ class topAsymm(supy.analysis) :
             print tagSuffix, "not in", self.orgMelded.keys()
             print "run meldScale() before plotMeldScale()"; return
         melded = copy.deepcopy(self.orgMelded[tagSuffix])
-        lname,tt,pu,ptMin = tagSuffix.split('_')
+        lname,tt,pu,sn,jn,ptMin = tagSuffix.split('_')
         for s in ['top.ttj_%s.%s.pu'%(tt,s) for s in ['wQQ','wQG','wAG','wGG']] :
             melded.drop(s)
         for log,label in [(False,""),(True,"_log")][:1] : 
@@ -444,7 +410,7 @@ class topAsymm(supy.analysis) :
                               ).plotAll()
 
     def meldScale(self,tagSuffix) :
-        lname,tt,pu,ptMin = tagSuffix.split('_')
+        lname,tt,pu,sn,jn,ptMin = tagSuffix.split('_')
         meldSamples = {"top_"+tagSuffix :( { 'mu': self.muons('.jw'),
                                              'el': self.electrons('.jw')}[lname]+
                                            ["ttj_%s"%tt]+self.single_top()+
@@ -532,7 +498,6 @@ class topAsymm(supy.analysis) :
         templateSamples = ['top.ttj_%s.%s.pu'%(tt,s) for s in ['wGG','wQQ','wQG','wAG']]
         org.mergeSamples(targetSpec = {"name":'qgag'}, sources = templateSamples[2:], keepSources = True, force = True)
         templateSamples = templateSamples[:-2] + ['qgag']
-        distTup,cs = map(measureFractions,["fitTopPtOverSumPt","fitTopPtPlusSumPt","fitTopAbsSumRapidities","TridiscriminantGGqqGq"][:-1])[0]
         supy.utils.tCanvasPrintPdf( mfCanvas, mfFileName, option = ']')
         org.drop('qgag')
 
@@ -541,7 +506,7 @@ class topAsymm(supy.analysis) :
         org.drop('bg')
 
     def measureAmplitudes(self,tagsSuffix) :
-        tt,pu,ptMin = tagsSuffix.split('_')
+        tt,pu,sn,jn,ptMin = tagsSuffix.split('_')
         tags = ['%s_%s'%(lname,tagsSuffix) for lname in ['mu','el']]
         if not all( tag in self.orgMelded for tag in tags ):
             print next(tag for tag in tags if tag not in self.orgMelded ), "not in", self.orgMelded.keys()

@@ -111,9 +111,15 @@ class MassSum(TopP4Calculable) :
 class RapiditySum(TopP4Calculable) :
     def update(self,_) : self.value = abs(self.source["SumP4".join(self.fixes)].Rapidity())
 ######################################
+class TanhRapiditySum(TopP4Calculable) :
+    def update(self,_) : self.value = math.tanh( self.source['RapiditySum'.join(self.fixes)])
+######################################
 class AbsSumRapidities(TopP4Calculable) :
     def update(self,_) : self.value = abs( self.source[self.P4]['t'].Rapidity() +
                                            self.source[self.P4]['tbar'].Rapidity() )
+######################################
+class TanhAvgAbsSumRapidities(TopP4Calculable) :
+    def update(self,_) : self.value = math.tanh( 0.5*self.source['AbsSumRapidities'.join(self.fixes)] )
 ######################################
 class TtxMass(TopP4Calculable) :
     def update(self,_) : self.value = self.source[self.P4]['ttx'].mass()
@@ -305,12 +311,12 @@ class CosThetaBoostAlt(TopP4Calculable) :
 
         self.value = -r.Math.VectorUtil.CosTheta(boost(t),bv)
 ######################################
-class DirectedDeltaYttbar(wrappedChain.calculable) :
+class TanhDirectedDeltaYttbar(wrappedChain.calculable) :
     def __init__(self, collection = None) :
         self.fixes = collection
         self.stash(['DeltaYttbar','SignQuarkZ'])
     def update(self,_) :
-        self.value = self.source[self.SignQuarkZ] * self.source[self.DeltaYttbar]
+        self.value = math.tanh( self.source[self.SignQuarkZ] * self.source[self.DeltaYttbar] )
 ######################################
 class genttDDeltaY(wrappedChain.calculable) :
     def update(self,_) :
@@ -377,10 +383,9 @@ class DirectedHTopRapidity(wrappedChain.calculable) :
 class SignQuarkZ(wrappedChain.calculable) :
     def __init__(self, collection = None) :
         self.fixes = collection
-        self.stash(['P4'])
     def update(self,_) :
-        self.value = 1 if self.source[self.P4]['quark'].z() > 0 else -1
-#####################################
+        self.value = 0 if not self.source['wQQ'] else self.source['qDir']
+######################################
 class genttOm(wrappedChain.calculable) :
     def update(self,_) :
         id = self.source['genPdgId']

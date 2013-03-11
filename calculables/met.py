@@ -5,19 +5,18 @@ except: pass
 
 ##############################
 class AdjustedP4(wrappedChain.calculable) :
-    def __init__(self, met = None, jet = None, smear="", z = None) :
+    def __init__(self, met = None, jet = None, smear="", djec = 0) :
         self.fixes = met
         self.stash(["P4"])
+        self.djecfactor = djec
+        self.dJEC = "DeltaMETJEC".join(jet)
         self.dSmear = ("DeltaMET"+smear).join(jet) if smear else None
-        self.z = z
-        self.moreName = " + ".join(filter(None,[self.P4,self.dSmear]))
+        self.moreName = " + ".join(filter(None,[self.P4,self.dSmear,'dJEC(%d)'%djec]))
 
     def update(self,_) :
-        met = self.source[self.P4]
-        self.value = utils.LorentzV(met.pt(),met.eta(),met.phi(),met.mass())
-        if not self.source["isRealData"] :
-            smear = self.source[self.dSmear]
-            self.value += utils.LorentzV(smear.pt(),smear.eta(),smear.phi(),smear.mass())
+        djec = utils.LorentzV() if not self.djecfactor else self.source[self.dJEC]*self.djecfactor
+        djer = utils.LorentzV() if self.source['isRealData'] or not self.dSmear else self.source[self.dSmear]
+        self.value = self.source[self.P4] + djec + djer
 #####################################
 class Covariance(wrappedChain.calculable) :
     def __init__(self, collection) :
