@@ -1,14 +1,6 @@
 import collections, ROOT as r
 from supy import utils,analysisStep
 #####################################
-class ParticleCountFilter(analysisStep) :
-    def __init__(self, reqDict) :
-        self.reqDict = reqDict
-    def select (self,eventVars) :
-        for key,value in self.reqDict.iteritems() :
-            if eventVars["GenParticleCategoryCounts"][key]!=value : return False
-        return True
-#####################################
 class topPrinter(analysisStep) :
 
     def uponAcceptance (self,ev) :

@@ -124,25 +124,6 @@ class duplicateEventCheck(analysisStep) :
         if not anyDups :
             print "No duplicate events were found."
 #####################################
-
-
-
-
-
-
-#####################################
-class productGreaterFilter(analysisStep) :
-
-    def __init__(self, threshold, variables, suffix = ""):
-        self.threshold = threshold
-        self.variables = variables
-        self.moreName = "%s>=%.3f %s" % ("*".join(variables),threshold,suffix)
-
-    def select (self,eventVars) :
-        product = 1
-        for var in self.variables : product *= eventVars[var]
-        return product >= self.threshold
-#####################################
 class pickEventSpecMaker(analysisStep) :
     #https://twiki.cern.ch/twiki/bin/viewauth/CMS/WorkBookPickEvents
 
