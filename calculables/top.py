@@ -72,18 +72,6 @@ class TopP4Calculable(wrappedChain.calculable) :
         self.fixes = collection
         self.stash(['P4'])
 ######################################
-class DeltaPhiLNu(TopP4Calculable) :
-    def update(self,_) : self.value = abs(r.Math.VectorUtil.DeltaPhi(self.source[self.P4]['lepton'],self.source[self.P4]['sumP4']))
-######################################
-class LeptonPt(TopP4Calculable) :
-    def update(self,_) : self.value = self.source[self.P4]['lepton'].pt()
-######################################
-class NuPt(TopP4Calculable) :
-    def update(self,_) : self.value = self.source[self.P4]['neutrino'].pt()
-######################################
-class MET(TopP4Calculable) :
-    def update(self,_) : self.value = self.source[self.P4]['sumP4'].pt()
-######################################
 class RawHadWmass(TopP4Calculable) :
     def update(self,_) : self.value = self.source[self.P4]['rawW'].M()
 ######################################
@@ -132,22 +120,6 @@ class TtxPt(TopP4Calculable) :
 ######################################
 class TtxPz(TopP4Calculable) :
     def update(self,_) : self.value = self.source[self.P4]['ttx'].z()
-######################################
-class JetAbsEtaMax(wrappedChain.calculable) :
-    def __init__(self,collection = None) :
-        self.fixes = collection
-    def update(self,_) :
-        iPQHL = self.source["TopReconstruction"][0]['iPQHL']
-        p4 = self.source["AdjustedP4".join(self.source["TopJets"])]
-        self.value = max([abs(p4[i].eta()) for i in iPQHL])
-######################################
-class JetPtMin(wrappedChain.calculable) :
-    def __init__(self,collection = None) :
-        self.fixes = collection
-    def update(self,_) :
-        iPQHL = self.source["TopReconstruction"][0]['iPQHL']
-        p4 = self.source["AdjustedP4".join(self.source["TopJets"])]
-        self.value = min([abs(p4[i].pt()) for i in iPQHL])
 ######################################
 class DeltaBetazRel(TopP4Calculable) :
     def update(self,_) :
