@@ -105,6 +105,9 @@ class SumPt(TopP4Calculable) :
 class PtSum(TopP4Calculable) :
     def update(self,_) : self.value = self.source["SumP4".join(self.fixes)].pt()
 ######################################
+class PtOverSumPt(TopP4Calculable) :
+    def update(self,_) : self.value = self.source['PtSum'.join(self.fixes)]/self.source['SumPt'.join(self.fixes)]
+######################################
 class MassSum(TopP4Calculable) :
     def update(self,_) : self.value = self.source["SumP4".join(self.fixes)].mass()
 ######################################
@@ -145,18 +148,6 @@ class JetPtMin(wrappedChain.calculable) :
         iPQHL = self.source["TopReconstruction"][0]['iPQHL']
         p4 = self.source["AdjustedP4".join(self.source["TopJets"])]
         self.value = min([abs(p4[i].pt()) for i in iPQHL])
-######################################
-class Pt(wrappedChain.calculable) :
-    def __init__(self,collection = None) :
-        self.fixes = collection
-        self.stash(['SumP4'])
-    def update(self,_) : self.value = self.source[self.SumP4].pt()
-######################################
-class PtOverSumPt(wrappedChain.calculable) :
-    def __init__(self, collection = None) :
-        self.fixes = collection
-        self.stash(['Pt','SumPt'])
-    def update(self,_) : self.value = self.source[self.Pt] / self.source[self.SumPt]
 ######################################
 class DeltaBetazRel(TopP4Calculable) :
     def update(self,_) :
