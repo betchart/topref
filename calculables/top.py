@@ -73,44 +73,64 @@ class TopP4Calculable(wrappedChain.calculable) :
         self.stash(['P4'])
 ######################################
 class RawHadWmass(TopP4Calculable) :
+    '''m_{W}^{had,raw}'''
     def update(self,_) : self.value = self.source[self.P4]['rawW'].M()
 ######################################
 class Key(TopP4Calculable) :
     def update(self,_) : self.value = self.source[self.P4]['key']
 ######################################
 class Chi2(TopP4Calculable) :
+    '''#chi^{2}'''
     def update(self,_) : self.value = self.source[self.P4]['chi2']
 ######################################
 class HadChi2(TopP4Calculable) :
+    '''#chi^{2}_{had}'''
     def update(self,_) : self.value = self.source[self.P4]['hadChi2']
 ######################################
 class SumP4(TopP4Calculable) :
     def update(self,_) : self.value = self.source[self.P4]['t'] + self.source[self.P4]['tbar']
 ######################################
 class SumPt(TopP4Calculable) :
+    '''t.pt+#bar{t}.pt'''
     def update(self,_) : self.value = self.source[self.P4]['t'].pt() + self.source[self.P4]['tbar'].pt()
 ######################################
 class PtSum(TopP4Calculable) :
+    '''t#bar{t}.pt'''
     def update(self,_) : self.value = self.source["SumP4".join(self.fixes)].pt()
 ######################################
 class PtOverSumPt(TopP4Calculable) :
+    '''t#bar{t}.pt / ( t.pt + #bar{t}.pt )'''
     def update(self,_) : self.value = self.source['PtSum'.join(self.fixes)]/self.source['SumPt'.join(self.fixes)]
 ######################################
 class MassSum(TopP4Calculable) :
+    '''(t+#bar{t}).m'''
     def update(self,_) : self.value = self.source["SumP4".join(self.fixes)].mass()
 ######################################
 class RapiditySum(TopP4Calculable) :
+    '''t#bar{t}.y'''
     def update(self,_) : self.value = abs(self.source["SumP4".join(self.fixes)].Rapidity())
 ######################################
 class TanhRapiditySum(TopP4Calculable) :
+    '''tanh(t#bar{t}.y)'''
     def update(self,_) : self.value = math.tanh( self.source['RapiditySum'.join(self.fixes)])
 ######################################
-class AbsSumRapidities(TopP4Calculable) :
+class SumRapidities(TopP4Calculable) :
+    '''|t.y+#bar{t}.y|'''
     def update(self,_) : self.value = abs( self.source[self.P4]['t'].Rapidity() +
                                            self.source[self.P4]['tbar'].Rapidity() )
 ######################################
-class TanhAvgAbsSumRapidities(TopP4Calculable) :
-    def update(self,_) : self.value = math.tanh( 0.5*self.source['AbsSumRapidities'.join(self.fixes)] )
+class TanhAvgRapidity(TopP4Calculable) :
+    '''tanh(|t.y+#bar{t}.y|/2)'''
+    def update(self,_) : self.value = math.tanh( 0.5*self.source['SumRapidities'.join(self.fixes)] )
+######################################
+class SumAbsRapidities(TopP4Calculable) :
+    '''|t.y|+|#bar{t}.y|'''
+    def update(self,_) : self.value = ( abs( self.source[self.P4]['t'].Rapidity() ) +
+                                        abs( self.source[self.P4]['tbar'].Rapidity() ) )
+######################################
+class TanhAvgAbsRapidity(TopP4Calculable) :
+    '''tanh((|t.y|+|#bar{t}.y|)/2)'''
+    def update(self,_) : self.value = math.tanh( 0.5*self.source['SumAbsRapidities'.join(self.fixes)] )
 ######################################
 class TtxMass(TopP4Calculable) :
     def update(self,_) : self.value = self.source[self.P4]['ttx'].mass()
@@ -122,14 +142,17 @@ class TtxPz(TopP4Calculable) :
     def update(self,_) : self.value = self.source[self.P4]['ttx'].z()
 ######################################
 class DeltaBetazRel(TopP4Calculable) :
+    '''tanh(|t.y|-|#bar{t}.y|)'''
     def update(self,_) :
         self.value = math.tanh(self.source['DeltaAbsYttbar'.join(self.fixes)])
 ######################################
 class DeltaAbsYttbar(TopP4Calculable) :
+    '''|t.y|-|#bar{t}.y|'''
     def update(self,_) :
         self.value = abs(self.source[self.P4]['t'].Rapidity()) - abs(self.source[self.P4]['tbar'].Rapidity())
 ######################################
 class DeltaYttbar(TopP4Calculable) :
+    '''t.y - #bar{t}.y'''
     def update(self,_) :
         self.value = self.source[self.P4]['t'].Rapidity() - self.source[self.P4]['tbar'].Rapidity()
 ######################################

@@ -377,7 +377,7 @@ class topAsymm(supy.analysis) :
 
         fileName = '%s/stats_%s.root'%(self.globalStem,org.tag)
         tfile = r.TFile.Open(fileName,'RECREATE')
-        grab = (['lumiHisto','xsHisto','allweighted','2_x_y','fitTopPtOverSumPt_triD','fitTopTanhRapiditySum_triD','fitTopTanhAvgAbsSumRapidities_triD'] +
+        grab = (['lumiHisto','xsHisto','allweighted','2_x_y','fitTopPtOverSumPt_triD','fitTopTanhRapiditySum_triD','fitTopTanhAvgRapidity_triD','fitTopTanhAvgAbsRapidity_triD'] +
                 [p+suf for p in ['fitTopQueuedBin%dTridiscriminantWTopQCD'%d for d in [7]] for suf in ['','_symm','_anti']])
         for g in grab :
             tfile.mkdir(g).cd()
