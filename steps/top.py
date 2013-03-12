@@ -84,12 +84,12 @@ class resolutions(analysisStep) :
         topReco = ev["TopReconstruction"]
 
         index = ev[self.moreName]
-        self.book.fill(index, self.moreName, 21, -1.5, 19.5, title = ';%s;events / bin'%self.moreName)
+        self.book.fill(index, '0_'+self.moreName, 21, -1.5, 19.5, title = ';%s;events / bin'%self.moreName)
         if index<0 : return
         
         if ev['genTTbarIndices']['semi'] :
             for s in ['lep','nu','bLep','bHad','q'] :
-                self.book.fill(ev['%sDeltaRTopRecoGen'%s][index], s+'DeltaRTopRecoGen', 50,0,2, title = ';%s DeltaR reco gen;events / bin'%s)
+                self.book.fill(ev['%sDeltaRTopRecoGen'%s][index], '1_'+s+'DeltaRTopRecoGen', 50,0,2, title = ';%s DeltaR reco gen;events / bin'%s)
         
         gsP4 = ev['genSumP4']
         self.book.fill( topReco[index]['ttx'].pt() - gsP4.pt(), "resolution_pt", 100, -100, 100, title = ";%s #Delta_{reco-gen} ttx.pt;events / bin"%self.moreName )
