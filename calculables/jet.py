@@ -246,7 +246,7 @@ class ScalingBQN(calculables.secondary) :
     def setup(self,*_) :
         names = [f+str(i) for f in "BQN" for i in range(len(self.etasMax))]
         names2 = [n+"_2" for n in names]
-        hists = self.fromCache(['merged'],names+names2, tag = self.tag)['merged']
+        hists = self.fromCache(['merged'],names2, tag = self.tag)['merged']
         if None in hists.values() :
             print self.name, ": Histograms not found."
             self.hists = {}
@@ -261,7 +261,7 @@ class ScalingBQN(calculables.secondary) :
 
         self.hists = {}
         for n,n2 in zip(names,names2) :
-            h = hists[n]
+            h = hists[n2].ProjectionX()
             self.hists[n] = r.TH1D(n,';'.join([h.GetTitle(),h.GetXaxis().GetTitle(),h.GetYaxis().GetTitle()]), h.GetNbinsX(), h.GetBinLowEdge(1), h.GetBinLowEdge(1+h.GetNbinsX()))
             for i in range(1,1+h.GetNbinsX()) :
                 bins = ("",i,i) if i < 15 else ("",i-1,i+1)
