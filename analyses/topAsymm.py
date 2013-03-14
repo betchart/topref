@@ -9,9 +9,10 @@ class topAsymm(supy.analysis) :
     
     Pass#
     0: ^selection : prime sim.*   : pileup
-    1: ^finegrain : prime top.top : RawMassWTopCorrectPQBTwoDChiSquared,jetCSVProbabilityGivenBQN,LTopUnfitSqrtChi2CombinationsLR
-    2: ^finegrain : prime top.top : HTopSigmasPQBCombinationsLR
-    3: ^finegrain : prime needed  : TridiscriminantWTopQCD
+    1: ^finegrain : prime top.top : jet.scalingBQN
+    2: ^finegrain : prime top.top : RawMassWTopCorrectPQBTwoDChiSquared,jetCSVProbabilityGivenBQN,LTopUnfitSqrtChi2CombinationsLR
+    3: ^finegrain : prime top.top : HTopSigmasPQBCombinationsLR
+    4: ^finegrain : prime needed  : TridiscriminantWTopQCD
     5.            : *
     '''
 
