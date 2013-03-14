@@ -9,13 +9,12 @@ class topSync(supy.analysis) :
         
         return {'CSVM':0.679,
                 'smear': self.vary({'sm':'Smear',}),#'smU':'SmearUp','smD':'SmearDown'}),
-                'samp': self.vary({'ea':'syncMC','db':'syncMC_db'}),
                 'lepton': self.vary([(lep,dict((key,val[i]) for key,val in lepton.items()))
                                      for i,lep in enumerate(lepton['name'])])}
 
-    def listOfSampleDictionaries(self) : return [samples.top118]
+    def listOfSampleDictionaries(self) : return [samples.top119]
         
-    def listOfSamples(self,pars) : return supy.samples.specify(names = pars['samp'])
+    def listOfSamples(self,pars) : return supy.samples.specify(names = 'ttj_ph', effectiveLumi=10)
 
     def listOfCalculables(self,pars) :
         jet = ('jet','')
