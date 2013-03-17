@@ -364,21 +364,20 @@ class topAsymm(supy.analysis) :
     def skimStats(self,org) :
         _,lepton,tt,pu,smear,jec,pt = org.tag.split('_')
         print org.tag
-        statsname = {'top.DY':'dy',
-                     'top.W': 'wj',
-                     'QCD.multijet': 'qcd',
-                     'top.t#bar{t}':'tt',
-                     'top.ttj_%s.wGG.pu'%tt:'ttgg',
-                     'top.ttj_%s.wQG.pu'%tt:'ttqg',
-                     'top.ttj_%s.wAG.pu'%tt:'ttag',
-                     'top.ttj_%s.wQQ.pu'%tt:'ttqq',
-                     'top.Single' : 'st',
-                     'top.Data 2012': 'data'
+        statsname = {'DY':'dy',
+                     'W': 'wj',
+                     't#bar{t}':'tt',
+                     'ttj_%s.wGG.pu'%tt:'ttgg',
+                     'ttj_%s.wQG.pu'%tt:'ttqg',
+                     'ttj_%s.wAG.pu'%tt:'ttag',
+                     'ttj_%s.wQQ.pu'%tt:'ttqq',
+                     'Single' : 'st',
+                     'Data 2012': 'data'
                      }
 
         fileName = '%s/stats_%s.root'%(self.globalStem,org.tag)
         tfile = r.TFile.Open(fileName,'RECREATE')
-        grab = (['lumiHisto','xsHisto','allweighted','2_x_y','fitTopPtOverSumPt_triD','fitTopTanhRapiditySum_triD','fitTopTanhAvgRapidity_triD','fitTopTanhAvgAbsRapidity_triD'] +
+        grab = (['lumiHisto','xsHisto','allweighted','2_x_y','fitTopPtOverSumPt_triD','fitTopTanhRapiditySum_triD']+#,'fitTopTanhAvgRapidity_triD','fitTopTanhAvgAbsRapidity_triD'] +
                 [p+suf for p in ['fitTopQueuedBin%dTridiscriminantWTopQCD'%d for d in [7]] for suf in ['','_symm','_anti']])
         for g in grab :
             tfile.mkdir(g).cd()
@@ -428,11 +427,12 @@ class topAsymm(supy.analysis) :
 
         if len(organizers) < len(meldSamples) : return
         for org in organizers :
-            org.mergeSamples(targetSpec = {"name":"t#bar{t}", "color":r.kViolet}, sources=["ttj_%s.%s.pu"%(tt,s) for s in ['wQQ','wQG','wAG','wGG']], keepSources = 'top' in org.tag)
+            org.mergeSamples(targetSpec = {"name":"t#bar{t}", "color":r.kViolet}, sources=["ttj_%s.%s.pu"%(tt,s) for s in ['wQQ','wQG','wAG','wGG']], keepSources = True)
             org.mergeSamples(targetSpec = {"name":"W", "color":r.kRed}, sources = ["w%dj_mg.pu"%n for n in [1,2,3,4]] )
             org.mergeSamples(targetSpec = {"name":"DY", "color":28}, allWithPrefix = "dy")
             org.mergeSamples(targetSpec = {"name":"Single", "color":r.kGray}, sources = ["%s.pu"%s for s in self.single_top()], keepSources = False )
             org.mergeSamples(targetSpec = {"name":"Data 2012", "color":r.kBlack, "markerStyle":20}, sources={'mu':self.muons('.jw'),'el':self.electrons('.jw')}[lname])
+            self.skimStats(org)
             org.scale()
             if "QCD_" in org.tag :
                 sm = ['t#bar{t}','W','Single']
@@ -443,7 +443,6 @@ class topAsymm(supy.analysis) :
 
         self.orgMelded[tagSuffix] = supy.organizer.meld(organizers = organizers)
         org = self.orgMelded[tagSuffix]
-        self.skimStats(org)
         templateSamples = ['top.t#bar{t}','top.W','QCD.multijet']
         baseSamples = ['top.Single','top.DY']
 
