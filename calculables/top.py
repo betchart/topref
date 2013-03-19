@@ -185,6 +185,9 @@ class SignQuarkZ(wrappedChain.calculable) :
     def update(self,_) :
         self.value = 0 if not self.source['wQQ'] else self.source['qDir']
 ######################################
+class FifthJetIndex(TopP4Calculable) :
+    def update(self,_) :
+        self.value = next(iter(self.source[self.P4]['iOtherJets']),None)
 ######################################
 
 class genTopP4(wrappedChain.calculable) :
@@ -228,6 +231,8 @@ class fitTopP4(wrappedChain.calculable) :
                       'hadChi2': reco['hadChi2'],
                       'ttx': reco['ttx'],
                       'fifth': reco['iX']!=None,
+                      'iPQHL' : reco['iPQHL'],
+                      'iOtherJets': [i for i in self.source['Indices'.join(self.source['TopJets'])] if i not in reco['iPQHL']]
                       }
 ######################################
 ######################################
