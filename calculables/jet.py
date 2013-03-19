@@ -1,4 +1,4 @@
-import math,bisect,itertools,ROOT as r
+import math,bisect,itertools,operator,ROOT as r
 from supy import wrappedChain,calculables,utils
 try: import numpy as np
 except: np = None
@@ -117,6 +117,14 @@ class Kt(wrappedChain.calculable) :
         p4 = self.source[self.AdjustedP4]
         i,j = self.source[self.IndicesMinDeltaR]
         self.value = min(p4[i].pt(),p4[j].pt()) * r.Math.VectorUtil.DeltaR(p4[i],p4[j]) if j else -1
+##############################
+class Moments2Sum(wrappedChain.calculable) :
+    def __init__(self, collection = None) :
+        self.fixes = collection
+        self.stash(['Eta2Moment','Phi2Moment'])
+        self.moreName = '%s%s; eta2moment+phi2moment'%collection
+    def update(self,_) :
+        self.value = utils.hackMap(operator.add,self.source[self.Eta2Moment],self.source[self.Phi2Moment])
 ##############################
 class CovariantResolution2(wrappedChain.calculable) :
     '''[[xx,xy],[xy,yy]] in the transverse plane.'''
