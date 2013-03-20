@@ -14,7 +14,7 @@ class topSync(supy.analysis) :
 
     def listOfSampleDictionaries(self) : return [samples.top119]
         
-    def listOfSamples(self,pars) : return supy.samples.specify(names = 'ttj_ph', effectiveLumi=10)
+    def listOfSamples(self,pars) : return supy.samples.specify(names = 'syncMC')
 
     def listOfCalculables(self,pars) :
         jet = ('jet','')
@@ -47,5 +47,5 @@ class topSync(supy.analysis) :
             supy.steps.filters.value('jetPt', min = 35, indices = 'jetIndices', index = 2),
             supy.steps.filters.value('jetPt', min = 20, indices = 'jetIndices', index = 3),
             supy.steps.filters.value('jetCSV', min = pars['CSVM'], indices = 'jetIndicesBtagged', index=0),
-            steps.other.pickEventSpecMaker()
+            steps.other.pickEventSpecMaker(),
             ]
