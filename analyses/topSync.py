@@ -8,7 +8,7 @@ class topSync(supy.analysis) :
         lepton['fix'] = [(l,'') for l in lepton['name']]
         
         return {'CSVM':0.679,
-                'smear': self.vary({'sm':'Smear',}),#'smU':'SmearUp','smD':'SmearDown'}),
+                'smear': self.vary({'sm':'Smear','no':'Unsmeared'}),#'smU':'SmearUp','smD':'SmearDown'}),
                 'lepton': self.vary([(lep,dict((key,val[i]) for key,val in lepton.items()))
                                      for i,lep in enumerate(lepton['name'])])}
 
@@ -27,6 +27,7 @@ class topSync(supy.analysis) :
                  calculables.electron.SignalID(el),
                  calculables.jet.AdjustedP4(jet, pars['smear']),
                  calculables.jet.Pt(jet),
+                 calculables.jet.Unsmeared(jet),
                  calculables.jet.Indices(jet, ptMin = 20),
                  calculables.jet.IndicesBtagged(jet, 'CSV'),
                  supy.calculables.other.abbreviation('combinedSecondaryVertex','CSV',jet)])
@@ -46,6 +47,6 @@ class topSync(supy.analysis) :
             supy.steps.filters.value('jetPt', min = 45, indices = 'jetIndices', index = 1),
             supy.steps.filters.value('jetPt', min = 35, indices = 'jetIndices', index = 2),
             supy.steps.filters.value('jetPt', min = 20, indices = 'jetIndices', index = 3),
-            supy.steps.filters.value('jetCSV', min = pars['CSVM'], indices = 'jetIndicesBtagged', index=0),
             steps.other.pickEventSpecMaker(),
+            supy.steps.filters.value('jetCSV', min = pars['CSVM'], indices = 'jetIndicesBtagged', index=0),
             ]

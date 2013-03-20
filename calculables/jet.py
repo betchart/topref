@@ -126,6 +126,13 @@ class Moments2Sum(wrappedChain.calculable) :
     def update(self,_) :
         self.value = utils.hackMap(operator.add,self.source[self.Eta2Moment],self.source[self.Phi2Moment])
 ##############################
+class Unsmeared(wrappedChain.calculable) :
+    def __init__(self, collection = None) :
+        self.fixes = collection
+        self.stash(['Eta2Moment'])
+    def update(self,_) :
+        self.value = [1.0]*len(self.source[self.Eta2Moment])
+##############################
 class CovariantResolution2(wrappedChain.calculable) :
     '''[[xx,xy],[xy,yy]] in the transverse plane.'''
 
