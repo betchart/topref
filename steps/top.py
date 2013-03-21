@@ -62,13 +62,11 @@ class kinematics(analysisStep) :
         self.book.fill(ev[self.moreName+"TtxMass"], "TTX.mass", 50,300,1300, title = ";ttx invariant mass;events / bin")
         self.book.fill(ev[self.moreName+"PtSum"],   "TT.pt",   100,  0, 200, title = ";ttbar.pt;events / bin")
         self.book.fill(ev[self.moreName+"RapiditySum"], "TT.y", 50, 0, 3, title = ";|t#bar{t}.y|;events / bin" )
-        self.book.fill(ev[self.moreName+"SumRapidities"]/2, "avgYs", 50, 0, 3, title = ";|t.y+#bar{t}.y|/2;events / bin" )
-        self.book.fill(ev[self.moreName+"SumAbsRapidities"]/2, "avgAbsYs", 50, 0, 3, title = ";(|t.y|+|#bar{t}.y|)/2;events / bin" )
         self.book.fill( topReco[index]['hadTraw'].mass(), "rawHadTopMass", 100, 100,300, title = ";%s raw hadronic top mass;events / bin"%self.moreName)
         self.book.fill( topReco[index]['hadWraw'].mass(), "rawHadWMass", 100, 0,200, title = ";%s raw hadronic W mass;events / bin"%self.moreName)
 
-        for var in  ["fitTopPtOverSumPt", "fitTopTanhRapiditySum", "fitTopTanhAvgRapidity","fitTopTanhAvgAbsRapidity"] :
-            lo = (0,-1)
+        for low,var in  zip([0,0,-1],["fitTopPtOverSumPt", "fitTopTanhRapiditySum", "TridiscriminantQQggQg"]) :
+            lo = (low,-1)
             up = (1, 1)
             v = tuple( max(L,min(val,U-1e-6)) for val,L,U  in zip((ev[var],ev['TridiscriminantWTopQCD']),lo, up) )
             self.book.fill( v, '%s_triD'%var, (100,100), lo, up)
@@ -78,7 +76,7 @@ class kinematics(analysisStep) :
         triD = ev['TridiscriminantWTopQCD']
         if i5!=None:
             jets = ev['TopJets']
-            vars = [item.join(jets) for item in ['Pt','Area','Moments2Sum']]
+            vars = [item.join(jets) for item in ['Pt','Moments2Sum']]
             los = (0,0.6,0)
             ups = (400,0.9,0.11)
             for var,lo,up in zip(vars,los,ups) :

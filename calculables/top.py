@@ -454,6 +454,12 @@ class qDeltaRTopRecoGen(wrappedChain.calculable) :
     def update(self,_): self.value = [pq[1] for pq in self.source['pqDeltaRTopRecoGen']]
 
 ######################################
+class extraJetMoments2Sum(wrappedChain.calculable) :
+    def update(self,_):
+        jets = self.source['TopJets']
+        i5 = self.source['fitTopFifthJetIndex']
+        self.value = self.source['Moments2Sum'.join(jets)][i5] if i5!=None else 0
+######################################
 
 class ttSymmAnti(calculables.secondary) :
     def __init__(self, thisSample, inspect = False, weights = ['weight']) :

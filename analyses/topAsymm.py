@@ -254,6 +254,7 @@ class topAsymm(supy.analysis) :
 
              ####################################
              #, steps.displayer.ttbar(jets=jet, met=obj['met'], muons = obj['mu'], electrons = obj['el'])
+             , self.tridiscriminant2(pars)
              , ssteps.filters.label('top reco')
              , steps.top.combinatorialFrequency().onlySim()
              , ssteps.histos.value('genTopRecoIndex', 10,-1.5,8.5)
@@ -313,6 +314,22 @@ class topAsymm(supy.analysis) :
                                                        dists = {"TopRatherThanWProbability" : (20,0,1),
                                                                 'ProbabilityHTopMasses' : (20,0,1),
                                                                 "MetMt".join(pars['objects'][lname]) : (20,0,100),
+                                                                })
+    ########################################################################################
+    def tridiscriminant2(self,pars) :
+        rw = pars['reweights']['abbr']
+        lname = pars['lepton']['name']
+        tt = pars['toptype']
+        tops = ['ttj_%s.%s.%s'%(tt,s,rw) for s in ['wGG','wQG','wAG','wQQ']]
+        topTag = pars['tag'].replace("QCD","top")
+
+        return supy.calculables.other.Tridiscriminant( fixes = ("","QQggQg"),
+                                                       zero = {"pre":"gg", "tag":topTag, "samples": tops[:1]},
+                                                       pi23 = {"pre":"qq", "tag":topTag, "samples": tops[-1:]},
+                                                       pi43 = {"pre":"qg", "tag":topTag, "samples": tops[1:-1]},
+                                                       correlations = pars['discriminant2DPlots'],
+                                                       dists = {"fitTopTanhRapiditySum" : (50,0,1),
+                                                                'extraJetMoments2Sum' : (50,0,0.11),
                                                                 })
     ########################################################################################
     def concludeAll(self) :
