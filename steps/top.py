@@ -77,8 +77,8 @@ class kinematics(analysisStep) :
         if i5!=None:
             jets = ev['TopJets']
             vars = [item.join(jets) for item in ['Pt','Moments2Sum']]
-            los = (0,0.6,0)
-            ups = (400,0.9,0.11)
+            los = (0,0)
+            ups = (400,0.11)
             for var,lo,up in zip(vars,los,ups) :
                 v = max(lo, min(up-1e-8, ev[var][i5]))
                 self.book.fill( (v,triD), '%s_triD'%var, (100,100), (lo,-1), (up,1))
