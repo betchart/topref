@@ -32,7 +32,7 @@ groupsAll = {80:[ '%s.B.1.jw'%lep,
                  'tbar_tW_ph.pu']
              }
 
-groupsTop = {140:['ttj_%s.wGG.pu'%top,],
+groupsTop = {142:['ttj_%s.wGG.pu'%top,],
              80:['ttj_%s.wQG.pu'%top,'ttj_%s.wQQ.pu'%top,],
              30:['ttj_%s.wAG.pu'%top,]
              }
