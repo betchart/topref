@@ -172,6 +172,8 @@ class topAsymm(supy.analysis) :
             supy.calculables.other.QueuedBin( 5, ("genTopDeltaBetazRel", "genTopPhiBoost"), (1,1), 'genTop'),
             supy.calculables.other.QueuedBin( 7, ("genTopDeltaBetazRel", "genTopPhiBoost"), (1,1), 'genTop'),
             ]
+        if 'ph_pn_sn_jn_20' in pars['tag'] and 'tt'==pars['sample'][:2]:
+            calcs.append(calculables.gen.genPdfWeights('/home/hep/bbetchar/local/share/lhapdf/PDFsets/CT10.LHgrid',))
         return calcs
     ########################################################################################
 
@@ -201,8 +203,9 @@ class topAsymm(supy.analysis) :
              , calculables.top.ttSymmAnti(pars['sample'], inspect=True).disable(saDisable)
              , ssteps.histos.symmAnti('tt','genTopQueuedBin7',49,-1,1).disable(saDisable)
              , ssteps.histos.symmAnti('tt','genTopTanhDirectedDeltaYttbar', 100, -1, 1).disable(saDisable)
+             , steps.gen.pdfWeightsPlotter().disable(saDisable)
              ####################################
-             , ssteps.filters.label('selection'),
+             , ssteps.filters.label('selection').invert(),
              ssteps.filters.value("mvaTrigV0Exists",min=True),
              ssteps.filters.value("muHandleValid",min=True),
              ssteps.filters.multiplicity( max=1, min=1, var = "Charge".join(lepton)),

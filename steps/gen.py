@@ -45,3 +45,9 @@ class qRecoilKinematics(analysisStep) :
         label = ('g' if id==21 else 'q' if id>0 else 'qbar')
         self.book.fill(p4.pt(), label + 'RecoilPt', 100, 0, 200, title = ';recoil %s.pt;events/bin'%label)
         self.book.fill(p4.eta(),label + 'RecoilEta', 50, -5, 5, title = ';recoil %s.eta;events/bin'%label)
+#####################################
+class pdfWeightsPlotter(analysisStep) :
+    def uponAcceptance(self,ev) :
+        weights = ev['genPdfWeights']
+        for i,w in enumerate(weights):
+            self.book.fill(i,'weights',len(weights),-0.5,len(weights)-0.5, title=";i^{th} weight;sum weights(i)", w=w)
