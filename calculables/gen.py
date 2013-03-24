@@ -1,6 +1,7 @@
 from supy import wrappedChain,utils,calculables
 import ROOT as r
-import lhapdf
+try: import lhapdf
+except: lhapdf=None
 ##############################
 class qPtMin(wrappedChain.calculable) :
     def __init__(self,ptMin) : self.value = ptMin
