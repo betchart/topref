@@ -202,8 +202,9 @@ class topAsymm(supy.analysis) :
              , getattr(self,pars['reweights']['func'])(pars)
              , calculables.top.ttSymmAnti(pars['sample'], inspect=True).disable(saDisable)
              , ssteps.histos.symmAnti('tt','genTopQueuedBin7',49,-1,1).disable(saDisable)
-             , ssteps.histos.symmAnti('tt','genTopTanhDirectedDeltaYttbar', 100, -1, 1).disable(saDisable)
-             , steps.gen.pdfWeightsPlotter().disable(saDisable)
+             , steps.gen.pdfWeightsPlotter(['genTopTanhRapiditySum','genTopPtOverSumPt','genTopDeltaBetazRel','genTopPhiBoost'],
+                                           [0,0,-1,-1],
+                                           [1,1,1,1]).disable(saDisable)
              ####################################
              , ssteps.filters.label('selection').invert(),
              ssteps.filters.value("mvaTrigV0Exists",min=True),

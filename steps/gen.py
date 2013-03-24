@@ -1,5 +1,5 @@
 import collections, ROOT as r
-from supy import utils,analysisStep
+from supy import utils,analysisStep,calculables
 #####################################
 class topPrinter(analysisStep) :
 
@@ -46,8 +46,43 @@ class qRecoilKinematics(analysisStep) :
         self.book.fill(p4.pt(), label + 'RecoilPt', 100, 0, 200, title = ';recoil %s.pt;events/bin'%label)
         self.book.fill(p4.eta(),label + 'RecoilEta', 50, -5, 5, title = ';recoil %s.eta;events/bin'%label)
 #####################################
-class pdfWeightsPlotter(analysisStep) :
+class pdfWeightsPlotter(calculables.secondary) :
+    def __init__(self,vars = [], mins = [], maxs = []) :
+        self.vars = vars
+        self.mins = mins
+        self.maxs = maxs
     def uponAcceptance(self,ev) :
         weights = ev['genPdfWeights']
+        N = len(weights)
         for i,w in enumerate(weights):
-            self.book.fill(i,'weights',len(weights),-0.5,len(weights)-0.5, title=";i^{th} weight;sum weights(i)", w=w)
+            self.book.fill(i,'weights',N,0,N, title=";i^{th} weight;sum weights(i)", w=w)
+            for var,lo,hi in zip(self.vars,self.mins,self.maxs) :
+                self.book.fill((i,ev[var]), '%s_weights'%var, (N,100), (0,lo), (N,hi), w=w, title=';i^{th} weight;%s;sum weights(i)'%var)
+
+    def update(self,_) : pass
+
+    def onlySamples(self) : return ['ttj_ph.wGG.pu','ttj_ph.wQQ.pu','ttj_ph.wQG.pu','ttj_ph.wAG.pu']
+
+    def reportCache(self) : 
+        fileName = '/'.join(self.outputFileName.split('/')[:-1]+[self.name])
+        histNames = ['weights']+['%s_weights'%v for v in self.vars]
+        tops = self.onlySamples()
+        cache = self.fromCache(tops,histNames)
+
+        c = r.TCanvas()
+        c.Print(fileName+'.pdf[')
+        c.Divide(2,2)
+        for n in histNames :
+            hists = [cache[tt][n] for tt in tops]
+            tt = hists[0].Clone(hists[0].GetName()+'_sum')
+            for h in hists[1:] : tt.Add(h)
+            [h.SetTitle(hn.split('.')[1]) for h,hn in zip(hists,tops)]
+            for i,h in enumerate(hists) :
+                c.cd(i+1)
+                h.Divide(tt)
+                h.SetMinimum(0)
+                h.SetMaximum(1)
+                h.Draw('colz')
+            c.Print(fileName+'.pdf')
+        c.Print(fileName+'.pdf]')
+        print "Wrote %s.pdf"%fileName
