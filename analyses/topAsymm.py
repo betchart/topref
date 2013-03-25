@@ -206,7 +206,7 @@ class topAsymm(supy.analysis) :
                                            [0,0,-1,-1],
                                            [1,1,1,1]).disable(saDisable)
              ####################################
-             , ssteps.filters.label('selection').invert(),
+             , ssteps.filters.label('selection'),
              ssteps.filters.value("mvaTrigV0Exists",min=True),
              ssteps.filters.value("muHandleValid",min=True),
              ssteps.filters.multiplicity( max=1, min=1, var = "Charge".join(lepton)),
@@ -273,13 +273,14 @@ class topAsymm(supy.analysis) :
              , ssteps.filters.label('recoTop')
              , steps.top.kinFitLook('fitTopRecoIndex')
              , steps.top.resolutions('fitTopRecoIndex')
-             , steps.top.kinematics('fitTop')
+             , ssteps.filters.label('kinematics')
+             , ssteps.other.reweights( steps.top.kinematics('fitTop'), "genPdfWeights", 53, not saDisable)
              ####################################
 
              , ssteps.filters.label('signal distributions')
              , ssteps.histos.symmAnti('tt','genTopQueuedBin7',49,-1,1).disable(saDisable)
-             , ssteps.histos.symmAnti('tt','fitTopQueuedBin7',49,-1,1, other = ('TridiscriminantWTopQCD',100,-1,1))
-
+             , ssteps.other.reweights( ssteps.histos.symmAnti('tt','fitTopQueuedBin7',49,-1,1, other = ('TridiscriminantWTopQCD',100,-1,1)),
+                                       "genPdfWeights", 53, not saDisable)
              ])
     ########################################################################################
 
