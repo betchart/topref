@@ -1,4 +1,4 @@
-import collections, ROOT as r
+import math,collections, ROOT as r
 from supy import utils,analysisStep,calculables
 #####################################
 class topPrinter(analysisStep) :
@@ -77,12 +77,49 @@ class pdfWeightsPlotter(calculables.secondary) :
             tt = hists[0].Clone(hists[0].GetName()+'_sum')
             for h in hists[1:] : tt.Add(h)
             [h.SetTitle(hn.split('.')[1]) for h,hn in zip(hists,tops)]
-            for i,h in enumerate(hists) :
+            hxs = [utils.divideX(h,tt if n=='weights' else  None) for h in hists]
+            for i,h in enumerate(hists if n=='weights' else hxs) :
                 c.cd(i+1)
-                h.Divide(tt)
+                if n=='weights' :
+                    h.Divide(tt)
+                    h.GetYaxis().SetTitle("fraction")
+                else:
+                    h.SetTitle(h.GetTitle() + " shape")
                 h.SetMinimum(0)
-                h.SetMaximum(1)
                 h.Draw('colz')
             c.Print(fileName+'.pdf')
+
+            if n=='weights' : continue
+
+            diffs=[]
+            noms=[]
+            for i,h in enumerate(hxs) :
+                c.cd(i+1)
+                hy = h.ProjectionY('_py',1,1)
+                diff = utils.subtractX(h,hy,ratherY=True)
+                diff.SetMinimum(-diff.GetMaximum())
+                diff.SetMaximum(diff.GetMaximum())
+                diff.SetTitle(diff.GetTitle() + " difference from nominal")
+                diff.Draw('colz')
+                diffs.append(diff)
+                noms.append(hy)
+            c.Print(fileName+'.pdf')
+
+            for i,(d,n) in enumerate(zip(diffs,noms)) :
+                c.cd(i+1)
+                d.Multiply(d)
+                dy = d.ProjectionY('_py',1,d.GetNbinsX())
+                for j in range(2+dy.GetNbinsX()):
+                    n.SetBinError(j,math.sqrt(dy.GetBinContent(j)/2))
+                n.SetMinimum(0)
+
+                empty=n.GetFillColor()
+                n.SetFillColor(r.kRed)
+                n.SetLineColor(r.kBlack)
+                n.DrawCopy("e4")
+                n.SetFillColor(empty)
+                n.Draw("hist C same")
+            c.Print(fileName+'.pdf')
+            
         c.Print(fileName+'.pdf]')
         print "Wrote %s.pdf"%fileName
