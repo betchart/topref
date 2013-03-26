@@ -66,11 +66,10 @@ class kinematics(analysisStep) :
         self.book.fill( topReco[index]['hadWraw'].mass(), "rawHadWMass", 100, 0,200, title = ";%s raw hadronic W mass;events / bin"%self.moreName)
 
         for low,var in  zip([0,0,-1],["fitTopPtOverSumPt", "fitTopTanhRapiditySum", "TridiscriminantQQggQg"]) :
-            lo = (low,-1)
-            up = (1, 1)
-            v = tuple( max(L,min(val,U-1e-6)) for val,L,U  in zip((ev[var],ev['TridiscriminantWTopQCD']),lo, up) )
-            self.book.fill( v, '%s_triD'%var, (100,100), lo, up)
-            self.book.fill( v[0], var, (100), lo[0], up[0], title = ';%s;events / bin'%var )
+            lo = low
+            up = 1
+            v = max(lo,min(ev[var],up-1e-6))
+            self.book.fill( v, var, 100, lo, up, title = ';%s;events / bin'%var )
 
         i5 = ev['fitTopFifthJetIndex']
         triD = ev['TridiscriminantWTopQCD']
@@ -83,6 +82,19 @@ class kinematics(analysisStep) :
                 v = max(lo, min(up-1e-8, ev[var][i5]))
                 self.book.fill( (v,triD), '%s_triD'%var, (100,100), (lo,-1), (up,1))
                 self.book.fill( v, var, 100, lo, up, title = ';%s;events / bin'%var)
+#####################################
+class kinematics3D(analysisStep) :
+    def __init__(self,indexName) : self.moreName = indexName
+    def uponAcceptance(self,ev) :
+        index = ev["%sRecoIndex"%self.moreName]
+        if index < 0 : return
+        topReco = ev["TopReconstruction"]
+
+        for low,var in  zip([0,0,-1],["fitTopPtOverSumPt", "fitTopTanhRapiditySum", "TridiscriminantQQggQg"]) :
+            lo = (low,-1)
+            up = (1, 1)
+            v = tuple( max(L,min(val,U-1e-6)) for val,L,U  in zip((ev[var],ev['TridiscriminantWTopQCD']),lo, up) )
+            self.book.fill( v, '%s_triD'%var, (50,5), lo, up)
 #####################################
 class resolutions(analysisStep) :
     def __init__(self,indexName) : self.moreName = indexName

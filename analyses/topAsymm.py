@@ -56,6 +56,9 @@ class topAsymm(supy.analysis) :
                  }
 
     @staticmethod
+    def doSystematics(pars) : return 'ph_pn_sn_jn_20' in pars['tag']
+
+    @staticmethod
     def scaleFactor() : return 1.0
 
     ########################################################################################
@@ -76,14 +79,6 @@ class topAsymm(supy.analysis) :
                                                        'Cert_190456-208686_8TeV_PromptReco-NoReprocessing_Collisions12CD_JSON.txt']]
     @staticmethod
     def single_top() : return ['top_s_ph','top_t_ph','top_tW_ph','tbar_s_ph','tbar_t_ph','tbar_tW_ph']
-    @staticmethod
-    def qcd_mu(suf='') :
-        bins = [15,20,30,50,80,120,170,300,470,600,800,1000,None]
-        return ['qcd_mu_%s'%'_'.join(str(i) + suf for i in [lo,hi] if i) for lo,hi in zip(bins[:-1],bins[1:])]
-    @staticmethod
-    def qcd_el(suf='') :
-        bins = [20,30,80,170,250,350,None]
-        return ['qcd_em_%s'%'_'.join(str(i) + suf for i in [lo,hi] if i) for lo,hi in zip(bins[:-1],bins[1:])]
 
     def listOfSamples(self,pars) :
         rw = pars['reweights']['abbr']
@@ -99,10 +94,6 @@ class topAsymm(supy.analysis) :
             return supy.samples.specify( names = self.single_top(),
                                          effectiveLumi = eL, color = r.kGray, weights = [rw]) #if "QCD" not in pars['tag'] else []
         
-        def qcd(eL = None) :
-            return supy.samples.specify( names = { 'mu' : self.qcd_mu(), 'el' : self.qcd_el(),}[pars['lepton']['name']],
-                                         effectiveLumi = eL, color = 9, weights = [rw] ) if "QCD" not in pars['tag'] else []
-
         def ttbar(eL = None) :
             tt = pars['toptype']
             color = [r.kBlue,r.kCyan,r.kCyan+1,r.kOrange]
@@ -116,7 +107,7 @@ class topAsymm(supy.analysis) :
                                             "el":self.electrons()}[pars['lepton']['name']],
                                            self.jsonFiles())],[])
 
-        return  ( data() + ewk() + ttbar() + single_top() ) #+ qcd() )
+        return  ( data() + ewk() + ttbar() + single_top() )
 
     ########################################################################################
     def listOfCalculables(self, pars) :
@@ -172,7 +163,7 @@ class topAsymm(supy.analysis) :
             supy.calculables.other.QueuedBin( 5, ("genTopDeltaBetazRel", "genTopPhiBoost"), (1,1), 'genTop'),
             supy.calculables.other.QueuedBin( 7, ("genTopDeltaBetazRel", "genTopPhiBoost"), (1,1), 'genTop'),
             ]
-        if 'ph_pn_sn_jn_20' in pars['tag'] and 'tt'==pars['sample'][:2]:
+        if self.doSystematics(pars) :
             calcs.append(calculables.gen.genPdfWeights('/home/hep/bbetchar/local/share/lhapdf/PDFsets/CT10.LHgrid',))
         return calcs
     ########################################################################################
@@ -204,7 +195,7 @@ class topAsymm(supy.analysis) :
              , ssteps.histos.symmAnti('tt','genTopQueuedBin7',49,-1,1).disable(saDisable)
              , steps.gen.pdfWeightsPlotter(['genTopTanhRapiditySum','genTopPtOverSumPt','genTopDeltaBetazRel','genTopPhiBoost'],
                                            [0,0,-1,-1],
-                                           [1,1,1,1]).disable(saDisable)
+                                           [1,1,1,1]).disable(saDisable or not self.doSystematics(pars))
              ####################################
              , ssteps.filters.label('selection'),
              ssteps.filters.value("mvaTrigV0Exists",min=True),
@@ -273,14 +264,16 @@ class topAsymm(supy.analysis) :
              , ssteps.filters.label('recoTop')
              , steps.top.kinFitLook('fitTopRecoIndex')
              , steps.top.resolutions('fitTopRecoIndex')
+             , steps.top.kinematics('fitTop')
              , ssteps.filters.label('kinematics')
-             , ssteps.other.reweights( steps.top.kinematics('fitTop'), "genPdfWeights", 53, not saDisable)
+             , ssteps.other.reweights( steps.top.kinematics3D('fitTop'), "genPdfWeights", 53, self.doSystematics(pars) and not saDisable)
              ####################################
-
              , ssteps.filters.label('signal distributions')
+             , ssteps.histos.value('fitTopDeltaBetazRel',100,-1,1)
+             , ssteps.histos.value('fitTopPhiBoost',100,-1,1)
              , ssteps.histos.symmAnti('tt','genTopQueuedBin7',49,-1,1).disable(saDisable)
-             , ssteps.other.reweights( ssteps.histos.symmAnti('tt','fitTopQueuedBin7',49,-1,1, other = ('TridiscriminantWTopQCD',100,-1,1)),
-                                       "genPdfWeights", 53, not saDisable)
+             , ssteps.other.reweights( ssteps.histos.symmAnti('tt','fitTopQueuedBin7',49,-1,1, other = ('TridiscriminantWTopQCD',5,-1,1)),
+                                       "genPdfWeights", 53, self.doSystematics(pars) and not saDisable)
              ])
     ########################################################################################
 
