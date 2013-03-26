@@ -74,14 +74,11 @@ class kinematics(analysisStep) :
         i5 = ev['fitTopFifthJetIndex']
         triD = ev['TridiscriminantWTopQCD']
         if i5!=None:
-            jets = ev['TopJets']
-            vars = [item.join(jets) for item in ['Pt','Moments2Sum']]
-            los = (0,0)
-            ups = (400,0.11)
-            for var,lo,up in zip(vars,los,ups) :
-                v = max(lo, min(up-1e-8, ev[var][i5]))
-                self.book.fill( (v,triD), '%s_triD'%var, (100,100), (lo,-1), (up,1))
-                self.book.fill( v, var, 100, lo, up, title = ';%s;events / bin'%var)
+            lo = 0
+            up = 0.11
+            v = max(lo, min(up-1e-8, ev['Moments2Sum'.join(ev['TopJets'])][i5]))
+            self.book.fill( (v,triD), '%s_triD'%var, (50,5), (lo,-1), (up,1))
+            self.book.fill( v, var, 100, lo, up, title = ';%s;events / bin'%var)
 #####################################
 class kinematics3D(analysisStep) :
     def __init__(self,indexName) : self.moreName = indexName
@@ -89,12 +86,9 @@ class kinematics3D(analysisStep) :
         index = ev["%sRecoIndex"%self.moreName]
         if index < 0 : return
         topReco = ev["TopReconstruction"]
-
         for low,var in  zip([0,0,-1],["fitTopPtOverSumPt", "fitTopTanhRapiditySum", "TridiscriminantQQggQg"]) :
-            lo = (low,-1)
-            up = (1, 1)
-            v = tuple( max(L,min(val,U-1e-6)) for val,L,U  in zip((ev[var],ev['TridiscriminantWTopQCD']),lo, up) )
-            self.book.fill( v, '%s_triD'%var, (50,5), lo, up)
+            v = tuple( max(L,min(val,U-1e-6)) for val,L,U  in zip((ev[var],ev['TridiscriminantWTopQCD']), (low,-1), (1,1)) )
+            self.book.fill( v, '%s_triD'%var, (50,5), (low,-1), (1,1))
 #####################################
 class resolutions(analysisStep) :
     def __init__(self,indexName) : self.moreName = indexName
