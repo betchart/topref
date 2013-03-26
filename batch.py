@@ -6,6 +6,7 @@ parser.add_option("--all",   dest = "doAll",     default = False,  action='store
 parser.add_option("--tops",  dest = "justTops",  default = False,  action='store_true',  help = "submit ttbar samples")
 parser.add_option("--wjets", dest = "justWJets", default = False,  action='store_true',  help = "submit wjets samples")
 parser.add_option("--nodata",dest = "noData",    default = False,  action='store_true',  help = 'submit all samples except data')
+parser.add_option("--noask", dest = "noData",    default = False,  action='store_true',  help = 'submit all samples except data')
 
 options,args = parser.parse_args()
 if len(args)!=1 or sum(int(i) for i in [options.doAll,options.justTops,options.justWJets,options.noData])!=1:
@@ -32,9 +33,9 @@ groupsAll = {80:[ '%s.B.1.jw'%lep,
                  'tbar_tW_ph.pu']
              }
 
-groupsTop = {142:['ttj_%s.wGG.pu'%top,],
-             80:['ttj_%s.wQG.pu'%top,'ttj_%s.wQQ.pu'%top,],
-             30:['ttj_%s.wAG.pu'%top,]
+groupsTop = {143:['ttj_%s.wGG.pu'%top,],
+             72:['ttj_%s.wQG.pu'%top,'ttj_%s.wQQ.pu'%top,],
+             26:['ttj_%s.wAG.pu'%top,]
              }
 
 groupsW = {80:['w2j_mg.pu'],
@@ -53,7 +54,9 @@ if options.doAll : cmds.append('supy analyses/topAsymm.py --tags %s --omit %s --
 
 for cmd in cmds : print cmd
 
-query = raw_input('Do it?')
+if not options.noask : query = raw_input('Do it?')
+else : query = True
+
 if query in [1,True,'y','yes','Y','Yes','YES'] :
     for cmd in cmds :
         os.system(cmd)
