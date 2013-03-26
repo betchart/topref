@@ -1,5 +1,7 @@
 from supy import wrappedChain,utils,calculables
 import ROOT as r
+try: import lhapdf
+except: lhapdf=None
 ##############################
 class qPtMin(wrappedChain.calculable) :
     def __init__(self,ptMin) : self.value = ptMin
@@ -87,6 +89,26 @@ class genIndicesWqq(wrappedChain.calculable) :
         ids = self.source['genPdgId']
         mom = self.source['genMotherPdgId']
         self.value = filter(lambda i: abs(mom[i]) is 24 and abs(ids[i]) < 5, range(len(ids)))
+##############################
+class genPdfWeights(wrappedChain.calculable) :
+    def __init__(self, pdfset, QisMt=True) :
+        self.pdfset = pdfset
+        self.QisMt = QisMt
+        self.moreName = "%s" + ("; Q=m_t" if QisMt else "")
+        lhapdf.initPDFSet(self.pdfset)
+
+    def update(self,_) :
+        x1 = self.source['genx1']
+        x2 = self.source['genx2']
+        id1 = self.source['genid1']
+        id2 = self.source['genid2']
+        Q = 175.2 if self.QisMt else self.source['genQ']
+        xpdfs = [self.xpdf(i,x1,x2,id1,id2,Q) for i in range(1+lhapdf.numberPDF())]
+        self.value = [xpdf/xpdfs[0] for xpdf in xpdfs]
+
+    def xpdf(self,i, x1, x2, id1, id2, Q) :
+        lhapdf.usePDFMember(i)
+        return lhapdf.xfx(x1,Q,id1) * lhapdf.xfx(x2,Q,id2)
 ##############################
 class qDirExpectation(calculables.secondary) :
     var = ""
