@@ -264,15 +264,30 @@ class topAsymm(supy.analysis) :
              , ssteps.filters.label('recoTop')
              , steps.top.kinFitLook('fitTopRecoIndex')
              , steps.top.resolutions('fitTopRecoIndex')
-             , steps.top.kinematics('fitTop')
-             , ssteps.filters.label('kinematics')
-             , ssteps.other.reweights( steps.top.kinematics3D('fitTop'), "genPdfWeights", 53, self.doSystematics(pars) and not saDisable)
              ####################################
-             , ssteps.filters.label('signal distributions')
+             , ssteps.filters.label('kinematics')
+             , steps.top.kinematics('fitTop')
+             , ssteps.filters.label('asymmetry')
              , ssteps.histos.value('fitTopDeltaBetazRel',100,-1,1)
              , ssteps.histos.value('fitTopPhiBoost',100,-1,1)
-             , ssteps.histos.symmAnti('tt','genTopQueuedBin7',49,-1,1).disable(saDisable)
+             #, ssteps.histos.symmAnti('tt','genTopQueuedBin7',49,-1,1).disable(saDisable)
+             , ssteps.histos.symmAnti('tt','fitTopQueuedBin7',49,-1,1)
+
              , ssteps.other.reweights( ssteps.histos.symmAnti('tt','fitTopQueuedBin7',49,-1,1, other = ('TridiscriminantWTopQCD',5,-1,1)),
+                                       "genPdfWeights", 53, self.doSystematics(pars) and not saDisable)
+             , ssteps.other.reweights( steps.top.kinematics3D('fitTop'),
+                                       "genPdfWeights", 53, self.doSystematics(pars) and not saDisable)
+             ####################################
+             , ssteps.filters.value('fitTopTanhRapiditySum',min=0.5)
+             , ssteps.histos.value('fitTopTanhRapiditySum', 100,0,1)
+             , ssteps.histos.value('fitTopPtOverSumPt', 100,0,1)
+             , ssteps.histos.value('TridiscriminantQQggQg', 100,-1,1)
+             , ssteps.histos.value('TridiscriminantWTopQCD', 100,-1,1)
+             , ssteps.histos.value('fitTopDeltaBetazRel',100,-1,1)
+             , ssteps.histos.value('fitTopPhiBoost',100,-1,1)
+             , ssteps.other.reweights( ssteps.histos.symmAnti('tt','fitTopQueuedBin7',49,-1,1, other = ('TridiscriminantWTopQCD',5,-1,1)),
+                                       "genPdfWeights", 53, self.doSystematics(pars) and not saDisable)
+             , ssteps.other.reweights( steps.top.kinematics3D('fitTop'),
                                        "genPdfWeights", 53, self.doSystematics(pars) and not saDisable)
              ])
     ########################################################################################
@@ -349,16 +364,16 @@ class topAsymm(supy.analysis) :
         org = self.organizer(pars, verbose = True )
 
         if pars['lepton']['name']=='mu' :
-            org.mergeSamples(targetSpec = {"name":"Mu.2012", "color":r.kBlack, "markerStyle":20}, sources = self.muons('.jw') )
+            org.mergeSamples(targetSpec = {"name":"Data 2012", "color":r.kBlack, "markerStyle":20}, sources = self.muons('.jw') )
         else:
-            org.mergeSamples(targetSpec = {"name":"El.2012", "color":r.kBlack, "markerStyle":20}, sources = self.electrons('.jw'))
+            org.mergeSamples(targetSpec = {"name":"Data 2012", "color":r.kBlack, "markerStyle":20}, sources = self.electrons('.jw'))
             
         org.mergeSamples(targetSpec = {"name":"t#bar{t}", "color":r.kViolet}, sources=["ttj_%s.%s.%s"%(tt,s,rw) for s in ['wQQ','wQG','wAG','wGG']], keepSources = True)
-        org.mergeSamples(targetSpec = {"name":"W+jets", "color":28}, allWithPrefix = 'w')
-        org.mergeSamples(targetSpec = {"name":"DY+jets", "color":r.kYellow}, allWithPrefix="dy")
-        org.mergeSamples(targetSpec = {"name":"Single top", "color":r.kGray}, sources = ["%s.%s"%(s,rw) for s in self.single_top()])
+        org.mergeSamples(targetSpec = {"name":"W", "color":28}, allWithPrefix = 'w')
+        org.mergeSamples(targetSpec = {"name":"DY", "color":r.kYellow}, allWithPrefix="dy")
+        org.mergeSamples(targetSpec = {"name":"Single", "color":r.kGray}, sources = ["%s.%s"%(s,rw) for s in self.single_top()])
         org.mergeSamples(targetSpec = {"name":"St.Model", "color":r.kGreen+2}, sources = ["t#bar{t}","W+jets","DY+jets","Single top","Multijet"], keepSources = True)
-
+        self.skimStats(org)
         org.scale( lumiToUseInAbsenceOfData = 19590 )
 
         names = [ss["name"] for ss in org.samples]
@@ -392,15 +407,26 @@ class topAsymm(supy.analysis) :
 
         fileName = '%s/stats_%s.root'%(self.globalStem,org.tag)
         tfile = r.TFile.Open(fileName,'RECREATE')
-        grab = (['lumiHisto','xsHisto','allweighted','2_x_y','fitTopPtOverSumPt_triD','fitTopTanhRapiditySum_triD','jetPt_triD','jetMoments2Sum_triD','TridiscriminantQQggQg_triD']+
-                [p+suf for p in ['fitTopQueuedBin%dTridiscriminantWTopQCD'%d for d in [7]] for suf in ['','_symm','_anti']])
-        for g in grab :
-            tfile.mkdir(g).cd()
+
+        for g in ['lumiHisto','xsHisto','allweighted','2_x_y'] :
+            tfile.mkdir(g,'_').cd()
             for ss,hist in zip( org.samples,
                                 org.steps[next(org.indicesOfStepsWithKey(g))][g] ) :
                 if not hist or ss['name'] in ['St.Model','S.M.']: continue
                 h = hist.Clone(statsname[ss['name']] if ss['name'] in statsname else ss['name'])
                 h.Write()
+        for iStep in org.indicesOfStep('reweights') :
+            print iStep
+            step = org.steps[iStep]
+            dirname = ''.join(step.title.split()).replace(';','_').replace('(','').replace(')','')
+            dir = tfile.mkdir(dirname,'_')
+            for g in step:
+                dir.mkdir(g,'_').cd()
+                for ss,hist in zip( org.samples,
+                                    step[g] ) :
+                    if not hist or ss['name'] in ['St.Model','S.M']: continue
+                    h = hist.Clone(statsname[ss['name']] if ss['name'] in statsname else ss['name'])
+                    h.Write()
         tfile.Close()
         print 'Wrote: ', fileName
 
@@ -447,7 +473,6 @@ class topAsymm(supy.analysis) :
             org.mergeSamples(targetSpec = {"name":"DY", "color":28}, allWithPrefix = "dy")
             org.mergeSamples(targetSpec = {"name":"Single", "color":r.kGray}, sources = ["%s.pu"%s for s in self.single_top()], keepSources = False )
             org.mergeSamples(targetSpec = {"name":"Data 2012", "color":r.kBlack, "markerStyle":20}, sources={'mu':self.muons('.jw'),'el':self.electrons('.jw')}[lname])
-            self.skimStats(org)
             org.scale()
             if "QCD_" in org.tag :
                 sm = ['t#bar{t}','W','Single']
