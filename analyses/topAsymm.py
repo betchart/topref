@@ -148,25 +148,17 @@ class topAsymm(supy.analysis) :
             calculables.jet.pt( jet, index = 3, Btagged = False ),
             calculables.jet.absEta( jet, index = 3, Btagged = False),
 
-            calculables.other.pileUpRatios('pileupTrueNumInteractionsBX0',
-                                           ['lumi/dsets_%s%s_pileup.root'%(pars['lepton']['name'],s) for s in ['','_down','_up']]),
-
             supy.calculables.other.pt( "AdjustedP4".join(met) ),
             supy.calculables.other.size( "Indices".join(jet) ),
             supy.calculables.other.abbreviation( pars['reweights']['var'], pars['reweights']['abbr'] ),
 
-            supy.calculables.other.QueuedBin( 3, ("fitTopDeltaBetazRel", "fitTopPhiBoost"), (1,1), 'fitTop'),
-            supy.calculables.other.QueuedBin( 4, ("fitTopDeltaBetazRel", "fitTopPhiBoost"), (1,1), 'fitTop'),
-            supy.calculables.other.QueuedBin( 5, ("fitTopDeltaBetazRel", "fitTopPhiBoost"), (1,1), 'fitTop'),
             supy.calculables.other.QueuedBin( 7, ("fitTopDeltaBetazRel", "fitTopPhiBoost"), (1,1), 'fitTop'),
-
-            supy.calculables.other.QueuedBin( 3, ("genTopDeltaBetazRel", "genTopPhiBoost"), (1,1), 'genTop'),
-            supy.calculables.other.QueuedBin( 4, ("genTopDeltaBetazRel", "genTopPhiBoost"), (1,1), 'genTop'),
-            supy.calculables.other.QueuedBin( 5, ("genTopDeltaBetazRel", "genTopPhiBoost"), (1,1), 'genTop'),
             supy.calculables.other.QueuedBin( 7, ("genTopDeltaBetazRel", "genTopPhiBoost"), (1,1), 'genTop'),
             ]
         if self.doSystematics(pars) :
             calcs.append(calculables.gen.genPdfWeights('/home/hep/bbetchar/local/share/lhapdf/PDFsets/CT10.LHgrid',))
+            calcs.append(calculables.other.pileUpRatios( 'pileupTrueNumInteractionsBX0',
+                                                         ['lumi/dsets_%s%s_pileup.root'%(pars['lepton']['name'],s) for s in ['','_down','_up']]))
         return calcs
     ########################################################################################
 
@@ -193,6 +185,7 @@ class topAsymm(supy.analysis) :
              , ssteps.histos.value("genQ",200,0,1000,xtitle="#hat{Q} (GeV)").onlySim()
              , steps.gen.qRecoilKinematics().disable(saDisable)
              , getattr(self,pars['reweights']['func'])(pars)
+             , ssteps.other.reweights( ssteps.histos.value('pileupTrueNumInteractionsBX0',100,0,60), 'pileUpRatios', 2, self.doSystematics(pars)).onlySim()
              , calculables.top.ttSymmAnti(pars['sample'], inspect=True).disable(saDisable)
              , ssteps.histos.symmAnti('tt','genTopQueuedBin7',49,-1,1).disable(saDisable)
              , steps.gen.pdfWeightsPlotter(['genTopTanhRapiditySum','genTopPtOverSumPt','genTopDeltaBetazRel','genTopPhiBoost'],
@@ -277,8 +270,12 @@ class topAsymm(supy.analysis) :
 
              , ssteps.other.reweights( ssteps.histos.symmAnti('tt','fitTopQueuedBin7',49,-1,1, other = ('TridiscriminantWTopQCD',5,-1,1)),
                                        "genPdfWeights", 53, self.doSystematics(pars) and not saDisable)
+             , ssteps.other.reweights( ssteps.histos.symmAnti('tt','fitTopQueuedBin7',49,-1,1, other = ('TridiscriminantWTopQCD',5,-1,1)),
+                                       'pileUpRatios', 2, self.doSystematics(pars)).onlySim()
              , ssteps.other.reweights( steps.top.kinematics3D('fitTop'),
                                        "genPdfWeights", 53, self.doSystematics(pars) and not saDisable)
+             , ssteps.other.reweights( steps.top.kinematics3D('fitTop'),
+                                       'pileUpRatios', 2, self.doSystematics(pars)).onlySim()
              ####################################
              , ssteps.filters.value('fitTopTanhRapiditySum',min=0.5)
              , ssteps.histos.value('fitTopTanhRapiditySum', 100,0,1)
@@ -287,10 +284,15 @@ class topAsymm(supy.analysis) :
              , ssteps.histos.value('TridiscriminantWTopQCD', 100,-1,1)
              , ssteps.histos.value('fitTopDeltaBetazRel',100,-1,1)
              , ssteps.histos.value('fitTopPhiBoost',100,-1,1)
+             , ssteps.histos.symmAnti('tt','fitTopQueuedBin7',49,-1,1)
              , ssteps.other.reweights( ssteps.histos.symmAnti('tt','fitTopQueuedBin7',49,-1,1, other = ('TridiscriminantWTopQCD',5,-1,1)),
                                        "genPdfWeights", 53, self.doSystematics(pars) and not saDisable)
+             , ssteps.other.reweights( ssteps.histos.symmAnti('tt','fitTopQueuedBin7',49,-1,1, other = ('TridiscriminantWTopQCD',5,-1,1)),
+                                       'pileUpRatios', 2, self.doSystematics(pars)).onlySim()
              , ssteps.other.reweights( steps.top.kinematics3D('fitTop'),
                                        "genPdfWeights", 53, self.doSystematics(pars) and not saDisable)
+             , ssteps.other.reweights( steps.top.kinematics3D('fitTop'),
+                                       'pileUpRatios', 2, self.doSystematics(pars)).onlySim()
              ])
     ########################################################################################
 
@@ -374,7 +376,8 @@ class topAsymm(supy.analysis) :
         org.mergeSamples(targetSpec = {"name":"DY", "color":r.kYellow}, allWithPrefix="dy")
         org.mergeSamples(targetSpec = {"name":"Single", "color":r.kGray}, sources = ["%s.%s"%(s,rw) for s in self.single_top()])
         org.mergeSamples(targetSpec = {"name":"St.Model", "color":r.kGreen+2}, sources = ["t#bar{t}","W+jets","DY+jets","Single top","Multijet"], keepSources = True)
-        self.skimStats(org)
+        try: self.skimStats(org)
+        except: pass
         org.scale( lumiToUseInAbsenceOfData = 19590 )
 
         names = [ss["name"] for ss in org.samples]
