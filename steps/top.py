@@ -66,19 +66,15 @@ class kinematics(analysisStep) :
         self.book.fill( topReco[index]['hadWraw'].mass(), "rawHadWMass", 100, 0,200, title = ";%s raw hadronic W mass;events / bin"%self.moreName)
 
         for low,var in  zip([0,0,-1],["fitTopPtOverSumPt", "fitTopTanhRapiditySum", "TridiscriminantQQggQg"]) :
-            lo = low
-            up = 1
-            v = max(lo,min(ev[var],up-1e-6))
-            self.book.fill( v, var, 100, lo, up, title = ';%s;events / bin'%var )
+            v = max(low,min(ev[var],1-1e-6))
+            self.book.fill( v, var, 100, low, 1, title = ';%s;events / bin'%var )
 
         i5 = ev['fitTopFifthJetIndex']
         triD = ev['TridiscriminantWTopQCD']
         if i5!=None:
-            lo = 0
             up = 0.11
-            v = max(lo, min(up-1e-8, ev['Moments2Sum'.join(ev['TopJets'])][i5]))
-            self.book.fill( (v,triD), '%s_triD'%var, (50,5), (lo,-1), (up,1))
-            self.book.fill( v, var, 100, lo, up, title = ';%s;events / bin'%var)
+            v = max(0, min(up-1e-8, ev['Moments2Sum'.join(ev['TopJets'])][i5]))
+            self.book.fill( (v,triD), '%s_triD'%var, (50,5), (0,-1), (up,1))
 #####################################
 class kinematics3D(analysisStep) :
     def __init__(self,indexName) : self.moreName = indexName
