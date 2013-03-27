@@ -37,8 +37,8 @@ class topAsymm(supy.analysis) :
         bCut = {"normal"   : {"index":0, "min":csvWP['CSVM']},
                 "inverted" : {"index":0, "min":csvWP['CSVL'], "max":csvWP['CSVM']}}
 
-        return { "vary" : ['selection','lepton','toptype','putarget','smear','jec','ptscale'],
-                 "nullvary": list(itertools.combinations(['pu','pd','ju','jd','su','sd','mn','40'],2)),
+        return { "vary" : ['selection','lepton','toptype','smear','jec','ptscale'],
+                 "nullvary": list(itertools.combinations(['ju','jd','su','sd','mn','40'],2)),
                  "discriminant2DPlots": True,
                  "bVar" : "CSV", # "Combined Secondary Vertex"
                  "objects" : dict([(item,(item,'')) for item in ['jet','mu','el','met']]),
@@ -49,14 +49,13 @@ class topAsymm(supy.analysis) :
                                           }),
                  "toptype" : self.vary({"ph":"ph",'mn':'mn'}),
                  "ptscale" : self.vary({"20":20,"40":40}),
-                 "putarget" : self.vary({"pn":"","pu":"_up","pd":"_down"}),
                  "smear" : self.vary({'sn':"Smear",'su':'SmearUp','sd':'SmearDown'}),
                  "jec" : self.vary({'jn':0,'ju':1,'jd':-1}),
                  "topBsamples": ("ttj_%s",['ttj_%s.wGG.%s','ttj_%s.wQG.%s','ttj_%s.wAG.%s','ttj_%s.wQQ.%s']),
                  }
 
     @staticmethod
-    def doSystematics(pars) : return 'ph_pn_sn_jn_20' in pars['tag']
+    def doSystematics(pars) : return 'ph_sn_jn_20' in pars['tag']
 
     @staticmethod
     def scaleFactor() : return 1.0
@@ -148,6 +147,9 @@ class topAsymm(supy.analysis) :
             calculables.jet.pt( jet, index = 0, Btagged = True ),
             calculables.jet.pt( jet, index = 3, Btagged = False ),
             calculables.jet.absEta( jet, index = 3, Btagged = False),
+
+            calculables.other.pileUpRatios('pileupTrueNumInteractionsBX0',
+                                           ['lumi/dsets_%s%s_pileup.root'%(pars['lepton']['name'],s) for s in ['','_down','_up']]),
 
             supy.calculables.other.pt( "AdjustedP4".join(met) ),
             supy.calculables.other.size( "Indices".join(jet) ),
@@ -296,11 +298,10 @@ class topAsymm(supy.analysis) :
     def pileup(cls,pars) :
         rw = pars['reweights']['abbr']
         tt = pars['toptype']
-        targetFile = 'lumi/dsets_%s%s_pileup.root'%(pars['lepton']['name'],pars['putarget'])
+        targetFile = 'lumi/dsets_%s_pileup.root'%pars['lepton']['name']
         return supy.calculables.other.Target("pileupTrueNumInteractionsBX0", thisSample = pars['baseSample'],
                                              target = (targetFile,"pileup"),
-                                             groups = [('qcd_mu',[]),
-                                                       ('dy1j_mg',[]),('dy2j_mg',[]),('dy3j_mg',[]),('dy4j_mg',[]),
+                                             groups = [('dy1j_mg',[]),('dy2j_mg',[]),('dy3j_mg',[]),('dy4j_mg',[]),
                                                        ("w1j_mg",[]), ("w2j_mg",[]), ("w3j_mg",[]), ("w4j_mg",[]),
                                                        ('single_top', ['%s.%s'%(s,rw) for s in cls.single_top()]),
                                                        ('ttj_%s'%tt,['ttj_%s.%s.%s'%(tt,s,rw) for s in ['',
@@ -379,8 +380,7 @@ class topAsymm(supy.analysis) :
         names = [ss["name"] for ss in org.samples]
         kwargs = {"detailedCalculables": False,
                   "blackList":["lumiHisto","xsHisto","nJobsHisto"],
-                  "samplesForRatios" : next(iter(filter(lambda x: x[0] in names and x[1] in names, [("Mu.2012","St.Model"),
-                                                                                                    ("El.2012","St.Model")])), ("","")),
+                  "samplesForRatios" : next(iter(filter(lambda x: x[0] in names and x[1] in names, [("Data 2012","St.Model")])), ("","")),
                   "sampleLabelsForRatios" : ("data","s.m."),
                   "detailedCalculables" : True,
                   "rowColors" : self.rowcolors,
@@ -392,7 +392,7 @@ class topAsymm(supy.analysis) :
         supy.plotter(org, pdfFileName = self.pdfFileName(org.tag+"_nolog"), doLog = False, **kwargs ).plotAll()
 
     def skimStats(self,org) :
-        _,lepton,tt,pu,smear,jec,pt = org.tag.split('_')
+        _,lepton,tt,smear,jec,pt = org.tag.split('_')
         print org.tag
         statsname = {'DY':'dy',
                      'W': 'wj',
@@ -419,7 +419,7 @@ class topAsymm(supy.analysis) :
             step = org.steps[iStep]
             dirname = 'R%02d_'%iRe+''.join(step.title.split()).replace(';','_').replace('(','').replace(')','')
             dir = tfile.mkdir(dirname,'_')
-            for g in step:
+            for g in sorted(step):
                 dir.mkdir(g,'_').cd()
                 for ss,hist in zip( org.samples,
                                     step[g] ) :
@@ -434,7 +434,7 @@ class topAsymm(supy.analysis) :
             print tagSuffix, "not in", self.orgMelded.keys()
             print "run meldScale() before plotMeldScale()"; return
         melded = copy.deepcopy(self.orgMelded[tagSuffix])
-        lname,tt,pu,sn,jn,ptMin = tagSuffix.split('_')
+        lname,tt,sn,jn,ptMin = tagSuffix.split('_')
         for s in ['top.ttj_%s.%s.pu'%(tt,s) for s in ['wQQ','wQG','wAG','wGG']] :
             melded.drop(s)
         for log,label in [(False,""),(True,"_log")][:1] : 
@@ -450,7 +450,7 @@ class topAsymm(supy.analysis) :
                               ).plotAll()
 
     def meldScale(self,tagSuffix) :
-        lname,tt,pu,sn,jn,ptMin = tagSuffix.split('_')
+        lname,tt,sn,jn,ptMin = tagSuffix.split('_')
         meldSamples = {"top_"+tagSuffix :( { 'mu': self.muons('.jw'),
                                              'el': self.electrons('.jw')}[lname]+
                                            ["ttj_%s"%tt]+self.single_top()+
@@ -545,7 +545,7 @@ class topAsymm(supy.analysis) :
         org.drop('bg')
 
     def measureAmplitudes(self,tagsSuffix) :
-        tt,pu,sn,jn,ptMin = tagsSuffix.split('_')
+        tt,sn,jn,ptMin = tagsSuffix.split('_')
         tags = ['%s_%s'%(lname,tagsSuffix) for lname in ['mu','el']]
         if not all( tag in self.orgMelded for tag in tags ):
             print next(tag for tag in tags if tag not in self.orgMelded ), "not in", self.orgMelded.keys()
