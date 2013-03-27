@@ -415,10 +415,9 @@ class topAsymm(supy.analysis) :
                 if not hist or ss['name'] in ['St.Model','S.M.']: continue
                 h = hist.Clone(statsname[ss['name']] if ss['name'] in statsname else ss['name'])
                 h.Write()
-        for iStep in org.indicesOfStep('reweights') :
-            print iStep
+        for iRe,iStep in enumerate(org.indicesOfStep('reweights')) :
             step = org.steps[iStep]
-            dirname = ''.join(step.title.split()).replace(';','_').replace('(','').replace(')','')
+            dirname = 'R%02d_'%iRe+''.join(step.title.split()).replace(';','_').replace('(','').replace(')','')
             dir = tfile.mkdir(dirname,'_')
             for g in step:
                 dir.mkdir(g,'_').cd()
