@@ -44,16 +44,15 @@ class KarlsruheDiscriminant(wrappedChain.calculable) :
 #####################################
 class pileUpRatios(wrappedChain.calculable) :
     def __init__(self, var, fileNames) :
-        for item in ['var','fileNames'] : setattr(self,item,eval(item))
-
-    def setup(self,*_) :
+        self.var = var
         hists = []
-        for i,name in enumerate(self.fileNames) :
+        for i,name in enumerate(fileNames) :
             tfile = r.TFile.Open(name)
             hists.append(tfile.Get('pileup').Clone())
             hists[-1].Scale(1.0/hists[-1].Integral())
+            hists[-1].SetDirectory(0)
             tfile.Close()
-        for h in hists : h.Divide(h[0])
+        for h in reversed(hists) : h.Divide(hists[0])
         self.hists = hists
 
     def update(self,_) :
