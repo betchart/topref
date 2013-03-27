@@ -6,7 +6,7 @@ parser.add_option("--all",   dest = "doAll",     default = False,  action='store
 parser.add_option("--tops",  dest = "justTops",  default = False,  action='store_true',  help = "submit ttbar samples")
 parser.add_option("--wjets", dest = "justWJets", default = False,  action='store_true',  help = "submit wjets samples")
 parser.add_option("--nodata",dest = "noData",    default = False,  action='store_true',  help = 'submit all samples except data')
-parser.add_option("--noask", dest = "noData",    default = False,  action='store_true',  help = 'submit all samples except data')
+parser.add_option("--noask", dest = "noask",    default = False,  action='store_true',  help = 'submit without asking')
 
 options,args = parser.parse_args()
 if len(args)!=1 or sum(int(i) for i in [options.doAll,options.justTops,options.justWJets,options.noData])!=1:
