@@ -41,3 +41,21 @@ class KarlsruheDiscriminant(wrappedChain.calculable) :
     def update(self,_) :
         met = self.source[self.met].pt()
         self.value = -8*met if met<40 else self.source[self.M3]
+#####################################
+class pileUpRatios(wrappedChain.calculable) :
+    def __init__(self, var, fileNames) :
+        for item in ['var','fileNames'] : setattr(self,item,eval(item))
+
+    def setup(self,*_) :
+        hists = []
+        for i,name in enumerate(self.fileNames) :
+            tfile = r.TFile.Open(name)
+            hists.append(tfile.Get('pileup').Clone())
+            hists[-1].Scale(1.0/hists[-1].Integral())
+            tfile.Close()
+        for h in hists : h.Divide(h[0])
+        self.hists = hists
+
+    def update(self,_) :
+        val = self.source[self.var]
+        self.value = [h.GetBinContent(h.FindFixBin(val)) for h in self.hists[1:]]
