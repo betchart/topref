@@ -465,12 +465,12 @@ class topAsymm(supy.analysis) :
                                             ["w%dj_mg"%n for n in [1,2,3,4]]),
                        }
 
-        organizers = [supy.organizer(tag, [s for s in self.sampleSpecs(tag) if any(item in s['name'] for item in meldSamples[tag])])
+        organizers = [supy.organizer(tag, [s for s in self.sampleSpecs(tag) if any(item in s['name'] for item in meldSamples[tag])], keepTH2=False)
                       for tag in [p['tag'] for p in self.readyConfs if p["tag"] in meldSamples]]
 
         if len(organizers) < len(meldSamples) : return
         for org in organizers :
-            org.mergeSamples(targetSpec = {"name":"t#bar{t}", "color":r.kViolet}, sources=["ttj_%s.%s.pu"%(tt,s) for s in ['wQQ','wQG','wAG','wGG']], keepSources = True)
+            org.mergeSamples(targetSpec = {"name":"t#bar{t}", "color":r.kViolet}, sources=["ttj_%s.%s.pu"%(tt,s) for s in ['wQQ','wQG','wAG','wGG']], keepSources = 'top_' in org.tag)
             org.mergeSamples(targetSpec = {"name":"W", "color":r.kRed}, sources = ["w%dj_mg.pu"%n for n in [1,2,3,4]] )
             org.mergeSamples(targetSpec = {"name":"DY", "color":28}, allWithPrefix = "dy")
             org.mergeSamples(targetSpec = {"name":"Single", "color":r.kGray}, sources = ["%s.pu"%s for s in self.single_top()], keepSources = False )
