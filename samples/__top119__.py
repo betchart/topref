@@ -9,6 +9,9 @@ ttj_ph = '2013_01_25_01_25_48/TT_CT10_TuneZ2star_8TeV-powheg-tauola.Summer12_DR5
 top119.add("ttj_ph", '+'.join(['%s/%s")'%(srm_burt,ttj_ph%v) for v in [1,2]]), xs = 211.0 )
 top119.add("ttj_mn", '%s/2013_02_04_22_38_13/")'%srm_burt, xs = 211.1 )
 
+top119.add("ttj_phU",'%s/2013_03_23_04_11_09/TT_scaleup_CT10_TuneZ2star_8TeV-powheg-tauola.Summer12-START52_V9_FSIM-v1.AODSIM")'%srm_burt, xs = 211.1 )
+top119.add("ttj_phD",'%s/2013_03_23_04_11_09/TT_scaledown_CT10_TuneZ2star_8TeV-powheg-tauola.Summer12-START52_V9_FSIM-v1.AODSIM")'%srm_burt, xs = 211.1 )
+
 top119.add("top_s_ph", singleT%('T','s-channel'), xs = 2.82 )
 top119.add("top_t_ph", singleT%('T','t-channel'), xs = 47.0 )
 top119.add("top_tW_ph", singleT%('T','tW-channel-DR'), xs = 10.7 )

@@ -38,7 +38,7 @@ class topAsymm(supy.analysis) :
                 "inverted" : {"index":0, "min":csvWP['CSVL'], "max":csvWP['CSVM']}}
 
         return { "vary" : ['selection','lepton','toptype','smear','jec','ptscale'],
-                 "nullvary": list(itertools.combinations(['ju','jd','su','sd','mn','40'],2)),
+                 "nullvary": list(itertools.combinations(['ju','jd','su','sd','mn','up','dn','40'],2)),
                  "discriminant2DPlots": True,
                  "bVar" : "CSV", # "Combined Secondary Vertex"
                  "objects" : dict([(item,(item,'')) for item in ['jet','mu','el','met']]),
@@ -47,7 +47,7 @@ class topAsymm(supy.analysis) :
                  "selection" : self.vary({"top" : {"bCut":bCut["normal"],  "iso":"isoNormal"},
                                           "QCD" : {"bCut":bCut["normal"],  "iso":"isoInvert"}
                                           }),
-                 "toptype" : self.vary({"ph":"ph",'mn':'mn'}),
+                 "toptype" : self.vary({"ph":"ph",'mn':'mn','up':'phU','dn':'phD'}),
                  "ptscale" : self.vary({"20":20,"40":40}),
                  "smear" : self.vary({'sn':"Smear",'su':'SmearUp','sd':'SmearDown'}),
                  "jec" : self.vary({'jn':0,'ju':1,'jd':-1}),
@@ -129,8 +129,8 @@ class topAsymm(supy.analysis) :
             calculables.muon.Indices(mu),
             calculables.electron.Indices(el),
 
-            calculables.gen.genIndicesHardPartons({'ph':'POWHEG','mn':'MC@NLO'}[pars['toptype']]),
-            calculables.gen.genIndexTtbarExtraJet({'ph':'POWHEG','mn':'MC@NLO'}[pars['toptype']]),
+            calculables.gen.genIndicesHardPartons({'ph':'POWHEG','phU':'POWHEG','phD':'POWHEG','mn':'MC@NLO'}[pars['toptype']]),
+            calculables.gen.genIndexTtbarExtraJet({'ph':'POWHEG','phU':'POWHEG','phD':'POWHEG','mn':'MC@NLO'}[pars['toptype']]),
             calculables.gen.qPtMin(pars['ptscale']),
             calculables.top.TopJets( jet ),
             calculables.top.TopLeptons( lepton ),
