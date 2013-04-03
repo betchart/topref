@@ -47,11 +47,11 @@ class topAsymm(supy.analysis) :
                  "selection" : self.vary({"top" : {"bCut":bCut["normal"],  "iso":"isoNormal"},
                                           "QCD" : {"bCut":bCut["normal"],  "iso":"isoInvert"}
                                           }),
-                 "toptype" : self.vary({"ph":"ph",'mn':'mn','up':'phU','dn':'phD'}),
-                 "ptscale" : self.vary({"20":20,"40":40}),
+                 "toptype" : self.vary({"ph":"ph",'up':'phU','dn':'phD'}),#,'mn':'mn'}),
+                 "ptscale" : self.vary({"20":20}),#,"40":40}),
                  "smear" : self.vary({'sn':"Smear",'su':'SmearUp','sd':'SmearDown'}),
                  "jec" : self.vary({'jn':0,'ju':1,'jd':-1}),
-                 "topBsamples": ("ttj_%s",['ttj_%s.wGG.%s','ttj_%s.wQG.%s','ttj_%s.wAG.%s','ttj_%s.wQQ.%s']),
+                 "topSamples": ("ttj_%s",['ttj_%s.wGG.%s','ttj_%s.wQG.%s','ttj_%s.wAG.%s','ttj_%s.wQQ.%s']),
                  }
 
     @staticmethod
@@ -173,7 +173,7 @@ class topAsymm(supy.analysis) :
         bVar = pars["bVar"].join(jet)
         rw = pars['reweights']['abbr']
         tt = pars['toptype']
-        topSamples = (pars['topBsamples'][0]%tt,[s%(tt,rw) for s in pars['topBsamples'][1]])
+        topSamples = (pars['topSamples'][0]%tt,[s%(tt,rw) for s in pars['topSamples'][1]])
         topTag = pars['tag'].replace("QCD","top")
 
         ssteps = supy.steps
