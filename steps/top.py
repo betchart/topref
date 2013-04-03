@@ -59,22 +59,15 @@ class kinematics(analysisStep) :
         index = ev["%sRecoIndex"%self.moreName]
         if index < 0 : return
         topReco = ev["TopReconstruction"]
-        self.book.fill(ev[self.moreName+"TtxMass"], "TTX.mass", 50,300,1300, title = ";ttx invariant mass;events / bin")
-        self.book.fill(ev[self.moreName+"PtSum"],   "TT.pt",   100,  0, 200, title = ";ttbar.pt;events / bin")
-        self.book.fill(ev[self.moreName+"RapiditySum"], "TT.y", 50, 0, 3, title = ";|t#bar{t}.y|;events / bin" )
         self.book.fill( topReco[index]['hadTraw'].mass(), "rawHadTopMass", 100, 100,300, title = ";%s raw hadronic top mass;events / bin"%self.moreName)
         self.book.fill( topReco[index]['hadWraw'].mass(), "rawHadWMass", 100, 0,200, title = ";%s raw hadronic W mass;events / bin"%self.moreName)
-
-        for low,var in  zip([0,0,-1],["fitTopPtOverSumPt", "fitTopTanhRapiditySum", "TridiscriminantQQggQg"]) :
-            v = max(low,min(ev[var],1-1e-6))
-            self.book.fill( v, var, 100, low, 1, title = ';%s;events / bin'%var )
 
         i5 = ev['fitTopFifthJetIndex']
         triD = ev['TridiscriminantWTopQCD']
         if i5!=None:
             up = 0.11
             v = max(0, min(up-1e-8, ev['Moments2Sum'.join(ev['TopJets'])][i5]))
-            self.book.fill( (v,triD), '%s_triD'%var, (50,5), (0,-1), (up,1))
+            self.book.fill( (v,triD), 'Moments2Sum_triD', (50,5), (0,-1), (up,1))
 #####################################
 class kinematics3D(analysisStep) :
     def __init__(self,indexName) : self.moreName = indexName
