@@ -262,22 +262,23 @@ class topAsymm(supy.analysis) :
              ####################################
              , ssteps.filters.label('kinematics')
              , steps.top.kinematics('fitTop')
+             , ssteps.histos.mass('fitTopSumP4', 30, 300, 1200)
+             , ssteps.histos.pt(  'fitTopSumP4', 100, 0, 300)
+             , ssteps.histos.value('fitTopRapiditySum', 50, 0, 3, xtitle = '|t#bar{t}.y|')
+             , ssteps.histos.value('fitTopTanhRapiditySum', 100, 0, 1)
+             , ssteps.histos.value('fitTopPtOverSumPt', 100, 0, 1)
+             , ssteps.histos.value('TridiscriminantQQggQg',100,0,1)
              , ssteps.filters.label('asymmetry')
              , ssteps.histos.value('fitTopDeltaBetazRel',100,-1,1)
              , ssteps.histos.value('fitTopPhiBoost',100,-1,1)
+             , ssteps.histos.symmAnti('tt','fitTopQueuedBin7',49,-1,1)] +
              #, ssteps.histos.symmAnti('tt','genTopQueuedBin7',49,-1,1).disable(saDisable)
-             , ssteps.histos.symmAnti('tt','fitTopQueuedBin7',49,-1,1)
-
-             , ssteps.other.reweights( ssteps.histos.symmAnti('tt','fitTopQueuedBin7',49,-1,1, other = ('TridiscriminantWTopQCD',5,-1,1)),
-                                       "genPdfWeights", 53, self.doSystematics(pars) and not saDisable)
-             , ssteps.other.reweights( ssteps.histos.symmAnti('tt','fitTopQueuedBin7',49,-1,1, other = ('TridiscriminantWTopQCD',5,-1,1)),
-                                       'pileUpRatios', 2, self.doSystematics(pars)).onlySim()
-             , ssteps.other.reweights( steps.top.kinematics3D('fitTop'),
-                                       "genPdfWeights", 53, self.doSystematics(pars) and not saDisable)
-             , ssteps.other.reweights( steps.top.kinematics3D('fitTop'),
-                                       'pileUpRatios', 2, self.doSystematics(pars)).onlySim()
-             ####################################
-             , ssteps.filters.value('fitTopTanhRapiditySum',min=0.5)
+            ###################################
+            self.signalSequence(pars,saDisable) +
+            self.signalSequence(pars,saDisable, ssteps.filters.mass('fitTopSumP4',min=450)) +
+            self.signalSequence(pars,saDisable, ssteps.filters.value('fitTopTanhRapiditySum',min=0.5)) +
+            ###################################
+             [ ssteps.filters.value('fitTopTanhRapiditySum',min=0.5)
              , ssteps.histos.value('fitTopTanhRapiditySum', 100,0,1)
              , ssteps.histos.value('fitTopPtOverSumPt', 100,0,1)
              , ssteps.histos.value('TridiscriminantQQggQg', 100,-1,1)
@@ -285,16 +286,20 @@ class topAsymm(supy.analysis) :
              , ssteps.histos.value('fitTopDeltaBetazRel',100,-1,1)
              , ssteps.histos.value('fitTopPhiBoost',100,-1,1)
              , ssteps.histos.symmAnti('tt','fitTopQueuedBin7',49,-1,1)
-             , ssteps.other.reweights( ssteps.histos.symmAnti('tt','fitTopQueuedBin7',49,-1,1, other = ('TridiscriminantWTopQCD',5,-1,1)),
-                                       "genPdfWeights", 53, self.doSystematics(pars) and not saDisable)
-             , ssteps.other.reweights( ssteps.histos.symmAnti('tt','fitTopQueuedBin7',49,-1,1, other = ('TridiscriminantWTopQCD',5,-1,1)),
-                                       'pileUpRatios', 2, self.doSystematics(pars)).onlySim()
-             , ssteps.other.reweights( steps.top.kinematics3D('fitTop'),
-                                       "genPdfWeights", 53, self.doSystematics(pars) and not saDisable)
-             , ssteps.other.reweights( steps.top.kinematics3D('fitTop'),
-                                       'pileUpRatios', 2, self.doSystematics(pars)).onlySim()
              ])
     ########################################################################################
+
+    def signalSequence(self, pars, saDisable, predicate=None) :
+        ssteps = supy.steps
+        return [ ssteps.other.reweights( ssteps.histos.symmAnti('tt','fitTopQueuedBin7',49,-1,1, other = ('TridiscriminantWTopQCD',5,-1,1)),
+                                         "genPdfWeights", 53, self.doSystematics(pars) and not saDisable, predicate),
+                 ssteps.other.reweights( ssteps.histos.symmAnti('tt','fitTopQueuedBin7',49,-1,1, other = ('TridiscriminantWTopQCD',5,-1,1)),
+                                         'pileUpRatios', 2, self.doSystematics(pars), predicate).onlySim(),
+                 ssteps.other.reweights( steps.top.kinematics3D('fitTop'),
+                                         "genPdfWeights", 53, self.doSystematics(pars) and not saDisable, predicate),
+                 ssteps.other.reweights( steps.top.kinematics3D('fitTop'),
+                                         'pileUpRatios', 2, self.doSystematics(pars), predicate).onlySim()
+                 ]
 
     @classmethod
     def pileup(cls,pars) :
