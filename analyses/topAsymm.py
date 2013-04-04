@@ -267,7 +267,7 @@ class topAsymm(supy.analysis) :
              , ssteps.histos.value('fitTopRapiditySum', 50, 0, 3, xtitle = '|t#bar{t}.y|')
              , ssteps.histos.value('fitTopTanhRapiditySum', 100, 0, 1)
              , ssteps.histos.value('fitTopPtOverSumPt', 100, 0, 1)
-             , ssteps.histos.value('TridiscriminantQQggQg',100,0,1)
+             , ssteps.histos.value('TridiscriminantQQggQg',100,-1,1)
              , ssteps.filters.label('asymmetry')
              , ssteps.histos.value('fitTopDeltaBetazRel',100,-1,1)
              , ssteps.histos.value('fitTopPhiBoost',100,-1,1)
