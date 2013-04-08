@@ -1,4 +1,5 @@
 from supy import wrappedChain,utils
+from calculables.other import ScaleFactors
 
 class Indices(wrappedChain.calculable) :
     def __init__(self, collection = None, ptMin = 26, absEtaMax = 2.1, ) :
@@ -33,3 +34,51 @@ class SignalID(wrappedChain.calculable) :
     def update(self,_) :
         self.value = utils.hackMap(self.passID,
                                    *[self.source[getattr(self,item)] for item in self.stashed])
+
+
+class TriggerScaleFactors(ScaleFactors):
+    '''Scale factors (eff_data / eff_mc) for HLT_IsoMu24_eta2p1.'''
+    def __init__(self, collection=None):
+        self.fixes = collection
+        self.stash(['P4','Indices'])
+
+        self.rows = [] # |eta|
+        self.columns = [] # pt
+
+        self.central = []
+        self.deltaUp = []
+        self.deltaDn = []
+
+
+class SelectionScaleFactors(ScaleFactors):
+    '''Scale factors (eff_data / eff_mc) for single muon selection.'''
+    def __init__(self, collection=None):
+        self.fixes = collection
+        self.stash(['P4','Indices'])
+
+        self.rows = [] # |eta|
+        self.columns = [] # pt
+
+        self.central = []
+        self.deltaUp = []
+        self.deltaDn = []
+
+
+class SF(wrappedChain.calculable):
+    def __init__(self, collection=None):
+        self.fixes = collection
+        self.stash(['TriggerScaleFactors','SelectionScaleFactors'])
+
+    def update(self,_):
+        self.value = self.source[self.TriggerScaleFactors][0] * self.source[self.SelectionScaleFactors][0]
+
+
+class Reweights(wrappedChain.calculable):
+    def __init__(self, collection=None):
+        self.fixes = collection
+        self.stash(['TriggerScaleFactors','SelectionScaleFactors'])
+
+    def update(self,_):
+        tSF = self.source[self.TriggerScaleFactors]
+        sSF = self.source[self.SelectionScaleFactors]
+        self.value = [sf/tSF[0] for sf in tSF[1:]] + [sf/sSF[0] for sf in sSF[1:]]
