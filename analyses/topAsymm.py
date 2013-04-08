@@ -89,18 +89,18 @@ class topAsymm(supy.analysis) :
             dy = ['dy%dj_mg'%n for n in range(1,5)] if "QCD" not in pars['tag'] else []
             w =  ['w%dj_mg'%n for n in range(1,5)]
             return supy.samples.specify( names = ( w + dy ),
-                                         effectiveLumi = eL, color = 28, weights = [rw] )
+                                         effectiveLumi = eL, color = 28, weights = [rw,'sf'] )
 
         def single_top(eL = None) :
             return supy.samples.specify( names = self.single_top(),
-                                         effectiveLumi = eL, color = r.kGray, weights = [rw])
+                                         effectiveLumi = eL, color = r.kGray, weights = [rw,'sf'])
         
         def ttbar(eL = None) :
             tt = pars['toptype']
             color = [r.kBlue,r.kCyan,r.kCyan+1,r.kOrange]
             wSub =  [  "wGG",  "wQG",    "wAG",    "wQQ"]
             return sum([supy.samples.specify(names = 'ttj_%s'%tt, effectiveLumi = eL,
-                                             color = c, weights = [w,rw]) for w,c in zip(wSub,color)],[])
+                                             color = c, weights = [w,rw,'sf']) for w,c in zip(wSub,color)],[])
         
         def data() :
             return sum( [supy.samples.specify( names = ds, weights = calculables.other.jw(jfn))
@@ -153,6 +153,7 @@ class topAsymm(supy.analysis) :
             supy.calculables.other.pt( "AdjustedP4".join(met) ),
             supy.calculables.other.size( "Indices".join(jet) ),
             supy.calculables.other.abbreviation( pars['reweights']['var'], pars['reweights']['abbr'] ),
+            supy.calculables.other.abbreviation( 'SF'.join(lepton), 'sf'),
 
             supy.calculables.other.QueuedBin( 7, ("fitTopDeltaBetazRel", "fitTopPhiBoost"), (1,1), 'fitTop'),
             supy.calculables.other.QueuedBin( 7, ("genTopDeltaBetazRel", "genTopPhiBoost"), (1,1), 'genTop'),
@@ -176,7 +177,7 @@ class topAsymm(supy.analysis) :
         bVar = pars["bVar"].join(jet)
         rw = pars['reweights']['abbr']
         tt = pars['toptype']
-        topSamples = (pars['topSamples'][0]%tt,[s%(tt,rw) for s in pars['topSamples'][1]])
+        topSamples = (pars['topSamples'][0]%tt,[s%(tt,'.'.join(rw,'sf')) for s in pars['topSamples'][1]])
         topTag = pars['tag'].replace("QCD","top")
         ttSmpTag = {'samples':topSamples[1], 'tag':topTag}
 
@@ -310,11 +311,11 @@ class topAsymm(supy.analysis) :
 
         pdf = 'ssteps.other.reweights( eval("%s"), "genPdfWeights", 53, doSys and not saDisable, predicate)'
         pu = 'ssteps.other.reweights( eval("%s"),  "pileUpRatios",  2, doSys and not isData,    predicate)'
+        effEl = 'ssteps.other.reweights( eval("%s"), "elReweights", 4, doSys and not isData and "_el_" in pars["tag"], predicate)'
+        effMu = 'ssteps.other.reweights( eval("%s"), "muReweights", 4, doSys and not isData and "_mu_" in pars["tag"], predicate)'
 
-        return [eval(pdf % asymm),
-                eval(pu % asymm),
-                eval(pdf % kinem),
-                eval(pu % kinem)
+        return [eval(pdf % asymm), eval(pu % asymm), eval(effEl % asymm), eval(effMu % asymm),
+                eval(pdf % kinem), eval(pu % kinem), eval(effEl % kinem), eval(effMu % kinem)
                 ]
 
     @classmethod
@@ -326,23 +327,23 @@ class topAsymm(supy.analysis) :
                                              target = (targetFile,"pileup"),
                                              groups = [('dy1j_mg',[]),('dy2j_mg',[]),('dy3j_mg',[]),('dy4j_mg',[]),
                                                        ("w1j_mg",[]), ("w2j_mg",[]), ("w3j_mg",[]), ("w4j_mg",[]),
-                                                       ('single_top', ['%s.%s'%(s,rw) for s in cls.single_top()]),
-                                                       ('ttj_%s'%tt,['ttj_%s.%s.%s'%(tt,s,rw)
+                                                       ('single_top', ['.'.join(s,rw,'sf') for s in cls.single_top()]),
+                                                       ('ttj_%s'%tt,['ttj_'+'.'.join(tt,s,rw,'sf')
                                                                      for s in ['','wGG','wQG','wAG','wQQ']])]).onlySim()
 
     def tridiscriminant(self,pars) :
         rw = pars['reweights']['abbr']
         lname = pars['lepton']['name']
         tt = pars['toptype']
-        tops = ['ttj_%s.%s.%s'%(tt,s,rw) for s in ['wGG','wQG','wAG','wQQ']]
-        others = ['%s.%s'%(o,rw) for o in self.single_top() + ['w%dj_mg'%d for d in [1,2,3,4]]]
+        tops = ['ttj_'+'.'.join(tt,s,rw,'sf') for s in ['wGG','wQG','wAG','wQQ']]
+        others = ['.'.join(o,rw,'sf') for o in self.single_top() + ['w%dj_mg.%s.sf'%(d,rw) for d in [1,2,3,4]]]
         datas = {"mu" : self.muons('.jw'),
                  "el": self.electrons('.jw')}[lname]
         sf = self.scaleFactor()
         topTag = pars['tag'].replace("QCD","top")
         qcdTag = pars['tag'].replace("top","QCD")
 
-        pi43 = {"pre":"wj",        "tag":topTag, "samples":['w%dj_mg.%s'%(n,rw) for n in [1,2,3,4]]}
+        pi43 = {"pre":"wj",        "tag":topTag, "samples":['w%dj_mg.%s.sf'%(n,rw) for n in [1,2,3,4]]}
         zero = {"pre":"ttj_%s"%tt, "tag":topTag, "samples": tops}
         pi23 = {"pre":"Multijet",  "tag":qcdTag, "samples":['data']+tops+others, 'sf':[1] + [-sf]*len(tops+others)}
 
@@ -359,7 +360,7 @@ class topAsymm(supy.analysis) :
         rw = pars['reweights']['abbr']
         lname = pars['lepton']['name']
         tt = pars['toptype']
-        tops = ['ttj_%s.%s.%s'%(tt,s,rw) for s in ['wGG','wQG','wAG','wQQ']]
+        tops = ['ttj_'+'.'.join(tt,s,rw,'sf') for s in ['wGG','wQG','wAG','wQQ']]
         topTag = pars['tag'].replace("QCD","top")
 
         return supy.calculables.other.Tridiscriminant( fixes = ("","QQggQg"),
@@ -393,7 +394,7 @@ class topAsymm(supy.analysis) :
         org.mergeSamples(targetSpec={"name":"t#bar{t}", "color":r.kViolet}, allWithPrefix='ttj', keepSources=True)
         org.mergeSamples(targetSpec={"name":"W", "color":28}, allWithPrefix='w')
         org.mergeSamples(targetSpec={"name":"DY", "color":r.kYellow}, allWithPrefix="dy")
-        org.mergeSamples(targetSpec={"name":"Single", "color":r.kGray}, sources=["%s.%s"%(s,rw) for s in self.single_top()])
+        org.mergeSamples(targetSpec={"name":"Single", "color":r.kGray}, sources=['.'.join(s,rw,'sf') for s in self.single_top()])
         org.mergeSamples(targetSpec={"name":"St.Model", "color":r.kGreen+2}, sources=["t#bar{t}","W","DY","Single"],
                          keepSources=True)
         try: self.skimStats(org)
