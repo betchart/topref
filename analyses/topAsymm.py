@@ -193,6 +193,8 @@ class topAsymm(supy.analysis) :
                                        'pileUpRatios', 2, self.doSystematics(pars)).onlySim()
              , calculables.top.ttSymmAnti(pars['sample'], inspect=True).disable(saDisable)
              , ssteps.histos.symmAnti('tt','genTopQueuedBin7',49,-1,1).disable(saDisable)
+             , ssteps.other.reweights( ssteps.histos.value( ('genTopDeltaBetazRel','genTopPhiBoost'), (2,2), (-1,-1), (1,1) ),
+                                       'genPdfWeights', 53, self.doSystematics(pars) ).disable(saDisable)
              , steps.gen.pdfWeightsPlotter(['genTopTanhRapiditySum','genTopPtOverSumPt',
                                             'genTopDeltaBetazRel','genTopPhiBoost'],
                                            [0,0,-1,-1],
@@ -551,7 +553,6 @@ class topAsymm(supy.analysis) :
 
         distTup,cs = map(mf2,["KarlsruheDiscriminant","TridiscriminantWTopQCD"][1:])[-1]
 
-        '...rescaling'
         iTT = next(i for i,ss in enumerate(org.samples) if ss['name']=='top.t#bar{t}')
         nTT = distTup[iTT].Integral(0,distTup[iTT].GetNbinsX()+1)
         fractions = dict(zip(templateSamples,cs.fractions))
@@ -567,7 +568,6 @@ class topAsymm(supy.analysis) :
 
         supy.utils.tCanvasPrintPdf( mfCanvas, mfFileName, option = ']')
 
-        '...last merge'
         org.mergeSamples( targetSpec={"name":"S.M.", "color":r.kGreen+2}, sources=(templateSamples+baseSamples),
                           keepSources=True, force=True)
 
