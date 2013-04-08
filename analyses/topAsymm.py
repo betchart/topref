@@ -302,14 +302,15 @@ class topAsymm(supy.analysis) :
     def signalSequence(self, pars, saDisable, predicate=None) :
         ssteps = supy.steps
         triD = ('TridiscriminantWTopQCD',5,-1,1)
+        isData = pars['sample'].split('.')[0] in ['El','Mu']
         return [ ssteps.other.reweights( ssteps.histos.symmAnti('tt','fitTopQueuedBin7',49,-1,1, other=triD),
                                          "genPdfWeights", 53, self.doSystematics(pars) and not saDisable, predicate),
                  ssteps.other.reweights( ssteps.histos.symmAnti('tt','fitTopQueuedBin7',49,-1,1, other=triD),
-                                         'pileUpRatios', 2, self.doSystematics(pars), predicate).onlySim(),
+                                         'pileUpRatios', 2, self.doSystematics(pars) and not isData, predicate),
                  ssteps.other.reweights( steps.top.kinematics3D('fitTop'),
                                          "genPdfWeights", 53, self.doSystematics(pars) and not saDisable, predicate),
                  ssteps.other.reweights( steps.top.kinematics3D('fitTop'),
-                                         'pileUpRatios', 2, self.doSystematics(pars), predicate).onlySim()
+                                         'pileUpRatios', 2, self.doSystematics(pars) and not isData, predicate)
                  ]
 
     @classmethod
