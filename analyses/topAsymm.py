@@ -303,15 +303,19 @@ class topAsymm(supy.analysis) :
         ssteps = supy.steps
         triD = ('TridiscriminantWTopQCD',5,-1,1)
         isData = pars['sample'].split('.')[0] in ['El','Mu']
-        return [ ssteps.other.reweights( ssteps.histos.symmAnti('tt','fitTopQueuedBin7',49,-1,1, other=triD),
-                                         "genPdfWeights", 53, self.doSystematics(pars) and not saDisable, predicate),
-                 ssteps.other.reweights( ssteps.histos.symmAnti('tt','fitTopQueuedBin7',49,-1,1, other=triD),
-                                         'pileUpRatios', 2, self.doSystematics(pars) and not isData, predicate),
-                 ssteps.other.reweights( steps.top.kinematics3D('fitTop'),
-                                         "genPdfWeights", 53, self.doSystematics(pars) and not saDisable, predicate),
-                 ssteps.other.reweights( steps.top.kinematics3D('fitTop'),
-                                         'pileUpRatios', 2, self.doSystematics(pars) and not isData, predicate)
-                 ]
+
+        asymm = "ssteps.histos.symmAnti('tt','fitTopQueuedBin7',49,-1,1, other=triD)"
+        kinem = "steps.top.kinematics3D('fitTop')"
+        doSys = self.doSystematics(pars)
+
+        pdf = 'ssteps.other.reweights( eval("%s"), "genPdfWeights", 53, doSys and not saDisable, predicate)'
+        pu = 'ssteps.other.reweights( eval("%s"),  "pileUpRatios",  2, doSys and not isData,    predicate)'
+
+        return [eval(pdf % asymm),
+                eval(pu % asymm),
+                eval(pdf % kinem),
+                eval(pu % kinem)
+                ]
 
     @classmethod
     def pileup(cls,pars) :
