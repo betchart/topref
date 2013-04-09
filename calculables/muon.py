@@ -1,5 +1,6 @@
 from supy import wrappedChain,utils
 from calculables.other import ScaleFactors
+import ROOT as r, numpy as np
 
 class Indices(wrappedChain.calculable) :
     def __init__(self, collection = None, ptMin = 26, absEtaMax = 2.1, ) :
@@ -41,13 +42,41 @@ class TriggerScaleFactors(ScaleFactors):
     def __init__(self, collection=None):
         self.fixes = collection
         self.stash(['P4','Indices'])
+        self.setUp()
 
-        self.rows = [] # |eta|
-        self.columns = [] # pt
+    def setUp(self):
+        pattern ='DATA_over_MC_IsoMu24_eta2p1_TightIso_pt_abseta'
+        absEtaBins = [('<0.9',(0,0.9)),
+                      ('0.9-1.2',(0.9,1.2)),
+                      ('1.2-2.1',(1.2,2.1))]
+        columns = set()
+        lumiSum = 0.
+        central = np.array(3*[8*[0]])
+        deltaUp2 = np.array(3*[8*[0]])
+        deltaDn2 = np.array(3*[8*[0]])
 
-        self.central = []
-        self.deltaUp = []
-        self.deltaDn = []
+        epochs = [('A',  891, 'data/MuonEfficiencies_Run_2012A_2012B_53X.root', True),
+                  ('B', 4400, 'data/MuonEfficiencies_Run_2012A_2012B_53X.root', True),
+                  ('C', 7020, 'data/MuonEfficiencies_Run_2012C_53X.root', False),
+                  ('D', 7273, 'data/TriggerMuonEfficiencies_Run_2012D_53X.root',True)]
+        for run,lumi,fileName,appendRun in epochs:
+            tfile = r.TFile.Open(fileName)
+            graphs = [tfile.Get(pattern + ebin[0] + ('_2012%s'%run if appendRun else '')) for ebin in absEtaBins]
+            for g in graphs:
+                columns.add(tuple([(g.GetX()[i] - g.GetErrorXlow(i), g.GetX()[i] + g.GetErrorXhigh(i)) for i in range(g.GetN())]))
+            lumiSum += lumi
+            central += lumi * np.array([[g.GetY()[i] for i in range(g.GetN())] for g in graphs])
+            deltaUp2 += lumi * np.array([[g.GetErrorYhigh(i)**2 for i in range(g.GetN())] for g in graphs])
+            deltaDn2 += lumi * np.array([[g.GetErrorYlow(i)**2 for i in range(g.GetN())] for g in graphs])
+            tfile.Close()
+
+        self.central = central / lumiSum
+        self.deltaUp = np.sqrt(deltaUp2 / lumiSum)
+        self.deltaDn = -np.sqrt(deltaDn2 / lumiSum)
+
+        assert len(columns) == 1
+        self.rows = [e[1] for e in absEtaBins] # |eta|
+        self.columns = list(list(columns)[0]) # pt
 
 
 class SelectionScaleFactors(ScaleFactors):
@@ -56,12 +85,25 @@ class SelectionScaleFactors(ScaleFactors):
         self.fixes = collection
         self.stash(['P4','Indices'])
 
-        self.rows = [] # |eta|
-        self.columns = [] # pt
+        fileName = 'data/Muon_ID_iso_Efficiencies_Run_2012ABCD_53X.root'
+        pattern = "DATA_over_MC_combRelIsoPF04dBeta<012_Tight_pt_abseta%s_2012ABCD"
+        tfile = r.TFile.Open(fileName)
 
-        self.central = []
-        self.deltaUp = []
-        self.deltaDn = []
+        absEtaBins = [('<0.9',(0,0.9)),
+                      ('0.9-1.2',(0.9,1.2)),
+                      ('1.2-2.1',(1.2,2.1))]
+        columns = set()
+        graphs = [tfile.Get(pattern % ebin[0]) for ebin in absEtaBins]
+        for g in graphs:
+            columns.add(tuple([(g.GetX()[i] - g.GetErrorXlow(i), g.GetX()[i] + g.GetErrorXhigh(i)) for i in range(g.GetN())]))
+        self.central = np.array([[g.GetY()[i] for i in range(g.GetN())] for g in graphs])
+        self.deltaUp = np.array([[g.GetErrorYhigh(i) for i in range(g.GetN())] for g in graphs])
+        self.deltaDn = np.array([[-g.GetErrorYlow(i) for i in range(g.GetN())] for g in graphs])
+        tfile.Close()
+
+        assert len(columns) == 1
+        self.rows = [e[1] for e in absEtaBins] # |eta|
+        self.columns = list(list(columns)[0]) # pt
 
 
 class SF(wrappedChain.calculable):
