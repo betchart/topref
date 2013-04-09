@@ -177,7 +177,7 @@ class topAsymm(supy.analysis) :
         bVar = pars["bVar"].join(jet)
         rw = pars['reweights']['abbr']
         tt = pars['toptype']
-        topSamples = (pars['topSamples'][0]%tt,[s%(tt,'.'.join(rw,'sf')) for s in pars['topSamples'][1]])
+        topSamples = (pars['topSamples'][0]%tt,[s%(tt,'.'.join([rw,'sf'])) for s in pars['topSamples'][1]])
         topTag = pars['tag'].replace("QCD","top")
         ttSmpTag = {'samples':topSamples[1], 'tag':topTag}
 
@@ -327,16 +327,16 @@ class topAsymm(supy.analysis) :
                                              target = (targetFile,"pileup"),
                                              groups = [('dy1j_mg',[]),('dy2j_mg',[]),('dy3j_mg',[]),('dy4j_mg',[]),
                                                        ("w1j_mg",[]), ("w2j_mg",[]), ("w3j_mg",[]), ("w4j_mg",[]),
-                                                       ('single_top', ['.'.join(s,rw,'sf') for s in cls.single_top()]),
-                                                       ('ttj_%s'%tt,['ttj_'+'.'.join(tt,s,rw,'sf')
+                                                       ('single_top', ['.'.join([s,rw,'sf']) for s in cls.single_top()]),
+                                                       ('ttj_%s'%tt,['ttj_'+'.'.join([tt,s,rw,'sf'])
                                                                      for s in ['','wGG','wQG','wAG','wQQ']])]).onlySim()
 
     def tridiscriminant(self,pars) :
         rw = pars['reweights']['abbr']
         lname = pars['lepton']['name']
         tt = pars['toptype']
-        tops = ['ttj_'+'.'.join(tt,s,rw,'sf') for s in ['wGG','wQG','wAG','wQQ']]
-        others = ['.'.join(o,rw,'sf') for o in self.single_top() + ['w%dj_mg.%s.sf'%(d,rw) for d in [1,2,3,4]]]
+        tops = ['ttj_'+'.'.join([tt,s,rw,'sf']) for s in ['wGG','wQG','wAG','wQQ']]
+        others = ['.'.join([o,rw,'sf']) for o in self.single_top() + ['w%dj_mg.%s.sf'%(d,rw) for d in [1,2,3,4]]]
         datas = {"mu" : self.muons('.jw'),
                  "el": self.electrons('.jw')}[lname]
         sf = self.scaleFactor()
@@ -360,7 +360,7 @@ class topAsymm(supy.analysis) :
         rw = pars['reweights']['abbr']
         lname = pars['lepton']['name']
         tt = pars['toptype']
-        tops = ['ttj_'+'.'.join(tt,s,rw,'sf') for s in ['wGG','wQG','wAG','wQQ']]
+        tops = ['ttj_'+'.'.join([tt,s,rw,'sf']) for s in ['wGG','wQG','wAG','wQQ']]
         topTag = pars['tag'].replace("QCD","top")
 
         return supy.calculables.other.Tridiscriminant( fixes = ("","QQggQg"),
