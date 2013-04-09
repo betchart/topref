@@ -192,7 +192,7 @@ class topAsymm(supy.analysis) :
              , getattr(self,pars['reweights']['func'])(pars)
              , ssteps.other.reweights( ssteps.histos.value('pileupTrueNumInteractionsBX0',100,0,60),
                                        'pileUpRatios', 2, self.doSystematics(pars)).onlySim()
-             , calculables.top.ttSymmAnti(pars['sample'], inspect=True).disable(saDisable)
+             , calculables.top.ttSymmAnti(pars['sample'], tt, inspect=True).disable(saDisable)
              , ssteps.histos.symmAnti('tt','genTopQueuedBin7',49,-1,1).disable(saDisable)
              , ssteps.other.reweights( ssteps.histos.value( ('genTopDeltaBetazRel','genTopPhiBoost'), (2,2), (-1,-1), (1,1) ),
                                        'genPdfWeights', 53, self.doSystematics(pars) ).disable(saDisable)

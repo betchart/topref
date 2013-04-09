@@ -462,12 +462,15 @@ class extraJetMoments2Sum(wrappedChain.calculable) :
 ######################################
 
 class ttSymmAnti(calculables.secondary) :
-    def __init__(self, thisSample, inspect = False, weights = []) :
+    def __init__(self, thisSample, topType, inspect = False, weights = []) :
         collection = ('genTop','')
         self.varX = 'PhiBoost'.join(collection)
         self.varY = 'DeltaBetazRel'.join(collection)
         for item in ['thisSample','inspect','weights'] : setattr(self,item,eval(item))
         self.__symm, self.__anti = None,None
+        self.topType = topType
+
+    def baseSamples(self) : return ['ttj_%s.w%s.pu.sf' % (self.topType, w) for w in ['GG','QQ','QG','AG']]
 
     def uponAcceptance(self,ev) :
         w = reduce(operator.mul, [ev[W] for W in self.weights], 1)
@@ -539,11 +542,7 @@ class ttSymmAnti(calculables.secondary) :
         optstat = r.gStyle.GetOptStat()
         r.gStyle.SetOptStat(0)
 
-        if 'ttj_' not in self.outputFileName :
-            print "Run just tt samples for ttSymmAnti report"
-            return
-        ttname,_,weight = '_'.join(self.outputFileName.split('/')[-1].split('_')[:-1]).split('.')
-        samples = ['%s.w%s.%s'%(ttname,s,weight) for s in ['GG','QG','QQ','AG']]
+        samples = self.baseSamples()
         names = ['%s#rightarrow^{}t#bar{t} '%i for i in ['gg','qg','q#bar{q}','#bar{q}g']]
         colors = [r.kBlack,r.kBlue,r.kRed,r.kGreen]
 
