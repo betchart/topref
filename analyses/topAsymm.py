@@ -394,7 +394,7 @@ class topAsymm(supy.analysis) :
         org.mergeSamples(targetSpec={"name":"t#bar{t}", "color":r.kViolet}, allWithPrefix='ttj', keepSources=True)
         org.mergeSamples(targetSpec={"name":"W", "color":28}, allWithPrefix='w')
         org.mergeSamples(targetSpec={"name":"DY", "color":r.kYellow}, allWithPrefix="dy")
-        org.mergeSamples(targetSpec={"name":"Single", "color":r.kGray}, sources=['.'.join(s,rw,'sf') for s in self.single_top()])
+        org.mergeSamples(targetSpec={"name":"Single", "color":r.kGray}, sources=['.'.join([s,rw,'sf']) for s in self.single_top()])
         org.mergeSamples(targetSpec={"name":"St.Model", "color":r.kGreen+2}, sources=["t#bar{t}","W","DY","Single"],
                          keepSources=True)
         try: self.skimStats(org)
@@ -493,11 +493,10 @@ class topAsymm(supy.analysis) :
 
         if len(organizers) < len(meldSamples) : return
         for org in organizers :
-            org.mergeSamples(targetSpec = {"name":"t#bar{t}", "color":r.kViolet}, allWithPrefix='ttj',
-                             keepSources = 'top_' in org.tag)
+            org.mergeSamples(targetSpec = {"name":"t#bar{t}", "color":r.kViolet}, allWithPrefix='ttj')
             org.mergeSamples( targetSpec={"name":"W", "color":r.kRed}, allWithPrefix='w')
             org.mergeSamples( targetSpec={"name":"DY", "color":28}, allWithPrefix="dy")
-            org.mergeSamples( targetSpec={"name":"Single", "color":r.kGray}, sources=["%s.pu"%s for s in self.single_top()])
+            org.mergeSamples( targetSpec={"name":"Single", "color":r.kGray}, sources=["%s.pu.sf"%s for s in self.single_top()])
             org.mergeSamples( targetSpec={"name":"Data 2012", "color":r.kBlack, "markerStyle":20},
                               sources={'mu':self.muons('.jw'),'el':self.electrons('.jw')}[lname])
             org.scale()
@@ -506,7 +505,7 @@ class topAsymm(supy.analysis) :
                 org.mergeSamples(targetSpec = {"name":"multijet","color":r.kBlue},
                                  sources=["Data 2012"]+sm,
                                  scaleFactors = [1]+len(sm)*[-self.scaleFactor()],
-                                 force=True, keepSources = False)
+                                 force=True)
 
         self.orgMelded[tagSuffix] = supy.organizer.meld(organizers = organizers)
         org = self.orgMelded[tagSuffix]
