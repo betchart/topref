@@ -433,7 +433,7 @@ class topAsymm(supy.analysis) :
         fileName = '%s/stats_%s.root'%(self.globalStem,org.tag)
         tfile = r.TFile.Open(fileName,'RECREATE')
 
-        for g in ['lumiHisto','xsHisto','allweighted','2_x_y'] :
+        for g in ['lumiHisto','xsHisto','meweighted','2_x_y'] :
             tfile.mkdir(g,'_').cd()
             for ss,hist in zip( org.samples,
                                 org.steps[next(org.indicesOfStepsWithKey(g))][g] ) :
