@@ -422,10 +422,10 @@ class topAsymm(supy.analysis) :
         statsname = {'DY':'dy',
                      'W': 'wj',
                      't#bar{t}':'tt',
-                     'ttj_%s.wGG.pu'%tt:'ttgg',
-                     'ttj_%s.wQG.pu'%tt:'ttqg',
-                     'ttj_%s.wAG.pu'%tt:'ttag',
-                     'ttj_%s.wQQ.pu'%tt:'ttqq',
+                     'ttj_%s.wGG.pu.sf'%tt:'ttgg',
+                     'ttj_%s.wQG.pu.sf'%tt:'ttqg',
+                     'ttj_%s.wAG.pu.sf'%tt:'ttag',
+                     'ttj_%s.wQQ.pu.sf'%tt:'ttqq',
                      'Single' : 'st',
                      'Data 2012': 'data'
                      }
