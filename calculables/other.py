@@ -58,3 +58,19 @@ class pileUpRatios(wrappedChain.calculable) :
     def update(self,_) :
         val = self.source[self.var]
         self.value = [h.GetBinContent(h.FindFixBin(val)) for h in self.hists[1:]]
+
+
+class ScaleFactors(wrappedChain.calculable):
+    def __init__(self,nontrivial): raise Exception("Virtual class")
+    def update(self,_):
+        i = self.source[self.Indices]
+        if not i: row, col = None, None
+        else:
+            p4 = self.source[self.P4][i[0]]
+            col = next((i for i,(lo,hi) in enumerate(self.columns) if lo <= p4.pt() <= hi), None)
+            row = next((i for i,(lo,hi) in enumerate(self.rows) if lo<= abs(p4.eta()) <=hi), None)
+
+        if None in [row,col]: self.value = 3*[1.0]
+        else:
+            cent = self.central[row][col]
+            self.value = [cent, cent + self.deltaUp[row][col], cent + self.deltaDn[row][col]]

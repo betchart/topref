@@ -22,24 +22,24 @@ assert lep
 groupsAll = {80:[ '%s.B.1.jw'%lep,
                   '%s.C.2.jw'%lep,
                   '%s.D.1.jw'%lep,
-                  'w2j_mg.pu',
-                  'ttj_%s.wGG.pu'%top,
+                  'w2j_mg.pu.sf',
+                  'ttj_%s.wGG.pu.sf'%top,
                   ],
-             10:['top_s_ph.pu',
-                 'top_t_ph.pu',
-                 'top_tW_ph.pu',
-                 'tbar_s_ph.pu',
-                 'tbar_t_ph.pu',
-                 'tbar_tW_ph.pu']
+             10:['top_s_ph.pu.sf',
+                 'top_t_ph.pu.sf',
+                 'top_tW_ph.pu.sf',
+                 'tbar_s_ph.pu.sf',
+                 'tbar_t_ph.pu.sf',
+                 'tbar_tW_ph.pu.sf']
              }
 
-groupsTop = {143:['ttj_%s.wGG.pu'%top,],
-             72:['ttj_%s.wQG.pu'%top,'ttj_%s.wQQ.pu'%top,],
-             26:['ttj_%s.wAG.pu'%top,]
+groupsTop = {143:['ttj_%s.wGG.pu.sf'%top,],
+             72:['ttj_%s.wQG.pu.sf'%top,'ttj_%s.wQQ.pu.sf'%top,],
+             26:['ttj_%s.wAG.pu.sf'%top,]
              }
 
-groupsW = {80:['w2j_mg.pu'],
-          40:['w%dj_mg.pu'%d for d in [1,3,4]]
+groupsW = {80:['w2j_mg.pu.sf'],
+          40:['w%dj_mg.pu.sf'%d for d in [1,3,4]]
           }
 
 

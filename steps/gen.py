@@ -61,7 +61,7 @@ class pdfWeightsPlotter(calculables.secondary) :
 
     def update(self,_) : pass
 
-    def onlySamples(self) : return ['ttj_ph.wGG.pu','ttj_ph.wQQ.pu','ttj_ph.wQG.pu','ttj_ph.wAG.pu']
+    def onlySamples(self) : return ['ttj_ph.wGG.pu.sf','ttj_ph.wQQ.pu.sf','ttj_ph.wQG.pu.sf','ttj_ph.wAG.pu.sf']
 
     def reportCache(self) : 
         fileName = '/'.join(self.outputFileName.split('/')[:-1]+[self.name])
