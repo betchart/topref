@@ -197,9 +197,9 @@ class topAsymm(supy.analysis) :
              , ssteps.other.reweights( ssteps.histos.value( ('genTopDeltaBetazRel','genTopPhiBoost'), (2,2), (-1,-1), (1,1) ),
                                        'genPdfWeights', 53, self.doSystematics(pars) ).disable(saDisable)
              , steps.gen.pdfWeightsPlotter(['genTopTanhRapiditySum','genTopPtOverSumPt',
-                                            'genTopDeltaBetazRel','genTopPhiBoost'],
-                                           [0,0,-1,-1],
-                                           [1,1,1,1]).disable(saDisable or not self.doSystematics(pars))
+                                            'genTopDeltaBetazRel','genTopPhiBoost','genTopRhoS'],
+                                           [0,0,-1,-1,0],
+                                           [1,1,1,1,1]).disable(saDisable or not self.doSystematics(pars))
              ####################################
              , ssteps.filters.label('selection'),
              ssteps.filters.value("mvaTrigV0Exists",min=True),
