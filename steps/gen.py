@@ -77,8 +77,8 @@ class pdfWeightsPlotter(calculables.secondary) :
             tt = hists[0].Clone(hists[0].GetName()+'_sum')
             for h in hists[1:] : tt.Add(h)
             [h.SetTitle(hn.split('.')[1]) for h,hn in zip(hists,tops)]
-            hxs = [utils.divideX(h,tt if n=='weights' else  None) for h in hists]
-            for i,h in enumerate(hists if n=='weights' else hxs) :
+            hxs = [utils.divideX(h,tt if n=='weights' else  None) for h in [tt]+hists]
+            for i,h in enumerate(hists if n=='weights' else hxs[1:]) :
                 c.cd(i+1)
                 if n=='weights' :
                     h.Divide(tt)
@@ -94,19 +94,20 @@ class pdfWeightsPlotter(calculables.secondary) :
             diffs=[]
             noms=[]
             for i,h in enumerate(hxs) :
-                c.cd(i+1)
+                c.cd(i)
                 hy = h.ProjectionY('_py',1,1)
                 diff = utils.subtractX(h,hy,ratherY=True)
                 diff.SetMinimum(-diff.GetMaximum())
                 diff.SetMaximum(diff.GetMaximum())
                 diff.SetTitle(diff.GetTitle() + " difference from nominal")
-                diff.Draw('colz')
+                if i: diff.Draw('colz')
                 diffs.append(diff)
                 noms.append(hy)
             c.Print(fileName+'.pdf')
 
             for i,(d,n) in enumerate(zip(diffs,noms)) :
-                c.cd(i+1)
+                if not i: c.Clear()
+                c.cd(i)
                 d.Multiply(d)
                 dy = d.ProjectionY('_py',1,d.GetNbinsX())
                 for j in range(2+dy.GetNbinsX()):
@@ -119,6 +120,10 @@ class pdfWeightsPlotter(calculables.secondary) :
                 n.DrawCopy("e4")
                 n.SetFillColor(empty)
                 n.Draw("hist C same")
+                if not i:
+                    c.Print(fileName+'.pdf')
+                    c.Clear()
+                    c.Divide(2,2)
             c.Print(fileName+'.pdf')
             
         c.Print(fileName+'.pdf]')
