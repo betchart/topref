@@ -138,8 +138,8 @@ class kinematic_resolution(calculables.secondary):
         cache = self.fromCache(['merged'],self.parBins.keys(), self.tag)['merged']
         for par,hist in cache.items():
             pivot = self.parBins[par][3]
-            lo = hist.ProjectionY(hist.GetName()+'_lo', 0, hist.GetXaxis().FindFixBin(pivot))
-            hi = hist.ProjectionY(hist.GetName()+'_hi', 1+hist.GetXaxis().FindFixBin(pivot), -1)
+            lo = hist.ProjectionY(hist.GetName()+'_lo', 0, hist.GetXaxis().FindFixBin(pivot)-1)
+            hi = hist.ProjectionY(hist.GetName()+'_hi', hist.GetXaxis().FindFixBin(pivot), -1)
             tot = hist.ProjectionY()
             lo.Divide(tot)
             hi.Divide(tot)
