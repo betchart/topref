@@ -277,7 +277,7 @@ class topAsymm(supy.analysis) :
                                                'MassSum':(30,300,1200,450),
                                                'PtSum':(100,0,300,50),
                                                'DeltaBetazRel':(100,-1,1,0),
-                                               'PhiBoost':(100,-1,1,0)}, topSamples[1], topTag)
+                                               'PhiBoost':(100,-1,1,0)}, topSamples[1], topTag).disable(saDisable)
              , ssteps.histos.mass('fitTopSumP4', 30, 300, 1200)
              , ssteps.histos.pt(  'fitTopSumP4', 100, 0, 300)
              , ssteps.histos.value('fitTopRapiditySum', 50, 0, 3, xtitle = '|t#bar{t}.y|')
