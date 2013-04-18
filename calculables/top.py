@@ -243,6 +243,14 @@ class genTopTTbar(wrappedChain.calculable) :
         ids = [] if self.source['isRealData'] else list(self.source['genPdgId'])
         self.value = tuple(ids.index(i) for i in [6,-6]) if all([id in ids for id in [-6,6]]) else ()
 ######################################
+class genTopRhoS(wrappedChain.calculable) :
+    def update(self,_):
+        i,i_ = self.source['genTopTTbar']
+        j = self.source['genIndexTtbarExtraJet']
+        p4 = self.source['genP4']
+        sqrts = sum([p4[k] for k in [i,i_,j] if k!=None], utils.LorentzV()).mass()
+        self.value = 2 * 170. / sqrts
+######################################
 class ttDecayMode(wrappedChain.calculable) :
     def update(self,_) :
         pdg = self.source['genPdgId']

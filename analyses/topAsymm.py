@@ -197,9 +197,9 @@ class topAsymm(supy.analysis) :
              , ssteps.other.reweights( ssteps.histos.value( ('genTopDeltaBetazRel','genTopPhiBoost'), (2,2), (-1,-1), (1,1) ),
                                        'genPdfWeights', 53, self.doSystematics(pars) ).disable(saDisable)
              , steps.gen.pdfWeightsPlotter(['genTopTanhRapiditySum','genTopPtOverSumPt',
-                                            'genTopDeltaBetazRel','genTopPhiBoost'],
-                                           [0,0,-1,-1],
-                                           [1,1,1,1]).disable(saDisable or not self.doSystematics(pars))
+                                            'genTopDeltaBetazRel','genTopPhiBoost','genTopRhoS'],
+                                           [0,0,-1,-1,0],
+                                           [1,1,1,1,1]).disable(saDisable or not self.doSystematics(pars))
              ####################################
              , ssteps.filters.label('selection'),
              ssteps.filters.value("mvaTrigV0Exists",min=True),
@@ -273,6 +273,11 @@ class topAsymm(supy.analysis) :
              ####################################
              , ssteps.filters.label('kinematics')
              , steps.top.kinematics('fitTop')
+             , steps.top.kinematic_resolution({'TanhRapiditySum':(100,0,1,0.5),
+                                               'MassSum':(30,300,1200,450),
+                                               'PtSum':(100,0,300,50),
+                                               'DeltaBetazRel':(100,-1,1,0),
+                                               'PhiBoost':(100,-1,1,0)}, topSamples[1], topTag).disable(saDisable)
              , ssteps.histos.mass('fitTopSumP4', 30, 300, 1200)
              , ssteps.histos.pt(  'fitTopSumP4', 100, 0, 300)
              , ssteps.histos.value('fitTopRapiditySum', 50, 0, 3, xtitle = '|t#bar{t}.y|')
@@ -438,7 +443,8 @@ class topAsymm(supy.analysis) :
             for ss,hist in zip( org.samples,
                                 org.steps[next(org.indicesOfStepsWithKey(g))][g] ) :
                 if not hist or ss['name'] in ['St.Model','S.M.']: continue
-                h = hist.Clone(statsname[ss['name']] if ss['name'] in statsname else ss['name'])
+                h = hist.Clone(statsname[ss['name']] if ss['name'] in statsname else
+                               ss['name'])
                 h.Write()
         for iRe,iStep in enumerate(org.indicesOfStep('reweights')) :
             step = org.steps[iStep]
@@ -449,7 +455,8 @@ class topAsymm(supy.analysis) :
                 for ss,hist in zip( org.samples,
                                     step[g] ) :
                     if not hist or ss['name'] in ['St.Model','S.M']: continue
-                    h = hist.Clone(statsname[ss['name']] if ss['name'] in statsname else ss['name'])
+                    h = hist.Clone(statsname[ss['name']] if ss['name'] in statsname else
+                                   ss['name'])
                     h.Write()
         tfile.Close()
         print 'Wrote: ', fileName
@@ -473,6 +480,9 @@ class topAsymm(supy.analysis) :
                               omit2D = True,
                               pageNumbers = False,
                               ).plotAll()
+        print
+        print 'fitTopPhiBoost indices:'
+        print melded.indicesOfStepsWithKey('fitTopPhiBoost')
 
     def meldScale(self,tagSuffix) :
         lname,tt,sn,jn,ptMin = tagSuffix.split('_')
