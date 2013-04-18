@@ -1,5 +1,5 @@
 import math,itertools,ROOT as r
-from supy import analysisStep,steps,calculables
+from supy import analysisStep,steps,calculables,utils
 try:
     import numpy as np
     import scipy.stats
@@ -112,3 +112,49 @@ class resolutions(analysisStep) :
                 self.book.fill( fit[iLep]     - genFunc[iLep],       "d%sLepTop_%s"%(func,f), 100,-1,1, title=";lep top #Delta %s_{%s reco gen};events / bin"%(func,f))
                 self.book.fill( fit[not iLep] - genFunc[not iLep],   "d%sHadTop_%s"%(func,f), 100,-1,1, title=";had top #Delta %s_{%s reco gen};events / bin"%(func,f))
                 self.book.fill( fit[0]-fit[1] - (genFunc[0]-genFunc[1]), "dd%sTTbar_%s"%(func,f), 100,-1,1, title = ";#Delta %s_{t#bar{t} %s reco}-#Delta %s_{t#bar{t} gen};events / bin"%(func,f,func))
+
+class kinematic_resolution(calculables.secondary):
+    def __init__(self, parBins, samples, tag):
+        self.parBins = parBins # dict of 'var:(N,lo,hi,pivot)'
+        self.samples = samples
+        self.tag = tag
+
+    def organize(self,org):
+        org.mergeSamples(targetSpec={'name':'merged'}, sources=self.samples)
+
+    def baseSamples(self): return self.samples
+
+    def uponAcceptance(self,ev):
+        for var,(N,lo,hi,_) in self.parBins.items():
+            gen = min(hi, max(lo, ev['genTop' + var]))
+            fit = min(hi, max(lo, ev['fitTop' + var]))
+            self.book.fill((gen,fit), var, (N,N), (lo,lo), (hi,hi),
+                           title=';genTop%s;fitTop%s;events / bin'%(var,var))
+
+    def reportCache(self):
+        fileName = '/'.join(self.outputFileName.split('/')[:-1]+[self.name])
+        c = r.TCanvas()
+        utils.tCanvasPrintPdf(c, fileName, False, '[')
+        cache = self.fromCache(['merged'],self.parBins.keys(), self.tag)['merged']
+        for par,hist in cache.items():
+            pivot = self.parBins[par][3]
+            lo = hist.ProjectionY(hist.GetName()+'_lo', 0, hist.GetXaxis().FindFixBin(pivot))
+            hi = hist.ProjectionY(hist.GetName()+'_hi', 1+hist.GetXaxis().FindFixBin(pivot), -1)
+            tot = hist.ProjectionY()
+            lo.Divide(tot)
+            hi.Divide(tot)
+            tot.Scale(1./tot.Integral())
+            lo.SetLineColor(r.kBlue)
+            hi.SetLineColor(r.kRed)
+            lo.SetMinimum(0)
+            lo.SetMaximum(1)
+            tot.SetFillColor(17)
+            tot.SetFillStyle(1001)
+            l = r.TLine(pivot,0,pivot,1)
+            l.SetLineColor(r.kGreen)
+            lo.Draw('hist')
+            hi.Draw('hist same')
+            tot.Draw('hist same')
+            l.Draw()
+            utils.tCanvasPrintPdf(c, fileName, False)
+        utils.tCanvasPrintPdf(c, fileName, True, ']')
