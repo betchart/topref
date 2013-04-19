@@ -339,7 +339,7 @@ class topAsymm(supy.analysis) :
     def tridiscriminant(self,pars) :
         rw = pars['reweights']['abbr']
         lname = pars['lepton']['name']
-        tt = pars['toptype']
+        tt = pars['toptype'].replace('phD','ph').replace('phU','ph')
         tops = ['ttj_'+'.'.join([tt,s,rw,'sf']) for s in ['wGG','wQG','wAG','wQQ']]
         others = ['.'.join([o,rw,'sf']) for o in self.single_top() + ['w%dj_mg.%s.sf'%(d,rw) for d in [1,2,3,4]]]
         datas = {"mu" : self.muons('.jw'),
@@ -364,7 +364,7 @@ class topAsymm(supy.analysis) :
     def tridiscriminant2(self,pars) :
         rw = pars['reweights']['abbr']
         lname = pars['lepton']['name']
-        tt = pars['toptype']
+        tt = pars['toptype'].replace('phD','ph').replace('phU','ph')
         tops = ['ttj_'+'.'.join([tt,s,rw,'sf']) for s in ['wGG','wQG','wAG','wQQ']]
         topTag = pars['tag'].replace("QCD","top")
 
@@ -389,7 +389,6 @@ class topAsymm(supy.analysis) :
 
     def conclude(self,pars) :
         rw = pars['reweights']['abbr']
-        tt = pars['toptype']
 
         org = self.organizer(pars, verbose = True )
 
