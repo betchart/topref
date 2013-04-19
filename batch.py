@@ -16,7 +16,7 @@ if len(args)!=1 or sum(int(i) for i in [options.doAll,options.justTops,options.j
 tagSuffix=args[0]
 tags = tagSuffix if ('top_' in tagSuffix or 'QCD_' in tagSuffix) else ','.join(pre+tagSuffix for pre in ['top_','QCD_'])
 lep = 'El' if '_el_' in tags else 'Mu' if '_mu_' in tags else ''
-top = 'ph' if '_ph_' in tags else 'mn' if '_mn_' in tags else ''
+top = 'ph' if '_ph_' in tags else 'mn' if '_mn_' in tags else 'phD' if '_dn_' in tags else 'phU' if '_up_' in tags else None
 assert lep
 
 groupsAll = {80:[ '%s.B.1.jw'%lep,

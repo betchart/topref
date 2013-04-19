@@ -52,7 +52,7 @@ class topAsymm(supy.analysis) :
                  "ptscale" : self.vary({"20":20}),#,"40":40}),
                  "smear" : self.vary({'sn':"Smear",'su':'SmearUp','sd':'SmearDown'}),
                  "jec" : self.vary({'jn':0,'ju':1,'jd':-1}),
-                 "topSamples": ("ttj_%s",['ttj_%s.wGG.%s','ttj_%s.wQG.%s','ttj_%s.wAG.%s','ttj_%s.wQQ.%s']),
+                 "topSamples": ("ttj_%s",['ttj_%s.wGG.%s','ttj_%s.wQG.%s','ttj_%s.wQQ.%s','ttj_%s.wAG.%s']),
                  }
 
     @staticmethod
@@ -192,7 +192,7 @@ class topAsymm(supy.analysis) :
              , getattr(self,pars['reweights']['func'])(pars)
              , ssteps.other.reweights( ssteps.histos.value('pileupTrueNumInteractionsBX0',100,0,60),
                                        'pileUpRatios', 2, self.doSystematics(pars)).onlySim()
-             , calculables.top.ttSymmAnti(pars['sample'], tt, inspect=True).disable(saDisable)
+             , calculables.top.ttSymmAnti(pars['sample'], topSamples[1], inspect=True).disable(saDisable)
              , ssteps.histos.symmAnti('tt','genTopQueuedBin7',49,-1,1).disable(saDisable)
              , ssteps.other.reweights( ssteps.histos.value( ('genTopDeltaBetazRel','genTopPhiBoost'), (2,2), (-1,-1), (1,1) ),
                                        'genPdfWeights', 53, self.doSystematics(pars) ).disable(saDisable)
@@ -222,7 +222,7 @@ class topAsymm(supy.analysis) :
              , ssteps.histos.multiplicity('Indices'.join(jet))
 
              , ssteps.filters.label("secondaries")
-             , calculables.jet.ProbabilityGivenBQN(jet, pars['bVar'], binning=(51,-0.02,1), samples=topSamples, tag=topTag)
+             , calculables.jet.ProbabilityGivenBQN(jet, pars['bVar'], binning=(51,-0.02,1), **ttSmpTag)
              , calculables.jet.ScalingBQN(jet, samples = topSamples[1], tag = topTag)
              , supy.calculables.other.TwoDChiSquared('RawMassWTopCorrectPQB', binningX=(300,0,600), binningY=(300,0,1200),
                                                      labelsXY = ("Raw Hadronic m_{W}","Raw Hadronic m_{top}"),
@@ -486,6 +486,7 @@ class topAsymm(supy.analysis) :
 
     def meldScale(self,tagSuffix) :
         lname,tt,sn,jn,ptMin = tagSuffix.split('_')
+        tt = tt.replace('dn','phD').replace('up','phU')
         meldSamples = {"top_"+tagSuffix :( { 'mu': self.muons('.jw'),
                                              'el': self.electrons('.jw')}[lname]+
                                            ["ttj_%s"%tt]+self.single_top()+
@@ -503,7 +504,7 @@ class topAsymm(supy.analysis) :
 
         if len(organizers) < len(meldSamples) : return
         for org in organizers :
-            org.mergeSamples(targetSpec = {"name":"t#bar{t}", "color":r.kViolet}, allWithPrefix='ttj')
+            org.mergeSamples( targetSpec={"name":"t#bar{t}", "color":r.kViolet}, allWithPrefix='ttj')
             org.mergeSamples( targetSpec={"name":"W", "color":r.kRed}, allWithPrefix='w')
             org.mergeSamples( targetSpec={"name":"DY", "color":28}, allWithPrefix="dy")
             org.mergeSamples( targetSpec={"name":"Single", "color":r.kGray}, sources=["%s.pu.sf"%s for s in self.single_top()])
@@ -551,10 +552,10 @@ class topAsymm(supy.analysis) :
             cs = componentSolver(observed, templates, 1e4, base = np.sum(bases, axis=0) )
 
             def replaceAll(label, pairs) : return replaceAll(label.replace(*pairs[0]),pairs[1:]) if pairs else label
-            replacements = [ ("top.ttj_%s.wQQ.pu"%tt,"q#bar{q}#to^{}t#bar{t}"),
-                             ("top.ttj_%s.wQG.pu"%tt,"qg#to^{}t#bar{t}"),
-                             ("top.ttj_%s.wAG.pu"%tt,"#bar{q}g#to^{}t#bar{t}"),
-                             ("top.ttj_%s.wGG.pu"%tt,"gg#to^{}t#bar{t}"),
+            replacements = [ ("top.ttj_%s.wQQ.pu.sf"%tt,"q#bar{q}#to^{}t#bar{t}"),
+                             ("top.ttj_%s.wQG.pu.sf"%tt,"qg#to^{}t#bar{t}"),
+                             ("top.ttj_%s.wAG.pu.sf"%tt,"#bar{q}g#to^{}t#bar{t}"),
+                             ("top.ttj_%s.wGG.pu.sf"%tt,"gg#to^{}t#bar{t}"),
                              ("QCD.Data 2012","Multijet"),
                              ("top.W","W+jets"),
                              ('top.',"") ]

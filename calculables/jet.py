@@ -149,21 +149,21 @@ class CovariantResolution2(wrappedChain.calculable) :
         self.value = utils.hackMap(self.matrix , self.source[self.AdjustedP4] , self.source[self.Resolution] )
 #####################################
 class ProbabilityGivenBQN(calculables.secondary) :
-    def __init__(self, collection = None, bvar = None, binning = (0,0,0), samples = ('',[]), tag = None,) :
+    def __init__(self, collection = None, bvar = None, binning = (0,0,0), samples = [], tag = None,) :
         self.fixes = collection
         self.__name = (bvar+self.__class__.__name__).join(self.fixes)
         self.bvar = bvar.join(collection)
         for item in ['binning','samples','tag'] : setattr(self,item,eval(item))
         self.stash(['Indices','IndicesGenB','IndicesGenWqq'])
-        self.moreName = (tag if tag!=None else '') + '; ' + ','.join(samples[1] if samples[1] else [samples[0]])
+        self.moreName = (tag if tag!=None else '') + '; ' + ','.join(samples)
     @property
     def name(self) : return self.__name
 
-    def onlySamples(self) : return [self.samples[0]]
+    def baseSamples(self) : return self.samples
 
     def setup(self,*_) :
-        hists = self.fromCache([self.samples[0]],['B','Q','N'], tag = self.tag)
-        self.histsBQN = [hists[self.samples[0]][jetType] for jetType in ['B','Q','N']]
+        hists = self.fromCache(['merged'],['B','Q','N'], tag = self.tag)
+        self.histsBQN = [hists['merged'][jetType] for jetType in ['B','Q','N']]
         for hist in filter(None,self.histsBQN) : hist.Scale(1./hist.Integral(0,hist.GetNbinsX()+1),"width")
         
     def uponAcceptance(self,ev) :
@@ -182,11 +182,9 @@ class ProbabilityGivenBQN(calculables.secondary) :
         
     def organize(self,org) :
         if org.tag != self.tag : return
-        if self.samples[1] :
-            missing = [s for s in self.samples[1] if s not in [ss['name'] for ss in org.samples]]
-            if missing: print self.name, "-- no such samples :\n", missing
-            org.mergeSamples( targetSpec = {'name':self.samples[0]}, sources = self.samples[1] )
-        else: org.mergeSamples( targetSpec = {'name':self.samples[0]}, allWithPrefix = self.samples[0] )
+        missing = [s for s in self.samples if s not in [ss['name'] for ss in org.samples]]
+        if missing: print self.name, "-- no such samples :\n", missing
+        org.mergeSamples( targetSpec = {'name':'merged'}, sources = self.samples )
 
     def reportCache(self) :
         optStat = r.gStyle.GetOptStat()

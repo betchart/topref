@@ -470,15 +470,15 @@ class extraJetMoments2Sum(wrappedChain.calculable) :
 ######################################
 
 class ttSymmAnti(calculables.secondary) :
-    def __init__(self, thisSample, topType, inspect = False, weights = []) :
+    def __init__(self, thisSample, samples, inspect = False, weights = []) :
         collection = ('genTop','')
         self.varX = 'PhiBoost'.join(collection)
         self.varY = 'DeltaBetazRel'.join(collection)
         for item in ['thisSample','inspect','weights'] : setattr(self,item,eval(item))
         self.__symm, self.__anti = None,None
-        self.topType = topType
+        self.samples = samples
 
-    def baseSamples(self) : return ['ttj_%s.w%s.pu.sf' % (self.topType, w) for w in ['GG','QQ','QG','AG']]
+    def baseSamples(self): return self.samples
 
     def uponAcceptance(self,ev) :
         w = reduce(operator.mul, [ev[W] for W in self.weights], 1)
