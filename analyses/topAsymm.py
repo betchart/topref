@@ -422,6 +422,7 @@ class topAsymm(supy.analysis) :
 
     def skimStats(self,org) :
         _,lepton,tt,smear,jec,pt = org.tag.split('_')
+        tt = tt.replace('dn','phD').replace('up','phU')
         print org.tag
         statsname = {'DY':'dy',
                      'W': 'wj',
