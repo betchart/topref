@@ -124,7 +124,7 @@ class topAsymm(supy.analysis) :
         calcs += supy.calculables.fromCollections(calculables.top,[('genTop',""),('fitTop',"")])
         calcs += [
             calculables.met.AdjustedP4(met, jet, pars['smear'], djec=pars['jec']),
-            calculables.jet.AdjustedP4(jet, pars['smear']),
+            calculables.jet.AdjustedP4(jet, pars['smear'], pars['jec']),
             calculables.jet.Indices(jet,ptMin = 20 ),
             calculables.jet.IndicesBtagged(jet,pars["bVar"]),
             supy.calculables.other.abbreviation('combinedSecondaryVertex','CSV',jet),
