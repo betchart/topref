@@ -155,8 +155,8 @@ class topAsymm(supy.analysis) :
             supy.calculables.other.abbreviation( pars['reweights']['var'], pars['reweights']['abbr'] ),
             supy.calculables.other.abbreviation( 'SF'.join(lepton), 'sf'),
 
-            supy.calculables.other.QueuedBin( 7, ("fitTopDeltaBetazRel", "fitTopPhiBoost"), (1,1), 'fitTop'),
-            supy.calculables.other.QueuedBin( 7, ("genTopDeltaBetazRel", "genTopPhiBoost"), (1,1), 'genTop'),
+            supy.calculables.other.QueuedBin( 7, ("fitTopTanhDeltaAbsY", "fitTopDPtDPhi"), (1,1), 'fitTop'),
+            supy.calculables.other.QueuedBin( 7, ("genTopTanhDeltaAbsY", "genTopDPtDPhi"), (1,1), 'genTop'),
             ]
         if self.doSystematics(pars) :
             calcs.append(calculables.gen.genPdfWeights('/home/hep/bbetchar/local/share/lhapdf/PDFsets/CT10.LHgrid',))
@@ -194,10 +194,10 @@ class topAsymm(supy.analysis) :
                                        'pileUpRatios', 2, self.doSystematics(pars)).onlySim()
              , calculables.top.ttSymmAnti(pars['sample'], topSamples[1], inspect=True).disable(saDisable)
              , ssteps.histos.symmAnti('tt','genTopQueuedBin7',49,-1,1).disable(saDisable)
-             , ssteps.other.reweights( ssteps.histos.value( ('genTopDeltaBetazRel','genTopPhiBoost'), (2,2), (-1,-1), (1,1) ),
+             , ssteps.other.reweights( ssteps.histos.value( ('genTopTanhDeltaAbsY','genTopDPtDPhi'), (2,2), (-1,-1), (1,1) ),
                                        'genPdfWeights', 53, self.doSystematics(pars) ).disable(saDisable)
              , steps.gen.pdfWeightsPlotter(['genTopTanhRapiditySum','genTopPtOverSumPt',
-                                            'genTopDeltaBetazRel','genTopPhiBoost','genTopRhoS'],
+                                            'genTopTanhDeltaAbsY','genTopDPtDPhi','genTopRhoS'],
                                            [0,0,-1,-1,0],
                                            [1,1,1,1,1]).disable(saDisable or not self.doSystematics(pars))
              ####################################
@@ -276,8 +276,8 @@ class topAsymm(supy.analysis) :
              , steps.top.kinematic_resolution({'TanhRapiditySum':(100,0,1,0.5),
                                                'MassSum':(30,300,1200,450),
                                                'PtSum':(100,0,300,50),
-                                               'DeltaBetazRel':(100,-1,1,0),
-                                               'PhiBoost':(100,-1,1,0)}, topSamples[1], topTag).disable(saDisable)
+                                               'TanhDeltaAbsY':(100,-1,1,0),
+                                               'DPtDPhi':(100,-1,1,0)}, topSamples[1], topTag).disable(saDisable)
              , ssteps.histos.mass('fitTopSumP4', 30, 300, 1200)
              , ssteps.histos.pt(  'fitTopSumP4', 100, 0, 300)
              , ssteps.histos.value('fitTopRapiditySum', 50, 0, 3, xtitle = '|t#bar{t}.y|')
@@ -285,8 +285,8 @@ class topAsymm(supy.analysis) :
              , ssteps.histos.value('fitTopPtOverSumPt', 100, 0, 1)
              , ssteps.histos.value('TridiscriminantQQggQg',100,-1,1)
              , ssteps.filters.label('asymmetry')
-             , ssteps.histos.value('fitTopDeltaBetazRel',100,-1,1)
-             , ssteps.histos.value('fitTopPhiBoost',100,-1,1)
+             , ssteps.histos.value('fitTopTanhDeltaAbsY',100,-1,1)
+             , ssteps.histos.value('fitTopDPtDPhi',100,-1,1)
              , ssteps.histos.symmAnti('tt','fitTopQueuedBin7',49,-1,1)] +
              #, ssteps.histos.symmAnti('tt','genTopQueuedBin7',49,-1,1).disable(saDisable)
             ###################################
@@ -299,8 +299,8 @@ class topAsymm(supy.analysis) :
              , ssteps.histos.value('fitTopPtOverSumPt', 100,0,1)
              , ssteps.histos.value('TridiscriminantQQggQg', 100,-1,1)
              , ssteps.histos.value('TridiscriminantWTopQCD', 100,-1,1)
-             , ssteps.histos.value('fitTopDeltaBetazRel',100,-1,1)
-             , ssteps.histos.value('fitTopPhiBoost',100,-1,1)
+             , ssteps.histos.value('fitTopTanhDeltaAbsY',100,-1,1)
+             , ssteps.histos.value('fitTopDPtDPhi',100,-1,1)
              , ssteps.histos.symmAnti('tt','fitTopQueuedBin7',49,-1,1)
              ])
     ########################################################################################
@@ -481,8 +481,8 @@ class topAsymm(supy.analysis) :
                               pageNumbers = False,
                               ).plotAll()
         print
-        print 'fitTopPhiBoost indices:'
-        print melded.indicesOfStepsWithKey('fitTopPhiBoost')
+        print 'fitTopDPtDPhi indices:'
+        print melded.indicesOfStepsWithKey('fitTopDPtDPhi')
 
     def meldScale(self,tagSuffix) :
         lname,tt,sn,jn,ptMin = tagSuffix.split('_')

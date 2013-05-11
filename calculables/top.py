@@ -141,7 +141,7 @@ class TtxPt(TopP4Calculable) :
 class TtxPz(TopP4Calculable) :
     def update(self,_) : self.value = self.source[self.P4]['ttx'].z()
 ######################################
-class DeltaBetazRel(TopP4Calculable) :
+class TanhDeltaAbsY(TopP4Calculable) :
     '''tanh(|t.y|-|#bar{t}.y|)'''
     def update(self,_) :
         self.value = math.tanh(self.source['DeltaAbsYttbar'.join(self.fixes)])
@@ -156,22 +156,14 @@ class DeltaYttbar(TopP4Calculable) :
     def update(self,_) :
         self.value = self.source[self.P4]['t'].Rapidity() - self.source[self.P4]['tbar'].Rapidity()
 ######################################
-class CosPhiBoost(TopP4Calculable) :
-    def update(self,_) :
+class DPtDPhi(TopP4Calculable):
+    def update(self,_):
         p4 = self.source[self.P4]
-        t = p4['t']
-        ttbar = t + p4['tbar']
-        beta = ttbar.BoostToCM()
-        betaXYZM = beta.x(), beta.y(), beta.z(), 0
-        boost = r.Math.Boost(*betaXYZM[:-1])
-
-        self.value = math.cos(boost(p4['t']).phi() - beta.phi())
-######################################
-class PhiBoost(TopP4Calculable) :
-    def update(self,_) :
-        c = self.source['CosPhiBoost'.join(self.fixes)]
-        self.value = 1 - 2 * math.acos(c) / math.pi
-######################################
+        ttbar = p4['t'] + p4['tbar']
+        diff =  p4['tbar'] - p4['t']
+        dphi = math.acos(math.cos(ttbar.phi() - diff.phi()))
+        self.value = 1 - 2 * dphi / math.pi
+#######################################
 class TanhDirectedDeltaYttbar(wrappedChain.calculable) :
     def __init__(self, collection = None) :
         self.fixes = collection
@@ -472,8 +464,8 @@ class extraJetMoments2Sum(wrappedChain.calculable) :
 class ttSymmAnti(calculables.secondary) :
     def __init__(self, thisSample, samples, inspect = False, weights = []) :
         collection = ('genTop','')
-        self.varX = 'PhiBoost'.join(collection)
-        self.varY = 'DeltaBetazRel'.join(collection)
+        self.varX = 'DPtDPhi'.join(collection)
+        self.varY = 'TanhDeltaAbsY'.join(collection)
         for item in ['thisSample','inspect','weights'] : setattr(self,item,eval(item))
         self.__symm, self.__anti = None,None
         self.samples = samples
@@ -493,17 +485,21 @@ class ttSymmAnti(calculables.secondary) :
         sumsymmanti = sum(symmanti)
         symm,anti = symmanti
 
-        self.book.fill(x, 'x_0symm', 50, -1, 1, w = w * symm / sumsymmanti, title = ';(symm) %s;events / bin'%self.varX)
-        self.book.fill(x, 'x_1anti', 50, -1, 1, w = w * anti / sumsymmanti, title = ';(anti) %s;events / bin'%self.varX)
-        self.book.fill(x, 'x_2flat', 50, -1, 1, w = w * 0.5  / max(1e-6,sumsymmanti), title = ';(flat) %s;events / bin'%self.varX)
+        wsymm = w * symm / sumsymmanti
+        wanti = w * anti / sumsymmanti
+        wflat = w * 0.5 / max(1e-6, sumsymmanti)
 
-        self.book.fill(y, 'y_0symm', 100, -1, 1, w = w * symm / sumsymmanti, title = ';(symm) %s;events / bin'%self.varY)
-        self.book.fill(y, 'y_1anti', 100, -1, 1, w = w * anti / sumsymmanti, title = ';(anti) %s;events / bin'%self.varY)
-        self.book.fill(y, 'y_2flat', 100, -1, 1, w = w * 0.5  / max(1e-6,sumsymmanti), title = ';(flat) %s;events / bin'%self.varY)
+        self.book.fill(x, 'x_0symm', 50, -1, 1, w = wsymm, title = ';(symm) %s;events / bin'%self.varX)
+        self.book.fill(x, 'x_1anti', 50, -1, 1, w = wanti, title = ';(anti) %s;events / bin'%self.varX)
+        self.book.fill(x, 'x_2flat', 50, -1, 1, w = wflat, title = ';(flat) %s;events / bin'%self.varX)
 
-        self.book.fill((x,y), '2_x_y_0symm', (50,100), (-1,-1), (1,1), w = w * symm / sumsymmanti, title = 'symm;%s;%s;'%(self.varX,self.varY))
-        self.book.fill((x,y), '2_x_y_1anti', (50,100), (-1,-1), (1,1), w = w * anti / sumsymmanti, title = 'anti;%s;%s;'%(self.varX,self.varY))
-        self.book.fill((x,y), '2_x_y_2flat', (50,100), (-1,-1), (1,1), w = w * 0.5  / max(1e-6,sumsymmanti), title = 'flat;%s;%s;'%(self.varX,self.varY))
+        self.book.fill(y, 'y_0symm', 100, -1, 1, w = wsymm, title = ';(symm) %s;events / bin'%self.varY)
+        self.book.fill(y, 'y_1anti', 100, -1, 1, w = wanti, title = ';(anti) %s;events / bin'%self.varY)
+        self.book.fill(y, 'y_2flat', 100, -1, 1, w = wflat, title = ';(flat) %s;events / bin'%self.varY)
+
+        self.book.fill((x,y), '2_x_y_0symm', (50,100), (-1,-1), (1,1), w = wsymm, title = 'symm;%s;%s;'%(self.varX,self.varY))
+        self.book.fill((x,y), '2_x_y_1anti', (50,100), (-1,-1), (1,1), w = wanti, title = 'anti;%s;%s;'%(self.varX,self.varY))
+        self.book.fill((x,y), '2_x_y_2flat', (50,100), (-1,-1), (1,1), w = wflat, title = 'flat;%s;%s;'%(self.varX,self.varY))
 
     def update(self,_) :
         self.value = ()
