@@ -163,6 +163,8 @@ class topAsymm(supy.analysis) :
             calcs.append(calculables.other.pileUpRatios( 'pileupTrueNumInteractionsBX0',
                                                          ['lumi/dsets_%s%s_pileup.root'%(pars['lepton']['name'],s)
                                                           for s in ['','_down','_up']]))
+            calcs.append(calculables.top.ttAltSymmAntiWeight('Dn'))
+            calcs.append(calculables.top.ttAltSymmAntiWeight('Up'))
         return calcs
     ########################################################################################
 
@@ -196,10 +198,16 @@ class topAsymm(supy.analysis) :
              , ssteps.histos.symmAnti('tt','genTopQueuedBin7',49,-1,1).disable(saDisable)
              , ssteps.other.reweights( ssteps.histos.value( ('genTopTanhDeltaAbsY','genTopDPtDPhi'), (2,2), (-1,-1), (1,1) ),
                                        'genPdfWeights', 53, self.doSystematics(pars) ).disable(saDisable)
+             , ssteps.other.reweights( ssteps.histos.value( ('genTopTanhDeltaAbsY','genTopDPtDPhi'), (2,2), (-1,-1), (1,1) ),
+                                       'ttDnSymmAntiWeight', 1, self.doSystematics(pars) ).disable(saDisable)
+             , ssteps.other.reweights( ssteps.histos.value( ('genTopTanhDeltaAbsY','genTopDPtDPhi'), (2,2), (-1,-1), (1,1) ),
+                                       'ttUpSymmAntiWeight', 1, self.doSystematics(pars) ).disable(saDisable)
              , steps.gen.pdfWeightsPlotter(['genTopTanhRapiditySum','genTopPtOverSumPt',
                                             'genTopTanhDeltaAbsY','genTopDPtDPhi','genTopRhoS'],
                                            [0,0,-1,-1,0],
                                            [1,1,1,1,1]).disable(saDisable or not self.doSystematics(pars))
+             , calculables.top.ttAltSymmAnti(pars['sample'].replace('_ph.','_phD.'), pars['tag'].replace('_ph_','_dn_'),'Dn')
+             , calculables.top.ttAltSymmAnti(pars['sample'].replace('_ph.','_phU.'), pars['tag'].replace('_ph_','_up_'),'Up')
              ####################################
              , ssteps.filters.label('selection'),
              ssteps.filters.value("mvaTrigV0Exists",min=True),
@@ -319,8 +327,12 @@ class topAsymm(supy.analysis) :
         effEl = 'ssteps.other.reweights( eval("%s"), "elReweights", 4, doSys and not isData and "_el_" in pars["tag"], predicate)'
         effMu = 'ssteps.other.reweights( eval("%s"), "muReweights", 4, doSys and not isData and "_mu_" in pars["tag"], predicate)'
 
-        return [eval(pdf % asymm), eval(pu % asymm), eval(effEl % asymm), eval(effMu % asymm),
-                eval(pdf % kinem), eval(pu % kinem), eval(effEl % kinem), eval(effMu % kinem)
+        asymmDn = asymm.replace('tt','ttDn')
+        asymmUp = asymm.replace('tt','ttUp')
+        wrap = 'ssteps.other.reweights( %s, "tt%sSymmAntiWeight", 1, doSys and not saDisable, predicate)'
+
+        return [eval(pdf % asymm), eval(pu % asymm), eval(effEl % asymm), eval(effMu % asymm), eval(wrap % (asymmDn, 'Dn')), eval(wrap % (asymmUp, 'Up')),
+                eval(pdf % kinem), eval(pu % kinem), eval(effEl % kinem), eval(effMu % kinem), eval(wrap % (kinem,   'Dn')), eval(wrap % (kinem,   'Up'))
                 ]
 
     @classmethod

@@ -462,13 +462,14 @@ class extraJetMoments2Sum(wrappedChain.calculable) :
 ######################################
 
 class ttSymmAnti(calculables.secondary) :
-    def __init__(self, thisSample, samples, inspect = False, weights = []) :
+    def __init__(self, thisSample, samples, inspect=False, weights=[], altTag=None) :
         collection = ('genTop','')
         self.varX = 'DPtDPhi'.join(collection)
         self.varY = 'TanhDeltaAbsY'.join(collection)
         for item in ['thisSample','inspect','weights'] : setattr(self,item,eval(item))
         self.__symm, self.__anti = None,None
         self.samples = samples
+        self.altTag = altTag
 
     def baseSamples(self): return self.samples
 
@@ -512,7 +513,7 @@ class ttSymmAnti(calculables.secondary) :
         self.value = (symm,anti) if symm else (1,0)
 
     def setup(self,*_) :
-        hist = self.fromCache([self.thisSample], ['2_x_y'])[self.thisSample]['2_x_y']
+        hist = self.fromCache([self.thisSample], ['2_x_y'], self.altTag)[self.thisSample]['2_x_y']
         if not hist : print "cannot find cache:", self.name ; return
         self.__stashsymmanti = self.prep(hist)
         self.__symm,self.__anti = [[next(iter(h.GetListOfFunctions())) for h in hs] for hs in self.__stashsymmanti]
@@ -550,7 +551,7 @@ class ttSymmAnti(calculables.secondary) :
         names = ['%s#rightarrow^{}t#bar{t} '%i for i in ['gg','qg','q#bar{q}','#bar{q}g']]
         colors = [r.kBlack,r.kBlue,r.kRed,r.kGreen]
 
-        hists = [self.fromCache(samples, ['2_x_y'])[s]['2_x_y'] for s in samples]
+        hists = [self.fromCache(samples, ['2_x_y'],self.altTag)[s]['2_x_y'] for s in samples]
         symmHists,antiHists = zip(*[self.prep(h) for h in hists])
         symm,symm0,symm1,symm2 = zip(*symmHists)
         anti,anti0,anti1 = zip(*antiHists)
@@ -660,3 +661,28 @@ class ttSymmAnti(calculables.secondary) :
         c.Print(fileName+'.pdf]')
         r.gStyle.SetOptStat(optstat)
         print "Wrote file: %s.pdf"%fileName
+
+class ttAltSymmAnti(ttSymmAnti):
+    @property
+    def name(self): return 'tt%sSymmAnti'%self.abbr
+
+    @property
+    def nameForCache(self): return 'ttSymmAnti'
+
+    def __init__(self, sample, tag, abbr="Alt"):
+        for item in ['sample','tag','abbr']: setattr(self,item,eval(item))
+        super(ttAltSymmAnti,self).__init__(sample, [], altTag=tag)
+
+    def uponAcceptance(self,_): pass
+    def baseSamples(self): return ['bogusSampleDontCacheAnything']
+
+class ttAltSymmAntiWeight(wrappedChain.calculable):
+    @property
+    def name(self): return 'tt%sSymmAntiWeight'%self.abbr
+
+    def __init__(self, abbr):
+        self.abbr = abbr
+        self.var = 'tt%sSymmAnti'%self.abbr
+
+    def update(self,_):
+        self.value = [sum(self.source[self.var]) / sum(self.source['ttSymmAnti'])]
