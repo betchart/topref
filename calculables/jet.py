@@ -1,5 +1,5 @@
 import math,bisect,itertools,operator,ROOT as r
-from supy import wrappedChain,calculables,utils
+from supy import wrappedChain,calculables,utils,whereami
 try: import numpy as np
 except: np = None
 
@@ -189,6 +189,8 @@ class ProbabilityGivenBQN(calculables.secondary) :
     def reportCache(self) :
         optStat = r.gStyle.GetOptStat()
         r.gStyle.SetOptStat(0)
+        r.gROOT.ProcessLine(".L %s/cpp/tdrstyle.C"%whereami())
+        r.setTDRStyle()
         self.setup(None)
         if None in self.histsBQN :
             print '%s.setup() failed'%self.name
@@ -284,6 +286,9 @@ class ScalingBQN(calculables.secondary) :
     def reportCache(self) :
         optStat = r.gStyle.GetOptStat()
         r.gStyle.SetOptStat(0)
+        r.gROOT.ProcessLine(".L %s/cpp/tdrstyle.C"%whereami())
+        r.setTDRStyle()
+        r.tdrStyle.SetPadRightMargin(0.06)
         self.setup(None)
         if not self.hists :
             print '%s.setup() failed'%self.name
@@ -294,16 +299,18 @@ class ScalingBQN(calculables.secondary) :
         c.Print(fileName +'[')
         for f in 'BQN' :
             leg = r.TLegend(0.6,0.6,0.9,0.9)
+            #leg = r.TLegend(0.2,0.2,0.5,0.5)
             leg.SetHeader("#eta range")
             for i,color in enumerate([r.kRed,r.kBlue,r.kGreen]) :
                 h = self.hists[f+str(i)]
                 label = h.GetTitle().split(',')[1]
-                h.SetTitle(h.GetTitle().split(',')[0])
+                h.SetTitle(';(%s): p_{T}^{meas};median log(E^{gen}/E^{meas})'%h.GetTitle().split(',')[0])
                 h.SetLineColor(color)
                 h.SetMarkerColor(color)
-                h.SetMaximum(0.4)
-                h.SetMinimum(-0.4)
-                h.Draw("same" if i else "")
+                h.SetLineWidth(2)
+                h.SetMaximum(0.2)
+                h.SetMinimum(-0.2)
+                h.Draw("histsame" if i else "hist")
                 leg.AddEntry(h,label,'l')
             leg.Draw()
             c.Print(fileName)
