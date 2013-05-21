@@ -207,6 +207,7 @@ class ProbabilityGivenBQN(calculables.secondary) :
         height = 1.1 * max(h.GetMaximum() for h in self.histsBQN)
         for i,(f,color) in enumerate(zip('BQN',[r.kRed,r.kBlue,r.kGreen])) :
             h = self.histsBQN[i]
+            h.UseCurrentStyle()
             h.SetTitle(";%s;"%h.GetXaxis().GetTitle().split()[0])
             h.SetLineColor(color)
             h.SetLineWidth(2)
@@ -214,7 +215,7 @@ class ProbabilityGivenBQN(calculables.secondary) :
             h.SetMaximum(height)
             h.SetMinimum(0)
             h.Draw("hist" + ("same" if i else ""))
-            leg.AddEntry(h,{"B":"B jets","Q":"jets from W","N":"other (gluon)"}[f],'l')
+            leg.AddEntry(h,{"B":"B jets","Q":"jets from W","N":"other jets"}[f],'l')
         leg.Draw()
         c.Print(fileName)
         c.Print(fileName +']')
@@ -299,7 +300,6 @@ class ScalingBQN(calculables.secondary) :
         c.Print(fileName +'[')
         for f in 'BQN' :
             leg = r.TLegend(0.6,0.6,0.9,0.9)
-            #leg = r.TLegend(0.2,0.2,0.5,0.5)
             leg.SetHeader("#eta range")
             for i,color in enumerate([r.kRed,r.kBlue,r.kGreen]) :
                 h = self.hists[f+str(i)]

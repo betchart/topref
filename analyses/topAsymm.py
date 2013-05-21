@@ -233,10 +233,10 @@ class topAsymm(supy.analysis) :
              , calculables.jet.ProbabilityGivenBQN(jet, pars['bVar'], binning=(51,-0.02,1), **ttSmpTag)
              , calculables.jet.ScalingBQN(jet, samples = topSamples[1], tag = topTag)
              , supy.calculables.other.TwoDChiSquared('RawMassWTopCorrectPQB', binningX=(300,0,600), binningY=(300,0,1200),
-                                                     labelsXY = ("Raw Hadronic m_{W}","Raw Hadronic m_{top}"),
+                                                     labelsXY = ("m_{#hat{c}#hat{d}}","m_{#hat{b}#hat{c}#hat{d}}"),
                                                      tailSuppression=0.01, **ttSmpTag)
-             , supy.calculables.other.CombinationsLR( var='HTopSigmasPQB', varMax=5, trueKey='IndicesGenTopPQH', **ttSmpTag)
-             , supy.calculables.other.CombinationsLR( var='LTopUnfitSqrtChi2', varMax=10, trueKey='IndexGenTopL', **ttSmpTag)
+             , supy.calculables.other.CombinationsLR( var='HTopSigmasPQB', varMax=5, trueKey='IndicesGenTopPQH', label="MSD", **ttSmpTag)
+             , supy.calculables.other.CombinationsLR( var='LTopUnfitSqrtChi2', varMax=10, trueKey='IndexGenTopL', label="#chi_{a}", **ttSmpTag)
              , self.tridiscriminant(pars)
 
              , ssteps.filters.label('finegrain')
