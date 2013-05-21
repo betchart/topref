@@ -524,6 +524,7 @@ class ttSymmAnti(calculables.secondary) :
         hist.Scale(1./hist.Integral())
         symm,anti = utils.symmAnti2(hist)
         symmSliceX = r.TF1('func','[0] + [1]*x*(1-x**2/3) + [2]*x**2/2 * (1-x**2/2)',-1,1)
+        symmSliceX.SetParNames("A^{+}","B^{+}","C^{+}")
         symmSliceX.SetLineWidth(0)
         symmSliceX.SetLineStyle(11)
         symm.FitSlicesX(symmSliceX)
@@ -533,6 +534,7 @@ class ttSymmAnti(calculables.secondary) :
         symmHists[2].Fit('++'.join('x**%d'%d for d in [1,3,5,7,9,11,13,15,17]),'Q')
         symmHists[3].Fit('++'.join('x**%d'%d for d in [0,2,4,6,8,10,12,14,16]),'Q')
         antiSliceX = r.TF1('func','[0] + [1]*x*(1-x**2/3)',-1,1)
+        antiSliceX.SetParNames("A^{-}","B^{-}")
         antiSliceX.SetLineWidth(0)
         antiSliceX.SetLineStyle(11)
         anti.FitSlicesX(antiSliceX)
@@ -545,13 +547,27 @@ class ttSymmAnti(calculables.secondary) :
     def reportCache(self) :
         fileName = '/'.join(self.outputFileName.split('/')[:-1]+[self.name])
         optstat = r.gStyle.GetOptStat()
-        r.gStyle.SetOptStat(0)
+        from supy import whereami
+        r.gROOT.ProcessLine(".L %s/cpp/tdrstyle.C"%whereami())
+        r.setTDRStyle()
+        r.tdrStyle.SetOptStat(0)
+        r.tdrStyle.SetOptFit(0)
+        r.tdrStyle.SetPalette(1)
+        r.tdrStyle.SetMarkerSize(0.5)
+        r.tdrStyle.SetTitleH(0.05)
+        r.tdrStyle.SetTitleW(0.4)
+        r.tdrStyle.SetTitleX(0.4)
+        r.tdrStyle.SetTitleY(1.0)
+        r.tdrStyle.SetTitleBorderSize(0)
 
         samples = self.baseSamples()
         names = ['%s#rightarrow^{}t#bar{t} '%i for i in ['gg','qg','q#bar{q}','#bar{q}g']]
         colors = [r.kBlack,r.kBlue,r.kRed,r.kGreen]
 
         hists = [self.fromCache(samples, ['2_x_y'],self.altTag)[s]['2_x_y'] for s in samples]
+        for h in hists:
+            h.UseCurrentStyle()
+            h.SetTitle(';X_{T};X_{L}')
         symmHists,antiHists = zip(*[self.prep(h) for h in hists])
         symm,symm0,symm1,symm2 = zip(*symmHists)
         anti,anti0,anti1 = zip(*antiHists)
@@ -563,16 +579,18 @@ class ttSymmAnti(calculables.secondary) :
         c = r.TCanvas()
         c.Print(fileName+'.pdf[')
         c.Divide(2,2)
+        r.tdrStyle.SetOptTitle(1)
         for i,h in enumerate(symm) :
             c.cd(i+1)
             h.SetMaximum(height)
             h.SetMinimum(0)
             h.Draw('colz')
         c.Print(fileName+'.pdf')
-        for i,h in enumerate(symm) :
-            c.cd(i+1)
-            h.Draw('surf2')
-        c.Print(fileName+'.pdf')
+        #for i,h in enumerate(symm) :
+        #    c.cd(i+1)
+        #    h.Draw('surf2')
+        #c.Print(fileName+'.pdf')
+        r.tdrStyle.SetOptTitle(0)
 
         c.Clear()
         c.cd(0)
@@ -581,19 +599,22 @@ class ttSymmAnti(calculables.secondary) :
             hists = eval('symm%d'%par)
             height = 1.05*max(h.GetBinContent(h.GetMaximumBin()) for h in hists)
             for i,h in enumerate(hists) :
+                h.GetYaxis().SetTitle('Fitted value of '+h.GetTitle().split('=')[-1])
                 fit = next(iter(h.GetListOfFunctions()),None)
                 if fit :
                     fit.SetLineColor(colors[i])
                     fit.SetLineWidth(1)
                 h.SetLineColor(colors[i])
+                h.SetMarkerColor(colors[i])
                 h.SetMaximum(height)
-                h.SetMinimum(-height)
+                h.SetMinimum(-height if h.GetMinimum()<0 else 0)
                 h.Draw('same' if i else '')
             c.Print(fileName+'.pdf')
 
 
         c.Clear()
         c.Divide(2,2)
+        r.tdrStyle.SetOptTitle(1)
         height = max(h.GetBinContent(h.GetMaximumBin()) for h in anti)
         for i,h in enumerate(anti) :
             c.cd(i+1)
@@ -601,10 +622,11 @@ class ttSymmAnti(calculables.secondary) :
             h.SetMinimum(-height)
             h.Draw('colz')
         c.Print(fileName+'.pdf')
-        for i,h in enumerate(anti) :
-            c.cd(i+1)
-            h.Draw('surf2')
-        c.Print(fileName+'.pdf')
+        #for i,h in enumerate(anti) :
+        #    c.cd(i+1)
+        #    h.Draw('surf2')
+        #c.Print(fileName+'.pdf')
+        r.tdrStyle.SetOptTitle(0)
 
         c.Clear()
         c.cd(0)
@@ -613,11 +635,13 @@ class ttSymmAnti(calculables.secondary) :
             hists = eval('anti%d'%par)
             height = 1.05*max([h.GetBinContent(h.GetMaximumBin()) for h in hists]+[abs(h.GetMinimum()) for h in hists])
             for i,h in enumerate(hists) :
+                h.GetYaxis().SetTitle('Fitted value of '+h.GetTitle().split('=')[-1])
                 fit = next(iter(h.GetListOfFunctions()),None)
                 if fit :
                     fit.SetLineColor(colors[i])
                     fit.SetLineWidth(1)
                 h.SetLineColor(colors[i])
+                h.SetMarkerColor(colors[i])
                 h.SetMaximum(height)
                 h.SetMinimum(-height)
                 h.Draw('same' if i else '')
@@ -633,6 +657,7 @@ class ttSymmAnti(calculables.secondary) :
             for i,(s,func) in enumerate(zip(symm,funcs)) :
                 proj = s.ProjectionX('%s_%d'%(s.GetName(),iY),iY,iY)
                 proj.SetLineColor(colors[i])
+                proj.SetMarkerColor(colors[i])
                 proj.SetMinimum(0)
                 proj.SetMaximum(height)
                 proj.Fit(func,'QR')
