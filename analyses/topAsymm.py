@@ -56,7 +56,7 @@ class topAsymm(supy.analysis) :
                  }
 
     @staticmethod
-    def doSystematics(pars) : return False #'ph_sn_jn_20' in pars['tag']
+    def doSystematics(pars) : return 'ph_sn_jn_20' in pars['tag']
 
     @staticmethod
     def scaleFactor() : return 1.0
