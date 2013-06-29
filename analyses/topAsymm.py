@@ -49,7 +49,7 @@ class topAsymm(supy.analysis) :
                                           "QCD" : {"bCut":bCut["normal"],  "iso":"isoInvert"}
                                           }),
                  "toptype" : self.vary({"ph":"ph",'up':'phU','dn':'phD'}),#,'mn':'mn'}),
-                 "ptscale" : self.vary({"20":20}),#,"40":40}),
+                 "ptscale" : self.vary({"20":20}),#,"30":30}),
                  "smear" : self.vary({'sn':"Smear",'su':'SmearUp','sd':'SmearDown'}),
                  "jec" : self.vary({'jn':0,'ju':1,'jd':-1}),
                  "topSamples": ("ttj_%s",['ttj_%s.wGG.%s','ttj_%s.wQG.%s','ttj_%s.wQQ.%s','ttj_%s.wAG.%s']),
@@ -237,9 +237,10 @@ class topAsymm(supy.analysis) :
                                                      tailSuppression=0.01, **ttSmpTag)
              , supy.calculables.other.CombinationsLR( var='HTopSigmasPQB', varMax=5, trueKey='IndicesGenTopPQH', label="MSD", **ttSmpTag)
              , supy.calculables.other.CombinationsLR( var='LTopUnfitSqrtChi2', varMax=10, trueKey='IndexGenTopL', label="#chi_{a}", **ttSmpTag)
+             , supy.calculables.other.CombinationsLR( var='TopComboQQBBLikelihoodRatio', varMax=1, trueKey='IndicesGenTopQQBB', label='L_i^{CSV}/max(L^{CSV})', **ttSmpTag)
              , self.tridiscriminant(pars)
 
-             , ssteps.filters.label('finegrain')
+             , ssteps.filters.label('finegrain').invert()
              , ssteps.histos.value('MetMt'.join(lepton), 120, 0, 120)
              , ssteps.histos.value('ProbabilityHTopMasses', 100,0,1)
              , ssteps.histos.value("TopRatherThanWProbability", 100,0,1)
