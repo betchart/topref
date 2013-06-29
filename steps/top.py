@@ -165,6 +165,6 @@ class chosenCombo(analysisStep) :
         iPQHL = ev['TopCandidateIndices'][ev["TopFitLikelihoodIndex"]]
         iQQBB = iPQHL[:2] + tuple(sorted(iPQHL[2:]))
 
-        self.book.fill(ev['HTopSigmasPQB'][iPQHL:3], 'MSD', 100, 0, 5, title=";MSD;events / bin")
+        self.book.fill(ev['HTopSigmasPQB'][iPQHL[:3]], 'MSD', 100, 0, 5, title=";MSD;events / bin")
         self.book.fill(ev['LTopUnfitSqrtChi2'][iPQHL[3]], 'chia', 100, 0, 10, title=";#chi_{a};events / bin")
         self.book.fill(ev['TopComboQQBBLikelihoodRatio'][iQQBB], 'LiCSV', 100, 0, 1, title=";L_i^{CSV}/max(L^{CSV});events / bin")

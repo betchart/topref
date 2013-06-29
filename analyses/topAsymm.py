@@ -240,7 +240,7 @@ class topAsymm(supy.analysis) :
              , supy.calculables.other.CombinationsLR( var='TopComboQQBBLikelihoodRatio', varMax=1, trueKey='IndicesGenTopQQBB', label='L_i^{CSV}/max(L^{CSV})', **ttSmpTag)
              , self.tridiscriminant(pars)
 
-             , ssteps.filters.label('finegrain').invert()
+             , ssteps.filters.label('finegrain')
              , ssteps.histos.value('MetMt'.join(lepton), 120, 0, 120)
              , ssteps.histos.value('ProbabilityHTopMasses', 100,0,1)
              , ssteps.histos.value("TopRatherThanWProbability", 100,0,1)
@@ -415,9 +415,10 @@ class topAsymm(supy.analysis) :
         org.mergeSamples(targetSpec={"name":"Single", "color":r.kGray}, sources=['.'.join([s,rw,'sf']) for s in self.single_top()])
         org.mergeSamples(targetSpec={"name":"St.Model", "color":r.kGreen+2}, sources=["t#bar{t}","W","DY","Single"],
                          keepSources=True)
-        try: self.skimStats(org)
+        try:
+            self.skimStats(org)
+            self.printTable(org)
         except: pass
-        self.printTable(org)
         org.scale( lumiToUseInAbsenceOfData = 19590 )
 
         names = [ss["name"] for ss in org.samples]
