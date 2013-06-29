@@ -56,7 +56,7 @@ class topAsymm(supy.analysis) :
                  }
 
     @staticmethod
-    def doSystematics(pars) : return 'ph_sn_jn_20' in pars['tag']
+    def doSystematics(pars) : return False #'ph_sn_jn_20' in pars['tag']
 
     @staticmethod
     def scaleFactor() : return 1.0
@@ -244,6 +244,7 @@ class topAsymm(supy.analysis) :
              , ssteps.histos.value('MetMt'.join(lepton), 120, 0, 120)
              , ssteps.histos.value('ProbabilityHTopMasses', 100,0,1)
              , ssteps.histos.value("TopRatherThanWProbability", 100,0,1)
+             , steps.top.chosenCombo()
 
              , ssteps.filters.label('object pt')
              , ssteps.histos.pt('AdjustedP4'.join(met), 125, 0, 250 )
