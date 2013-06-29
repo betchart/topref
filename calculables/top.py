@@ -51,6 +51,11 @@ class IndicesGenTopPQH(wrappedChain.calculable) :
 class IndexGenTopL(wrappedChain.calculable) :
     def update(self,_) : self.value = self.source['IndicesGenTopPQHL'][3]
 
+class IndicesGenTopQQBB(wrappedChain.calculable) :
+    def update(self,_) :
+        iPQHL = self.source['IndicesGenTopPQHL']
+        self.value =  iPQHL[:2]+tuple(sorted(iPQHL[2:]))
+
 class IndicesGenTopExtra(wrappedChain.calculable) :
     rMax = 0.6
     def update(self,_) :

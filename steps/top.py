@@ -67,7 +67,10 @@ class kinematics(analysisStep) :
         if i5!=None:
             up = 0.11
             v = max(0, min(up-1e-8, ev['Moments2Sum'.join(ev['TopJets'])][i5]))
-            self.book.fill( (v,triD), 'Moments2Sum_triD', (50,5), (0,-1), (up,1))
+            mass = '_loM' if ev['fitTopMassSum']<450 else '_hiM'
+            rap = '_loY' if ev['fitTopRapiditySum']<0.5 else '_hiY'
+            for item in ['',mass,rap]:
+                self.book.fill( (v,triD), 'Moments2Sum_triD'+item, (50,5), (0,-1), (up,1))
 #####################################
 class kinematics3D(analysisStep) :
     def __init__(self,indexName) : self.moreName = indexName
@@ -158,3 +161,14 @@ class kinematic_resolution(calculables.secondary):
             l.Draw()
             utils.tCanvasPrintPdf(c, fileName, False)
         utils.tCanvasPrintPdf(c, fileName, True, ']')
+
+
+class chosenCombo(analysisStep) :
+    def uponAcceptance(self,ev):
+        TCL = ev['TopCandidateLikelihood']
+        iPQHL = max(TCL, key=TCL.__getitem__)
+        iQQBB = iPQHL[:2] + tuple(sorted(iPQHL[2:]))
+
+        self.book.fill(ev['HTopSigmasPQB'][iPQHL[:3]], 'MSD', 100, 0, 5, title=";MSD;events / bin")
+        self.book.fill(ev['LTopUnfitSqrtChi2'][iPQHL[3]], 'chia', 100, 0, 10, title=";#chi_{a};events / bin")
+        self.book.fill(ev['TopComboQQBBLikelihoodRatio'][iQQBB], 'LiCSV', 100, 0, 1, title=";L_i^{CSV}/max(L^{CSV});events / bin")

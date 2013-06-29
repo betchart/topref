@@ -125,6 +125,12 @@ class TopComboQQBBLikelihood(wrappedChain.calculable) :
                                                       [B[i] for i in iPQHL[2:]]  +
                                                       [N[k] for k in indices if k not in iPQHL]) )
 
+class TopComboQQBBLikelihoodRatio(wrappedChain.calculable) :
+    def update(self,_) :
+        likelihoods = self.source['TopComboQQBBLikelihood']
+        maxL = max(likelihoods.values())
+        self.value = dict([(key,val/maxL) for key,val in likelihoods.iteritems()])
+
 class TopComboQQBBProbability(wrappedChain.calculable) :
     def update(self,_) :
         likelihoods = self.source['TopComboQQBBLikelihood']
