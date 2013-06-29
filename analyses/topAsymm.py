@@ -210,7 +210,7 @@ class topAsymm(supy.analysis) :
              , calculables.top.ttAltSymmAnti(pars['sample'].replace('_ph.','_phU.'), pars['tag'].replace('_ph_','_up_'),'Up')
              ####################################
              , ssteps.filters.label('selection'),
-             ssteps.filters.value("mvaTrigV0Exists",min=True),
+             ssteps.filters.value("mvaTrigV0Exists",min=True), # Event Cleaning
              ssteps.filters.value("muHandleValid",min=True),
              ssteps.filters.multiplicity( max=1, min=1, var = "Charge".join(lepton)),
              ssteps.filters.multiplicity( max=0, var = "Charge".join(otherLepton)),
@@ -415,6 +415,7 @@ class topAsymm(supy.analysis) :
                          keepSources=True)
         try: self.skimStats(org)
         except: pass
+        self.printTable(org)
         org.scale( lumiToUseInAbsenceOfData = 19590 )
 
         names = [ss["name"] for ss in org.samples]
@@ -471,6 +472,25 @@ class topAsymm(supy.analysis) :
                                    ss['name'])
                     h.Write()
         tfile.Close()
+        print 'Wrote: ', fileName
+
+    def printTable(self,org):
+        space = '   &   '
+        fileName = '%s/eff_%s.txt'%(self.globalStem,org.tag)
+        samples = ['Data 2012','t#bar{t}','W','Single','DY']
+        def eff(h):
+            n = h.GetEffectiveEntries()
+            F,P = [h.GetBinContent(i) for i in [1,2]]
+            p = P/(F+P)
+            return 100*p, 100*math.sqrt(p*(1-p)/n)
+        
+        with open(fileName,'w') as f:
+            print>>f, space + space.join(samples)
+            for step in org.steps:
+                if not step.isSelector: continue
+                if step.name=='label': continue
+                sampleFP = dict([(ss['name'],FP) for ss,FP in zip(org.samples,step['counts'])])
+                print>>f, step.nameTitle, space, "%0.3f"%(sampleFP['Data 2012'][2]/1000.), space, space.join( '%.4f(%.4f)'%eff(h) for h in [sampleFP[s] for s in samples[1:-1 if 'QCD' in org.tag else None]]), r'//'
         print 'Wrote: ', fileName
 
     def plotMeldScale(self,tagSuffix) :
