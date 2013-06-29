@@ -67,7 +67,10 @@ class kinematics(analysisStep) :
         if i5!=None:
             up = 0.11
             v = max(0, min(up-1e-8, ev['Moments2Sum'.join(ev['TopJets'])][i5]))
-            self.book.fill( (v,triD), 'Moments2Sum_triD', (50,5), (0,-1), (up,1))
+            mass = '_loM' if ev['fitTopMassSum']<450 else '_hiM'
+            rap = '_loY' if ev['fitTopRapiditySum']<0.5 else '_hiY'
+            for item in ['',mass,rap]:
+                self.book.fill( (v,triD), 'Moments2Sum_triD'+item, (50,5), (0,-1), (up,1))
 #####################################
 class kinematics3D(analysisStep) :
     def __init__(self,indexName) : self.moreName = indexName
