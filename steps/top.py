@@ -162,7 +162,8 @@ class kinematic_resolution(calculables.secondary):
 
 class chosenCombo(analysisStep) :
     def uponAcceptance(self,ev):
-        iPQHL = ev['TopCandidateIndices'][ev["TopFitLikelihoodIndex"]]
+        TCL = ev['TopCandidateLikelihood']
+        iPQHL = max(TCL, key=TCL.__getitem__)
         iQQBB = iPQHL[:2] + tuple(sorted(iPQHL[2:]))
 
         self.book.fill(ev['HTopSigmasPQB'][iPQHL[:3]], 'MSD', 100, 0, 5, title=";MSD;events / bin")
