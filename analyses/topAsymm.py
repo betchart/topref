@@ -38,7 +38,7 @@ class topAsymm(supy.analysis) :
                 "inverted" : {"index":0, "min":csvWP['CSVL'], "max":csvWP['CSVM']}}
 
         return { "vary" : ['selection','lepton','toptype','smear','jec','ptscale'],
-                 "nullvary": list(itertools.combinations(['ju','jd','su','sd','mn','up','dn','40'],2)),
+                 "nullvary": list(itertools.combinations(['ju','jd','su','sd','mn','up','dn','30'],2)),
                  "discriminant2DPlots": True,
                  "bVar" : "CSV", # "Combined Secondary Vertex"
                  "objects" : dict([(item,(item,'')) for item in ['jet','mu','el','met']]),
@@ -49,7 +49,7 @@ class topAsymm(supy.analysis) :
                                           "QCD" : {"bCut":bCut["normal"],  "iso":"isoInvert"}
                                           }),
                  "toptype" : self.vary({"ph":"ph",'up':'phU','dn':'phD'}),#,'mn':'mn'}),
-                 "ptscale" : self.vary({"20":20}),#,"30":30}),
+                 "ptscale" : self.vary({"20":20,"30":30}),
                  "smear" : self.vary({'sn':"Smear",'su':'SmearUp','sd':'SmearDown'}),
                  "jec" : self.vary({'jn':0,'ju':1,'jd':-1}),
                  "topSamples": ("ttj_%s",['ttj_%s.wGG.%s','ttj_%s.wQG.%s','ttj_%s.wQQ.%s','ttj_%s.wAG.%s']),
