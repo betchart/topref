@@ -418,6 +418,7 @@ class topAsymm(supy.analysis) :
         try:
             self.skimStats(org)
             self.printTable(org)
+            self.skimControl(org)
         except: pass
         org.scale( lumiToUseInAbsenceOfData = 19590 )
 
@@ -436,21 +437,23 @@ class topAsymm(supy.analysis) :
         #supy.plotter(org, pdfFileName = self.pdfFileName(org.tag+"_log"),  doLog=True, pegMinimum=0.01, **kwargs ).plotAll()
         supy.plotter(org, pdfFileName = self.pdfFileName(org.tag+"_nolog"), doLog=False, **kwargs ).plotAll()
 
-    def skimStats(self,org) :
+    def statsname(self,org):
         _,lepton,tt,smear,jec,pt = org.tag.split('_')
         tt = tt.replace('dn','phD').replace('up','phU')
         print org.tag
-        statsname = {'DY':'dy',
-                     'W': 'wj',
-                     't#bar{t}':'tt',
-                     'ttj_%s.wGG.pu.sf'%tt:'ttgg',
-                     'ttj_%s.wQG.pu.sf'%tt:'ttqg',
-                     'ttj_%s.wAG.pu.sf'%tt:'ttag',
-                     'ttj_%s.wQQ.pu.sf'%tt:'ttqq',
-                     'Single' : 'st',
-                     'Data 2012': 'data'
-                     }
+        return {'DY':'dy',
+                'W': 'wj',
+                't#bar{t}':'tt',
+                'ttj_%s.wGG.pu.sf'%tt:'ttgg',
+                'ttj_%s.wQG.pu.sf'%tt:'ttqg',
+                'ttj_%s.wAG.pu.sf'%tt:'ttag',
+                'ttj_%s.wQQ.pu.sf'%tt:'ttqq',
+                'Single' : 'st',
+                'Data 2012': 'data'
+                }
 
+    def skimStats(self,org) :
+        statsname = self.statsname(org)
         fileName = '%s/stats_%s.root'%(self.globalStem,org.tag)
         tfile = r.TFile.Open(fileName,'RECREATE')
 
@@ -474,6 +477,37 @@ class topAsymm(supy.analysis) :
                     h = hist.Clone(statsname[ss['name']] if ss['name'] in statsname else
                                    ss['name'])
                     h.Write()
+        tfile.Close()
+        print 'Wrote: ', fileName
+
+    def skimControl(self,org):
+        if 'ph_sn_jn_20' not in org.tag: return
+        controlname = self.statsname(org)
+        fileName = "%s/control_%s.root"%(self.globalStem,org.tag)
+        tfile = r.TFile.Open(fileName,"RECREATE")
+
+        # everything starting frome 'finegrain' through last absEta (except 'counts')
+        # histos.mass('fitTopSumP4')
+        # histos.value('fitTopRapiditySum')
+        start,trip = False, False
+        for step in org.steps:
+            start|= step.nameTitle == ('label','finegrain')
+            if not start: continue
+            trip|= 'absEta' == step.name
+            other = [('kinematics','fitTop'),
+                     ('mass','fitTopSumP4.mass'),
+                     ('value','fitTopTanhRapiditySum'),
+                     ]
+            if trip and not (step.name == 'absEta' or
+                             step.nameTitle in other):
+                continue
+            for g in filter(lambda s:s!='counts',sorted(step)):
+                tfile.mkdir(g.split(';')[0],'_').cd()
+                for ss,hist in zip(org.samples, step[g]):
+                    if not hist or ss['name'] in ['St.Model','S.M.'] : continue
+                    h = hist.Clone(controlname[ss['name']] if ss['name'] in controlname else ss['name'])
+                    h.Write()
+            if step.nameTitle == other[-1] : break
         tfile.Close()
         print 'Wrote: ', fileName
 
