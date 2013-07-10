@@ -489,8 +489,18 @@ class topAsymm(supy.analysis) :
         # everything starting frome 'finegrain' through last absEta (except 'counts')
         # histos.mass('fitTopSumP4')
         # histos.value('fitTopRapiditySum')
+        def save(step, Only=[]):
+            for g in filter(lambda s:s!='counts',sorted(step)):
+                if Only and not g in Only: continue
+                tfile.mkdir(g.split(';')[0],'_').cd()
+                for ss,hist in zip(org.samples, step[g]):
+                    if not hist or ss['name'] in ['St.Model','S.M.'] : continue
+                    h = hist.Clone(controlname[ss['name']] if ss['name'] in controlname else ss['name'])
+                    h.Write()
+
         start,trip = False, False
         for step in org.steps:
+            if step.name == 'TridiscriminantWTopQCD': save(step, ['TridiscriminantWTopQCD'])
             start|= step.nameTitle == ('label','finegrain')
             if not start: continue
             trip|= 'absEta' == step.name
@@ -501,12 +511,7 @@ class topAsymm(supy.analysis) :
             if trip and not (step.name == 'absEta' or
                              step.nameTitle in other):
                 continue
-            for g in filter(lambda s:s!='counts',sorted(step)):
-                tfile.mkdir(g.split(';')[0],'_').cd()
-                for ss,hist in zip(org.samples, step[g]):
-                    if not hist or ss['name'] in ['St.Model','S.M.'] : continue
-                    h = hist.Clone(controlname[ss['name']] if ss['name'] in controlname else ss['name'])
-                    h.Write()
+            save(step)
             if step.nameTitle == other[-1] : break
         tfile.Close()
         print 'Wrote: ', fileName
