@@ -159,7 +159,7 @@ class topAsymm(supy.analysis) :
             supy.calculables.other.QueuedBin( 7, ("genTopTanhDeltaAbsY", "genTopDPtDPhi"), (1,1), 'genTop'),
             ]
         if self.doSystematics(pars) :
-            calcs.append(calculables.gen.genPdfWeights('/home/hep/bbetchar/local/share/lhapdf/PDFsets/CT10.LHgrid',))
+            calcs.append(calculables.gen.genPdfWeights('CT10.LHgrid',))
             calcs.append(calculables.other.pileUpRatios( 'pileupTrueNumInteractionsBX0',
                                                          ['lumi/dsets_%s%s_pileup.root'%(pars['lepton']['name'],s)
                                                           for s in ['','_down','_up']]))
