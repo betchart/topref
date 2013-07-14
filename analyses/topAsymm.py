@@ -297,8 +297,9 @@ class topAsymm(supy.analysis) :
              , ssteps.filters.label('asymmetry')
              , ssteps.histos.value('fitTopTanhDeltaAbsY',100,-1,1)
              , ssteps.histos.value('fitTopDPtDPhi',100,-1,1)
-             , ssteps.histos.symmAnti('tt','fitTopQueuedBin7',49,-1,1)] +
-             #, ssteps.histos.symmAnti('tt','genTopQueuedBin7',49,-1,1).disable(saDisable)
+             , ssteps.histos.symmAnti('tt','fitTopQueuedBin7',49,-1,1)
+             , ssteps.histos.symmAnti('tt','genTopQueuedBin7',49,-1,1).disable(saDisable)
+             ] +
             ###################################
             self.signalSequence(pars,saDisable) +
             self.signalSequence(pars,saDisable, ssteps.filters.mass('fitTopSumP4',min=450)) +
@@ -415,6 +416,7 @@ class topAsymm(supy.analysis) :
         org.mergeSamples(targetSpec={"name":"Single", "color":r.kGray}, sources=['.'.join([s,rw,'sf']) for s in self.single_top()])
         org.mergeSamples(targetSpec={"name":"St.Model", "color":r.kGreen+2}, sources=["t#bar{t}","W","DY","Single"],
                          keepSources=True)
+        self.skimSymmanti(org)
         try:
             self.skimStats(org)
             self.printTable(org)
@@ -480,6 +482,26 @@ class topAsymm(supy.analysis) :
         tfile.Close()
         print 'Wrote: ', fileName
 
+    def skimSymmanti(self,org) :
+        statsname = self.statsname(org)
+        fileName = '%s/symmanti_%s.root'%(self.globalStem,org.tag)
+        tfile = r.TFile.Open(fileName,'RECREATE')
+
+        for iRe,iStep in enumerate(org.indicesOfStep('symmAnti')) :
+            step = org.steps[iStep]
+            dirname = 'R%02d_'%iRe+''.join(step.title.split()).replace(';','_').replace('(','').replace(')','')
+            dir = tfile.mkdir(dirname,'_')
+            for g in sorted(step):
+                dir.mkdir(g,'_').cd()
+                for ss,hist in zip( org.samples,
+                                    step[g] ) :
+                    if not hist or ss['name'] in ['St.Model','S.M']: continue
+                    h = hist.Clone(statsname[ss['name']] if ss['name'] in statsname else
+                                   ss['name'])
+                    h.Write()
+        tfile.Close()
+        print 'Wrote: ', fileName
+
     def skimControl(self,org):
         if 'ph_sn_jn_20' not in org.tag: return
         controlname = self.statsname(org)
@@ -501,6 +523,7 @@ class topAsymm(supy.analysis) :
         start,trip = False, False
         for step in org.steps:
             if step.name == 'TridiscriminantWTopQCD': save(step, ['TridiscriminantWTopQCD'])
+            #if step.name == 'qRecoilKinematics': save(step, ['qRecoilPt'])
             start|= step.nameTitle == ('label','finegrain')
             if not start: continue
             trip|= 'absEta' == step.name
