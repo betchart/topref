@@ -78,7 +78,7 @@ class kinematics3D(analysisStep) :
         index = ev["%sRecoIndex"%self.moreName]
         if index < 0 : return
         topReco = ev["TopReconstruction"]
-        for low,var in  zip([0,0,-1],["fitTopPtOverSumPt", "fitTopTanhRapiditySum", "TridiscriminantQQggQg"]) :
+        for low,var in  zip([0,0],["fitTopPtOverSumPt", "fitTopTanhRapiditySum"]) :
             v = tuple( max(L,min(val,U-1e-6)) for val,L,U  in zip((ev[var],ev['TridiscriminantWTopQCD']), (low,-1), (1,1)) )
             self.book.fill( v, '%s_triD'%var, (50,5), (low,-1), (1,1))
 #####################################
@@ -172,3 +172,19 @@ class chosenCombo(analysisStep) :
         self.book.fill(ev['HTopSigmasPQB'][iPQHL[:3]], 'MSD', 100, 0, 5, title=";MSD;events / bin")
         self.book.fill(ev['LTopUnfitSqrtChi2'][iPQHL[3]], 'chia', 100, 0, 10, title=";#chi_{a};events / bin")
         self.book.fill(ev['TopComboQQBBLikelihoodRatio'][iQQBB], 'LiCSV', 100, 0, 1, title=";L_i^{CSV}/max(L^{CSV});events / bin")
+
+
+class signalhists(analysisStep):
+    def __init__(self,doGen):
+        self.doGen = doGen
+        self.vars = ('genTopQueuedBin5' if doGen else 'fitTopQueuedBin5','fitTopQueuedBin5','TridiscriminantWTopQCD')
+        self.nbins = (25,25,5)
+        self.lo = (-1,-1,-1)
+        self.hi = (1,1,1)
+        
+    def uponAcceptance(self,ev):
+        vals = tuple([ev[item] for item in self.vars])
+        self.book.fill(vals[1:], '_'.join(self.vars[1:]), self.nbins[1:], self.lo[1:], self.hi[1:])
+        if self.doGen:
+            self.book.fill(vals, '_'.join(self.vars), self.nbins, self.lo, self.hi)
+        
