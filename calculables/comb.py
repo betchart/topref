@@ -128,7 +128,7 @@ class TopComboQQBBLikelihood(wrappedChain.calculable) :
 class TopComboQQBBLikelihoodRatio(wrappedChain.calculable) :
     def update(self,_) :
         likelihoods = self.source['TopComboQQBBLikelihood']
-        maxL = max(likelihoods.values())
+        maxL = max(likelihoods.values()) or 1
         self.value = dict([(key,val/maxL) for key,val in likelihoods.iteritems()])
 
 class TopComboQQBBProbability(wrappedChain.calculable) :

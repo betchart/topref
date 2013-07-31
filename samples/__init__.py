@@ -9,4 +9,7 @@ for module in [
     "lepton119",
     "top119",
     "ewk119",
+    "lepton119_fnal",
+    "top119_fnal",
+    "ewk119_fnal",
     ] : exec("from __%s__ import %s"%(module,module))

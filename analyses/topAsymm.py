@@ -56,14 +56,14 @@ class topAsymm(supy.analysis) :
                  }
 
     @staticmethod
-    def doSystematics(pars) : return 'ph_sn_jn_20' in pars['tag']
+    def doSystematics(pars) : return 'ph_sn_jn_20' in pars['tag'] 
 
     @staticmethod
     def scaleFactor() : return 1.0
 
     ########################################################################################
 
-    def listOfSampleDictionaries(self) : return [getattr(samples,item) for item in ['lepton119', 'top119', 'ewk119']]
+    def listOfSampleDictionaries(self) : return [getattr(samples,item) for item in ['lepton119_fnal', 'top119_fnal', 'ewk119_fnal']]
 
     @staticmethod
     def muons(suffix="") :     return [f+suffix for f in ['Mu.A.1','Mu.A.2','Mu.B.1','Mu.C.1','Mu.C.2','Mu.C.3','Mu.D.1']]
@@ -155,16 +155,15 @@ class topAsymm(supy.analysis) :
             supy.calculables.other.abbreviation( pars['reweights']['var'], pars['reweights']['abbr'] ),
             supy.calculables.other.abbreviation( 'SF'.join(lepton), 'sf'),
 
-            supy.calculables.other.QueuedBin( 7, ("fitTopTanhDeltaAbsY", "fitTopDPtDPhi"), (1,1), 'fitTop'),
-            supy.calculables.other.QueuedBin( 7, ("genTopTanhDeltaAbsY", "genTopDPtDPhi"), (1,1), 'genTop'),
+            supy.calculables.other.QueuedBin( 5, ("fitTopTanhDeltaAbsY", "fitTopDPtDPhi"), (1,1), 'fitTop'),
+            supy.calculables.other.QueuedBin( 5, ("genTopTanhDeltaAbsY", "genTopDPtDPhi"), (1,1), 'genTop'),
             ]
         if self.doSystematics(pars) :
-            calcs.append(calculables.gen.genPdfWeights('/home/hep/bbetchar/local/share/lhapdf/PDFsets/CT10.LHgrid',))
             calcs.append(calculables.other.pileUpRatios( 'pileupTrueNumInteractionsBX0',
                                                          ['lumi/dsets_%s%s_pileup.root'%(pars['lepton']['name'],s)
                                                           for s in ['','_down','_up']]))
-            calcs.append(calculables.top.ttAltSymmAntiWeight('Dn'))
-            calcs.append(calculables.top.ttAltSymmAntiWeight('Up'))
+            if 'ttj' in pars['sample']:
+                calcs.append(calculables.gen.genPdfWeights('CT10.LHgrid',))
         return calcs
     ########################################################################################
 
@@ -194,20 +193,12 @@ class topAsymm(supy.analysis) :
              , getattr(self,pars['reweights']['func'])(pars)
              , ssteps.other.reweights( ssteps.histos.value('pileupTrueNumInteractionsBX0',100,0,60),
                                        'pileUpRatios', 2, self.doSystematics(pars)).onlySim()
-             , calculables.top.ttSymmAnti(pars['sample'], topSamples[1], inspect=True).disable(saDisable)
-             , ssteps.histos.symmAnti('tt','genTopQueuedBin7',49,-1,1).disable(saDisable)
              , ssteps.other.reweights( ssteps.histos.value( ('genTopTanhDeltaAbsY','genTopDPtDPhi'), (2,2), (-1,-1), (1,1) ),
                                        'genPdfWeights', 53, self.doSystematics(pars) ).disable(saDisable)
-             , ssteps.other.reweights( ssteps.histos.value( ('genTopTanhDeltaAbsY','genTopDPtDPhi'), (2,2), (-1,-1), (1,1) ),
-                                       'ttDnSymmAntiWeight', 1, self.doSystematics(pars) ).disable(saDisable)
-             , ssteps.other.reweights( ssteps.histos.value( ('genTopTanhDeltaAbsY','genTopDPtDPhi'), (2,2), (-1,-1), (1,1) ),
-                                       'ttUpSymmAntiWeight', 1, self.doSystematics(pars) ).disable(saDisable)
              , steps.gen.pdfWeightsPlotter(['genTopTanhRapiditySum','genTopPtOverSumPt',
-                                            'genTopTanhDeltaAbsY','genTopDPtDPhi','genTopRhoS'],
-                                           [0,0,-1,-1,0],
-                                           [1,1,1,1,1]).disable(saDisable or not self.doSystematics(pars))
-             , calculables.top.ttAltSymmAnti(pars['sample'].replace('_ph.','_phD.'), pars['tag'].replace('_ph_','_dn_'),'Dn')
-             , calculables.top.ttAltSymmAnti(pars['sample'].replace('_ph.','_phU.'), pars['tag'].replace('_ph_','_up_'),'Up')
+                                            'genTopTanhDeltaAbsY','genTopDPtDPhi'],
+                                           [0,0,-1,-1],
+                                           [1,1,1,1]).disable(saDisable or not self.doSystematics(pars))
              ####################################
              , ssteps.filters.label('selection'),
              ssteps.filters.value("mvaTrigV0Exists",min=True), # Event Cleaning
@@ -266,7 +257,6 @@ class topAsymm(supy.analysis) :
 
              ####################################
              #, steps.displayer.ttbar(jets=jet, met=obj['met'], muons = obj['mu'], electrons = obj['el'])
-             , self.tridiscriminant2(pars)
              , ssteps.filters.label('top reco')
              , steps.top.combinatorialFrequency().onlySim()
              , ssteps.histos.value('genTopRecoIndex', 10,-1.5,8.5)
@@ -293,12 +283,12 @@ class topAsymm(supy.analysis) :
              , ssteps.histos.value('fitTopRapiditySum', 50, 0, 3, xtitle = '|t#bar{t}.y|')
              , ssteps.histos.value('fitTopTanhRapiditySum', 100, 0, 1)
              , ssteps.histos.value('fitTopPtOverSumPt', 100, 0, 1)
-             , ssteps.histos.value('TridiscriminantQQggQg',100,-1,1)
+
              , ssteps.filters.label('asymmetry')
              , ssteps.histos.value('fitTopTanhDeltaAbsY',100,-1,1)
              , ssteps.histos.value('fitTopDPtDPhi',100,-1,1)
-             , ssteps.histos.symmAnti('tt','fitTopQueuedBin7',49,-1,1)
-             , ssteps.histos.symmAnti('tt','genTopQueuedBin7',49,-1,1).disable(saDisable)
+             , ssteps.histos.value('fitTopQueuedBin5',25,-1,1)
+             , ssteps.histos.value('genTopQueuedBin5',25,-1,1).disable(saDisable)
              ] +
             ###################################
             self.signalSequence(pars,saDisable) +
@@ -308,11 +298,11 @@ class topAsymm(supy.analysis) :
              [ ssteps.filters.value('fitTopTanhRapiditySum',min=0.5)
              , ssteps.histos.value('fitTopTanhRapiditySum', 100,0,1)
              , ssteps.histos.value('fitTopPtOverSumPt', 100,0,1)
-             , ssteps.histos.value('TridiscriminantQQggQg', 100,-1,1)
              , ssteps.histos.value('TridiscriminantWTopQCD', 100,-1,1)
              , ssteps.histos.value('fitTopTanhDeltaAbsY',100,-1,1)
              , ssteps.histos.value('fitTopDPtDPhi',100,-1,1)
-             , ssteps.histos.symmAnti('tt','fitTopQueuedBin7',49,-1,1)
+             , ssteps.histos.value('fitTopQueuedBin5',25,-1,1)
+             , ssteps.histos.value('genTopQueuedBin5',25,-1,1).disable(saDisable)
              ])
     ########################################################################################
 
@@ -321,7 +311,7 @@ class topAsymm(supy.analysis) :
         triD = ('TridiscriminantWTopQCD',5,-1,1)
         isData = pars['sample'].split('.')[0] in ['El','Mu']
 
-        asymm = "ssteps.histos.symmAnti('tt','fitTopQueuedBin7',49,-1,1, other=triD)"
+        asymm = "steps.top.signalhists(not saDisable)"
         kinem = "steps.top.kinematics3D('fitTop')"
         doSys = self.doSystematics(pars)
 
@@ -330,12 +320,8 @@ class topAsymm(supy.analysis) :
         effEl = 'ssteps.other.reweights( eval("%s"), "elReweights", 4, doSys and not isData and "_el_" in pars["tag"], predicate)'
         effMu = 'ssteps.other.reweights( eval("%s"), "muReweights", 4, doSys and not isData and "_mu_" in pars["tag"], predicate)'
 
-        asymmDn = asymm.replace('tt','ttDn')
-        asymmUp = asymm.replace('tt','ttUp')
-        wrap = 'ssteps.other.reweights( %s, "tt%sSymmAntiWeight", 1, doSys and not saDisable, predicate)'
-
-        return [eval(pdf % asymm), eval(pu % asymm), eval(effEl % asymm), eval(effMu % asymm), eval(wrap % (asymmDn, 'Dn')), eval(wrap % (asymmUp, 'Up')),
-                eval(pdf % kinem), eval(pu % kinem), eval(effEl % kinem), eval(effMu % kinem), eval(wrap % (kinem,   'Dn')), eval(wrap % (kinem,   'Up'))
+        return [eval(pdf % asymm), eval(pu % asymm), eval(effEl % asymm), eval(effMu % asymm),
+                eval(pdf % kinem), eval(pu % kinem), eval(effEl % kinem), eval(effMu % kinem)
                 ]
 
     @classmethod
@@ -459,7 +445,8 @@ class topAsymm(supy.analysis) :
         fileName = '%s/stats_%s.root'%(self.globalStem,org.tag)
         tfile = r.TFile.Open(fileName,'RECREATE')
 
-        for g in ['lumiHisto','xsHisto','meweighted','2_x_y'] :
+        for g in ['lumiHisto','xsHisto','meweighted'] :
+            print g
             tfile.mkdir(g,'_').cd()
             for ss,hist in zip( org.samples,
                                 org.steps[next(org.indicesOfStepsWithKey(g))][g] ) :
