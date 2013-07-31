@@ -311,7 +311,7 @@ class topAsymm(supy.analysis) :
         triD = ('TridiscriminantWTopQCD',5,-1,1)
         isData = pars['sample'].split('.')[0] in ['El','Mu']
 
-        asymm = "steps.top.signalhists(not saDisable)"
+        asymm = "steps.top.signalhists(doGen=False)"
         kinem = "steps.top.kinematics3D('fitTop')"
         doSys = self.doSystematics(pars)
 
