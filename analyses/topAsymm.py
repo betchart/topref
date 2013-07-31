@@ -63,7 +63,7 @@ class topAsymm(supy.analysis) :
 
     ########################################################################################
 
-    def listOfSampleDictionaries(self) : return [getattr(samples,item) for item in ['lepton119_fnal', 'top119_fnal', 'ewk119_fnal']]
+    def listOfSampleDictionaries(self) : return [getattr(samples,item) for item in ['lepton119', 'top119', 'ewk119']]
 
     @staticmethod
     def muons(suffix="") :     return [f+suffix for f in ['Mu.A.1','Mu.A.2','Mu.B.1','Mu.C.1','Mu.C.2','Mu.C.3','Mu.D.1']]
