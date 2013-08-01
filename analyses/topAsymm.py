@@ -38,7 +38,7 @@ class topAsymm(supy.analysis) :
                 "inverted" : {"index":0, "min":csvWP['CSVL'], "max":csvWP['CSVM']}}
 
         return { "vary" : ['selection','lepton','toptype','smear','jec','ptscale'],
-                 "nullvary": list(itertools.combinations(['ju','jd','su','sd','mn','up','dn','30'],2)),
+                 "nullvary": list(itertools.combinations(['ju','jd','su','sd','mn','30'],2)),
                  "discriminant2DPlots": True,
                  "bVar" : "CSV", # "Combined Secondary Vertex"
                  "objects" : dict([(item,(item,'')) for item in ['jet','mu','el','met']]),
@@ -48,7 +48,7 @@ class topAsymm(supy.analysis) :
                  "selection" : self.vary({"top" : {"bCut":bCut["normal"],  "iso":"isoNormal"},
                                           "QCD" : {"bCut":bCut["normal"],  "iso":"isoInvert"}
                                           }),
-                 "toptype" : self.vary({"ph":"ph",'up':'phU','dn':'phD'}),#,'mn':'mn'}),
+                 "toptype" : self.vary({"ph":"ph"}),#,'mn':'mn'}),
                  "ptscale" : self.vary({"20":20,"30":30}),
                  "smear" : self.vary({'sn':"Smear",'su':'SmearUp','sd':'SmearDown'}),
                  "jec" : self.vary({'jn':0,'ju':1,'jd':-1}),
@@ -63,7 +63,7 @@ class topAsymm(supy.analysis) :
 
     ########################################################################################
 
-    def listOfSampleDictionaries(self) : return [getattr(samples,item) for item in ['lepton119_fnal', 'top119_fnal', 'ewk119_fnal']]
+    def listOfSampleDictionaries(self) : return [getattr(samples,item) for item in ['lepton119', 'top119', 'ewk119']]
 
     @staticmethod
     def muons(suffix="") :     return [f+suffix for f in ['Mu.A.1','Mu.A.2','Mu.B.1','Mu.C.1','Mu.C.2','Mu.C.3','Mu.D.1']]
@@ -163,7 +163,7 @@ class topAsymm(supy.analysis) :
                                                          ['lumi/dsets_%s%s_pileup.root'%(pars['lepton']['name'],s)
                                                           for s in ['','_down','_up']]))
             if 'ttj' in pars['sample']:
-                calcs.append(calculables.gen.genPdfWeights('CT10.LHgrid',))
+                calcs.append(calculables.gen.genPdfWeights('CT10.LHgrid','CT10as.LHgrid'))
         return calcs
     ########################################################################################
 
@@ -194,7 +194,7 @@ class topAsymm(supy.analysis) :
              , ssteps.other.reweights( ssteps.histos.value('pileupTrueNumInteractionsBX0',100,0,60),
                                        'pileUpRatios', 2, self.doSystematics(pars)).onlySim()
              , ssteps.other.reweights( ssteps.histos.value( ('genTopTanhDeltaAbsY','genTopDPtDPhi'), (2,2), (-1,-1), (1,1) ),
-                                       'genPdfWeights', 53, self.doSystematics(pars) ).disable(saDisable)
+                                       'genPdfWeights', 57, self.doSystematics(pars) ).disable(saDisable)
              , steps.gen.pdfWeightsPlotter(['genTopTanhRapiditySum','genTopPtOverSumPt',
                                             'genTopTanhDeltaAbsY','genTopDPtDPhi'],
                                            [0,0,-1,-1],
@@ -311,11 +311,11 @@ class topAsymm(supy.analysis) :
         triD = ('TridiscriminantWTopQCD',5,-1,1)
         isData = pars['sample'].split('.')[0] in ['El','Mu']
 
-        asymm = "steps.top.signalhists(not saDisable)"
+        asymm = "steps.top.signalhists(doGen=False)"
         kinem = "steps.top.kinematics3D('fitTop')"
         doSys = self.doSystematics(pars)
 
-        pdf = 'ssteps.other.reweights( eval("%s"), "genPdfWeights", 53, doSys and not saDisable, predicate)'
+        pdf = 'ssteps.other.reweights( eval("%s"), "genPdfWeights", 57, doSys and not saDisable, predicate)'
         pu = 'ssteps.other.reweights( eval("%s"),  "pileUpRatios",  2, doSys and not isData,    predicate)'
         effEl = 'ssteps.other.reweights( eval("%s"), "elReweights", 4, doSys and not isData and "_el_" in pars["tag"], predicate)'
         effMu = 'ssteps.other.reweights( eval("%s"), "muReweights", 4, doSys and not isData and "_mu_" in pars["tag"], predicate)'
@@ -340,7 +340,7 @@ class topAsymm(supy.analysis) :
     def tridiscriminant(self,pars) :
         rw = pars['reweights']['abbr']
         lname = pars['lepton']['name']
-        tt = pars['toptype'].replace('phD','ph').replace('phU','ph')
+        tt = pars['toptype']
         tops = ['ttj_'+'.'.join([tt,s,rw,'sf']) for s in ['wGG','wQG','wAG','wQQ']]
         others = ['.'.join([o,rw,'sf']) for o in self.single_top() + ['w%dj_mg.%s.sf'%(d,rw) for d in [1,2,3,4]]]
         datas = {"mu" : self.muons('.jw'),
@@ -365,7 +365,7 @@ class topAsymm(supy.analysis) :
     def tridiscriminant2(self,pars) :
         rw = pars['reweights']['abbr']
         lname = pars['lepton']['name']
-        tt = pars['toptype'].replace('phD','ph').replace('phU','ph')
+        tt = pars['toptype']
         tops = ['ttj_'+'.'.join([tt,s,rw,'sf']) for s in ['wGG','wQG','wAG','wQQ']]
         topTag = pars['tag'].replace("QCD","top")
 
@@ -402,7 +402,6 @@ class topAsymm(supy.analysis) :
         org.mergeSamples(targetSpec={"name":"Single", "color":r.kGray}, sources=['.'.join([s,rw,'sf']) for s in self.single_top()])
         org.mergeSamples(targetSpec={"name":"St.Model", "color":r.kGreen+2}, sources=["t#bar{t}","W","DY","Single"],
                          keepSources=True)
-        self.skimSymmanti(org)
         try:
             self.skimStats(org)
             self.printTable(org)
@@ -427,7 +426,6 @@ class topAsymm(supy.analysis) :
 
     def statsname(self,org):
         _,lepton,tt,smear,jec,pt = org.tag.split('_')
-        tt = tt.replace('dn','phD').replace('up','phU')
         print org.tag
         return {'DY':'dy',
                 'W': 'wj',
@@ -455,26 +453,6 @@ class topAsymm(supy.analysis) :
                                ss['name'])
                 h.Write()
         for iRe,iStep in enumerate(org.indicesOfStep('reweights')) :
-            step = org.steps[iStep]
-            dirname = 'R%02d_'%iRe+''.join(step.title.split()).replace(';','_').replace('(','').replace(')','')
-            dir = tfile.mkdir(dirname,'_')
-            for g in sorted(step):
-                dir.mkdir(g,'_').cd()
-                for ss,hist in zip( org.samples,
-                                    step[g] ) :
-                    if not hist or ss['name'] in ['St.Model','S.M']: continue
-                    h = hist.Clone(statsname[ss['name']] if ss['name'] in statsname else
-                                   ss['name'])
-                    h.Write()
-        tfile.Close()
-        print 'Wrote: ', fileName
-
-    def skimSymmanti(self,org) :
-        statsname = self.statsname(org)
-        fileName = '%s/symmanti_%s.root'%(self.globalStem,org.tag)
-        tfile = r.TFile.Open(fileName,'RECREATE')
-
-        for iRe,iStep in enumerate(org.indicesOfStep('symmAnti')) :
             step = org.steps[iStep]
             dirname = 'R%02d_'%iRe+''.join(step.title.split()).replace(';','_').replace('(','').replace(')','')
             dir = tfile.mkdir(dirname,'_')
@@ -570,7 +548,6 @@ class topAsymm(supy.analysis) :
 
     def meldScale(self,tagSuffix) :
         lname,tt,sn,jn,ptMin = tagSuffix.split('_')
-        tt = tt.replace('dn','phD').replace('up','phU')
         meldSamples = {"top_"+tagSuffix :( { 'mu': self.muons('.jw'),
                                              'el': self.electrons('.jw')}[lname]+
                                            ["ttj_%s"%tt]+self.single_top()+

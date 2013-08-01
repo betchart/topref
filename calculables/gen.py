@@ -91,11 +91,12 @@ class genIndicesWqq(wrappedChain.calculable) :
         self.value = filter(lambda i: abs(mom[i]) is 24 and abs(ids[i]) < 5, range(len(ids)))
 ##############################
 class genPdfWeights(wrappedChain.calculable) :
-    def __init__(self, pdfset, QisMt=True) :
-        self.pdfset = pdfset
-        self.QisMt = QisMt
-        self.moreName = "%s" + ("; Q=m_t" if QisMt else "")
-        lhapdf.initPDFSet(self.pdfset)
+    def __init__(self, pdfset, alphasset=None, alphasmems = (3,7), QisMt=True) :
+        for item in ['pdfset','alphasset','QisMt','alphasmems'] : setattr(self,item,eval(item))
+        self.moreName = pdfset + (alphasset if alphasset else "") + ("; Q=m_t" if QisMt else "")
+        lhapdf.initPDFSet(0, pdfset)
+        if alphasset:
+            lhapdf.initPDFSet(1,alphasset)
 
     def update(self,_) :
         x1 = self.source['genx1']
@@ -103,12 +104,15 @@ class genPdfWeights(wrappedChain.calculable) :
         id1 = self.source['genid1']
         id2 = self.source['genid2']
         Q = 175.2 if self.QisMt else self.source['genQ']
-        xpdfs = [self.xpdf(i,x1,x2,id1,id2,Q) for i in range(1+lhapdf.numberPDF())]
+        xpdfs = [self.xpdf((0,i),x1,x2,id1,id2,Q) for i in range(1+lhapdf.numberPDF(0))]
+        xpdfs.extend([self.xpdf((0,0),x1,x2,id1,id2,q) for q in [Q/2,Q*2]])
+        if self.alphasset:
+            xpdfs.extend([self.xpdf((1,mem),x1,x2,id1,id2,Q) for mem in self.alphasmems])
         self.value = [xpdf/xpdfs[0] for xpdf in xpdfs]
 
-    def xpdf(self,i, x1, x2, id1, id2, Q) :
-        lhapdf.usePDFMember(i)
-        return lhapdf.xfx(x1,Q,id1) * lhapdf.xfx(x2,Q,id2)
+    def xpdf(self, mem, x1, x2, id1, id2, Q) :
+        lhapdf.usePDFMember(*mem)
+        return lhapdf.xfx(mem[0], x1,Q,id1) * lhapdf.xfx(mem[0], x2,Q,id2)
 ##############################
 class qDirExpectation(calculables.secondary) :
     var = ""
