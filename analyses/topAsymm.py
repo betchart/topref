@@ -163,7 +163,7 @@ class topAsymm(supy.analysis) :
                                                          ['lumi/dsets_%s%s_pileup.root'%(pars['lepton']['name'],s)
                                                           for s in ['','_down','_up']]))
             if 'ttj' in pars['sample']:
-                calcs.append(calculables.gen.genPdfWeights('CT10.LHgrid',))
+                calcs.append(calculables.gen.genPdfWeights('CT10.LHgrid','CT10as.LHgrid'))
         return calcs
     ########################################################################################
 
@@ -194,7 +194,7 @@ class topAsymm(supy.analysis) :
              , ssteps.other.reweights( ssteps.histos.value('pileupTrueNumInteractionsBX0',100,0,60),
                                        'pileUpRatios', 2, self.doSystematics(pars)).onlySim()
              , ssteps.other.reweights( ssteps.histos.value( ('genTopTanhDeltaAbsY','genTopDPtDPhi'), (2,2), (-1,-1), (1,1) ),
-                                       'genPdfWeights', 53, self.doSystematics(pars) ).disable(saDisable)
+                                       'genPdfWeights', 57, self.doSystematics(pars) ).disable(saDisable)
              , steps.gen.pdfWeightsPlotter(['genTopTanhRapiditySum','genTopPtOverSumPt',
                                             'genTopTanhDeltaAbsY','genTopDPtDPhi'],
                                            [0,0,-1,-1],
@@ -315,7 +315,7 @@ class topAsymm(supy.analysis) :
         kinem = "steps.top.kinematics3D('fitTop')"
         doSys = self.doSystematics(pars)
 
-        pdf = 'ssteps.other.reweights( eval("%s"), "genPdfWeights", 53, doSys and not saDisable, predicate)'
+        pdf = 'ssteps.other.reweights( eval("%s"), "genPdfWeights", 57, doSys and not saDisable, predicate)'
         pu = 'ssteps.other.reweights( eval("%s"),  "pileUpRatios",  2, doSys and not isData,    predicate)'
         effEl = 'ssteps.other.reweights( eval("%s"), "elReweights", 4, doSys and not isData and "_el_" in pars["tag"], predicate)'
         effMu = 'ssteps.other.reweights( eval("%s"), "muReweights", 4, doSys and not isData and "_mu_" in pars["tag"], predicate)'
