@@ -38,7 +38,7 @@ class topAsymm(supy.analysis) :
                 "inverted" : {"index":0, "min":csvWP['CSVL'], "max":csvWP['CSVM']}}
 
         return { "vary" : ['selection','lepton','toptype','smear','jec','ptscale'],
-                 "nullvary": list(itertools.combinations(['ju','jd','su','sd','mn','up','dn','30'],2)),
+                 "nullvary": list(itertools.combinations(['ju','jd','su','sd','mn','30'],2)),
                  "discriminant2DPlots": True,
                  "bVar" : "CSV", # "Combined Secondary Vertex"
                  "objects" : dict([(item,(item,'')) for item in ['jet','mu','el','met']]),
@@ -48,7 +48,7 @@ class topAsymm(supy.analysis) :
                  "selection" : self.vary({"top" : {"bCut":bCut["normal"],  "iso":"isoNormal"},
                                           "QCD" : {"bCut":bCut["normal"],  "iso":"isoInvert"}
                                           }),
-                 "toptype" : self.vary({"ph":"ph",'up':'phU','dn':'phD'}),#,'mn':'mn'}),
+                 "toptype" : self.vary({"ph":"ph"}),#,'mn':'mn'}),
                  "ptscale" : self.vary({"20":20,"30":30}),
                  "smear" : self.vary({'sn':"Smear",'su':'SmearUp','sd':'SmearDown'}),
                  "jec" : self.vary({'jn':0,'ju':1,'jd':-1}),
@@ -340,7 +340,7 @@ class topAsymm(supy.analysis) :
     def tridiscriminant(self,pars) :
         rw = pars['reweights']['abbr']
         lname = pars['lepton']['name']
-        tt = pars['toptype'].replace('phD','ph').replace('phU','ph')
+        tt = pars['toptype']
         tops = ['ttj_'+'.'.join([tt,s,rw,'sf']) for s in ['wGG','wQG','wAG','wQQ']]
         others = ['.'.join([o,rw,'sf']) for o in self.single_top() + ['w%dj_mg.%s.sf'%(d,rw) for d in [1,2,3,4]]]
         datas = {"mu" : self.muons('.jw'),
@@ -365,7 +365,7 @@ class topAsymm(supy.analysis) :
     def tridiscriminant2(self,pars) :
         rw = pars['reweights']['abbr']
         lname = pars['lepton']['name']
-        tt = pars['toptype'].replace('phD','ph').replace('phU','ph')
+        tt = pars['toptype']
         tops = ['ttj_'+'.'.join([tt,s,rw,'sf']) for s in ['wGG','wQG','wAG','wQQ']]
         topTag = pars['tag'].replace("QCD","top")
 
@@ -427,7 +427,6 @@ class topAsymm(supy.analysis) :
 
     def statsname(self,org):
         _,lepton,tt,smear,jec,pt = org.tag.split('_')
-        tt = tt.replace('dn','phD').replace('up','phU')
         print org.tag
         return {'DY':'dy',
                 'W': 'wj',
@@ -570,7 +569,6 @@ class topAsymm(supy.analysis) :
 
     def meldScale(self,tagSuffix) :
         lname,tt,sn,jn,ptMin = tagSuffix.split('_')
-        tt = tt.replace('dn','phD').replace('up','phU')
         meldSamples = {"top_"+tagSuffix :( { 'mu': self.muons('.jw'),
                                              'el': self.electrons('.jw')}[lname]+
                                            ["ttj_%s"%tt]+self.single_top()+
