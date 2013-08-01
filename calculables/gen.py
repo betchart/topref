@@ -91,7 +91,7 @@ class genIndicesWqq(wrappedChain.calculable) :
         self.value = filter(lambda i: abs(mom[i]) is 24 and abs(ids[i]) < 5, range(len(ids)))
 ##############################
 class genPdfWeights(wrappedChain.calculable) :
-    def __init__(self, pdfset, alphasset=None, alphasmems = (4,6), QisMt=True) :
+    def __init__(self, pdfset, alphasset=None, alphasmems = (3,7), QisMt=True) :
         for item in ['pdfset','alphasset','QisMt','alphasmems'] : setattr(self,item,eval(item))
         self.moreName = pdfset + (alphasset if alphasset else "") + ("; Q=m_t" if QisMt else "")
         lhapdf.initPDFSet(0, pdfset)
