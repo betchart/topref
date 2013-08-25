@@ -7,6 +7,7 @@ import sys,os,ROOT as r
 
 if not len(sys.argv)>1 :
     print "Usage: makePileUp.py <jsonsDirectory>"
+    exit()
 
 json = {}
 for fname in os.listdir(sys.argv[1]) :
@@ -18,7 +19,7 @@ with open(outJsonName,'w') as outfile:
     print >> outfile, str(json).replace("'",'"')
 
 xsInelastic = 69300
-systematics = 0.05
+systematics = 0.06
 currentLumiJSON = '/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions12/8TeV/PileUp/pileup_JSON_DCSONLY_190389-208686_corr.txt'
 
 
