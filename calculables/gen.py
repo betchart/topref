@@ -1,4 +1,5 @@
 from supy import wrappedChain,utils,calculables
+import math
 import ROOT as r
 try: import lhapdf
 except: lhapdf=None
@@ -113,6 +114,29 @@ class genPdfWeights(wrappedChain.calculable) :
     def xpdf(self, mem, x1, x2, id1, id2, Q) :
         lhapdf.usePDFMember(*mem)
         return lhapdf.xfx(mem[0], x1,Q,id1) * lhapdf.xfx(mem[0], x2,Q,id2)
+##############################
+class genPtWeights(wrappedChain.calculable):
+    '''https://twiki.cern.ch/twiki/bin/viewauth/CMS/TopPtReweighting'''
+    def __init__(self, sqrts, channel):
+        self.ab = {(7, 'all'):(0.199,-0.00166),
+                   (7,'semi'):(0.174,-0.00137),
+                   (7,  'di'):(0.222,-0.00197),
+                   (8, 'all'):(0.156,-0.00137),
+                   (8,'semi'):(0.159,-0.00141),
+                   (8,  'di'):(0.148,-0.00129)
+                   }[(sqrts,channel)]
+        self.moreName = "Top Pt Reweight: %d TeV, %s"%(sqrts,channel)
+
+    def weight(self,pt,ptbar):
+        a,b = self.ab
+        onent = 0.5 * (a+b*pt) * (a+b*ptbar)
+        return math.exp(onent)
+
+    def update(self,_):
+        p4 = self.source['genP4']
+        iT,iTbar = self.source['genTopTTbar']
+        w = self.weight(p4[iT].pt(), p4[iTbar].pt())
+        self.value = [1,w,w*w]
 ##############################
 class qDirExpectation(calculables.secondary) :
     var = ""

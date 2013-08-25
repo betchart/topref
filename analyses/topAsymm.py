@@ -164,6 +164,7 @@ class topAsymm(supy.analysis) :
                                                           for s in ['','_down','_up']]))
             if 'ttj' in pars['sample']:
                 calcs.append(calculables.gen.genPdfWeights('CT10.LHgrid','CT10as.LHgrid'))
+                calcs.append(calculables.gen.genPtWeights(8,'semi'))
         return calcs
     ########################################################################################
 
@@ -195,6 +196,8 @@ class topAsymm(supy.analysis) :
                                        'pileUpRatios', 2, self.doSystematics(pars)).onlySim()
              , ssteps.other.reweights( ssteps.histos.value( ('genTopTanhDeltaAbsY','genTopDPtDPhi'), (2,2), (-1,-1), (1,1) ),
                                        'genPdfWeights', 57, self.doSystematics(pars) ).disable(saDisable)
+             , ssteps.other.reweights( ssteps.histos.value( ('genTopTanhDeltaAbsY','genTopDPtDPhi'), (2,2), (-1,-1), (1,1) ),
+                                       'genPtWeights', 3, self.doSystematics(pars) ).disable(saDisable)
              , steps.gen.pdfWeightsPlotter(['genTopTanhRapiditySum','genTopPtOverSumPt',
                                             'genTopTanhDeltaAbsY','genTopDPtDPhi'],
                                            [0,0,-1,-1],
@@ -263,13 +266,13 @@ class topAsymm(supy.analysis) :
              , ssteps.histos.value('TopGenLikelihoodIndex', 10,-1.5,8.5)
              , ssteps.histos.value('TopFitLikelihoodCorrectIndex',10,-1.5,8.5)
 
-             #, ssteps.filters.label('genTop')
-             #, steps.top.kinFitLook('genTopRecoIndex')
-             #, steps.top.resolutions('genTopRecoIndex')
-             #
-             #, ssteps.filters.label('recoTop')
-             #, steps.top.kinFitLook('fitTopRecoIndex')
-             #, steps.top.resolutions('fitTopRecoIndex')
+             , ssteps.filters.label('genTop')
+             , steps.top.kinFitLook('genTopRecoIndex')
+             , steps.top.resolutions('genTopRecoIndex')
+
+             , ssteps.filters.label('recoTop')
+             , steps.top.kinFitLook('fitTopRecoIndex')
+             , steps.top.resolutions('fitTopRecoIndex')
              ####################################
              , ssteps.filters.label('kinematics')
              , steps.top.kinematics('fitTop')
@@ -319,9 +322,10 @@ class topAsymm(supy.analysis) :
         pu = 'ssteps.other.reweights( eval("%s"),  "pileUpRatios",  2, doSys and not isData,    predicate)'
         effEl = 'ssteps.other.reweights( eval("%s"), "elReweights", 4, doSys and not isData and "_el_" in pars["tag"], predicate)'
         effMu = 'ssteps.other.reweights( eval("%s"), "muReweights", 4, doSys and not isData and "_mu_" in pars["tag"], predicate)'
+        pt = 'ssteps.other.reweights( eval("%s"), "genPtWeights", 3, doSys and not saDisable, predicate)'
 
-        return [eval(pdf % asymm), eval(pu % asymm), eval(effEl % asymm), eval(effMu % asymm),
-                eval(pdf % kinem), eval(pu % kinem), eval(effEl % kinem), eval(effMu % kinem)
+        return [eval(pdf % asymm), eval(pu % asymm), eval(effEl % asymm), eval(effMu % asymm), eval(pt % asymm),
+                eval(pdf % kinem), eval(pu % kinem), eval(effEl % kinem), eval(effMu % kinem), eval(pt % kinem)
                 ]
 
     @classmethod
