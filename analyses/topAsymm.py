@@ -497,6 +497,7 @@ class topAsymm(supy.analysis) :
             if not start: continue
             trip|= 'absEta' == step.name
             other = [('kinematics','fitTop'),
+                     ('kinFitLook','fitTop'),
                      ('mass','fitTopSumP4.mass'),
                      ('value','fitTopTanhRapiditySum'),
                      ]
