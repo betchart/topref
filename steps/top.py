@@ -116,6 +116,19 @@ class resolutions(analysisStep) :
                 self.book.fill( fit[not iLep] - genFunc[not iLep],   "d%sHadTop_%s"%(func,f), 100,-1,1, title=";had top #Delta %s_{%s reco gen};events / bin"%(func,f))
                 self.book.fill( fit[0]-fit[1] - (genFunc[0]-genFunc[1]), "dd%sTTbar_%s"%(func,f), 100,-1,1, title = ";#Delta %s_{t#bar{t} %s reco}-#Delta %s_{t#bar{t} gen};events / bin"%(func,f,func))
 
+        def XL(t,tbar):
+            return math.tanh(abs(t.Rapidity())-abs(tbar.Rapidity()))
+        def XT(t,tbar):
+            phiPM = math.acos(math.cos( (t+tbar).phi() -
+                                        (t-tbar).phi()))
+            return -1 + 2 * phiPM / math.pi
+        for func in ['XL','XT']:
+            genFunc = eval(func)(*gen)
+            recoFunc = eval(func)(*reco)
+            unfitFunc = eval(func)(*unfit)
+            self.book.fill( recoFunc - genFunc, func+"_reco", 200, -2, 2, title = ";%s^{rec}-%s^{gen}"%(func,func))
+            self.book.fill( unfitFunc- genFunc, func+"_unfit", 200, -2, 2, title = ";%s^{unfit}-%s^{gen}"%(func,func))
+
 class kinematic_resolution(calculables.secondary):
     def __init__(self, parBins, samples, tag):
         self.parBins = parBins # dict of 'var:(N,lo,hi,pivot)'
