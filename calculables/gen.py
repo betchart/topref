@@ -71,7 +71,7 @@ class genGG(wrappedChain.calculable) :
 ##############################
 class qDir(wrappedChain.calculable) :
     def update(self,_) :
-        iQ = next(iter(max(self.source[g] for g in ['genQQbar','genQG','genAG'])),None)
+        iQ = next(iter(max(self.source[g][::order] for g,order in [('genQQbar',1),('genQG',1),('genAG',-1)])),None)
         self.value = (1 if self.source['genP4'][iQ].pz() > 0 else -1) if iQ!=None else None
 ##############################
 class genSumP4(wrappedChain.calculable) :

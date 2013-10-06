@@ -37,7 +37,18 @@ class topPrinter(analysisStep) :
         if abs(tt.E() - (p4s[4]+p4s[5]).E())>0.5 : print (50*' '), "2 -> 3+"
 #####################################
 class qRecoilKinematics(analysisStep) :
+    def hackStep(self,ev):
+        if not ev['wQQ'] and ev['genTopTTbar'] : return
+        qDir = ev['qDir']
+        tdy = math.tanh(ev['genTopDeltaYttbar'])
+        qtdy = qDir* tdy
+        tday = ev['genTopTanhDeltaAbsY']
+        self.book.fill(tday, 'genTopTanhDeltaAbsY', 100, -1, 1, title=';genTopTanhDeltaAbsY;events / bin')
+        self.book.fill(tdy,  'genTopTanhDeltaY', 100, -1, 1, title=';genTopTanhDeltaY;events / bin')
+        self.book.fill(qtdy,  'qDir_genTopTanhDeltaY', 100, -1, 1, title=';qDir*genTopTanhDeltaY;events / bin')
+
     def uponAcceptance(self,ev) :
+        self.hackStep(ev)
         index = ev["genIndexTtbarExtraJet"]
         if index==None : return
         p4 = ev['genP4'][index]
