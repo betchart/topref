@@ -63,7 +63,7 @@ class topAsymm(supy.analysis) :
 
     ########################################################################################
 
-    def listOfSampleDictionaries(self) : return [getattr(samples,item) for item in ['lepton119', 'top119', 'ewk119']]
+    def listOfSampleDictionaries(self) : return [getattr(samples,item) for item in ['lepton119_fnal', 'top119_fnal', 'ewk119_fnal']]
 
     @staticmethod
     def muons(suffix="") :     return [f+suffix for f in ['Mu.A.1','Mu.A.2','Mu.B.1','Mu.C.1','Mu.C.2','Mu.C.3','Mu.D.1']]
@@ -101,6 +101,13 @@ class topAsymm(supy.analysis) :
             wSub =  [  "wGG",  "wQG",    "wAG",    "wQQ"]
             return sum([supy.samples.specify(names = 'ttj_%s'%tt, effectiveLumi = eL,
                                              color = c, weights = [w,rw,'sf']) for w,c in zip(wSub,color)],[])
+
+        def ttextra(eL = None) :
+            tt = pars['toptype']
+            color = [r.kBlue,r.kCyan,r.kCyan+1,r.kOrange][1:]
+            wSub =  [  "wGG",  "wQG",    "wAG",    "wQQ"][1:]
+            return sum([supy.samples.specify(names = 'extra_%s'%tt, effectiveLumi = eL,
+                                             color = c, weights = [w,rw,'sf']) for w,c in zip(wSub,color)],[])
         
         def data() :
             return sum( [supy.samples.specify( names = ds, weights = calculables.other.jw(jfn))
@@ -108,7 +115,7 @@ class topAsymm(supy.analysis) :
                                             "el":self.electrons()}[pars['lepton']['name']],
                                            self.jsonFiles())],[])
 
-        return  ( data() + ewk() + ttbar() + single_top() )
+        return  ( data() + ewk() + ttbar() + single_top() + ttextra())
 
     ########################################################################################
     def listOfCalculables(self, pars) :
@@ -162,7 +169,7 @@ class topAsymm(supy.analysis) :
             calcs.append(calculables.other.pileUpRatios( 'pileupTrueNumInteractionsBX0',
                                                          ['lumi/dsets_%s%s_pileup.root'%(pars['lepton']['name'],s)
                                                           for s in ['','_down','_up']]))
-            if 'ttj' in pars['sample']:
+            if any(s in pars['sample'] for s in ['ttj','extra']):
                 calcs.append(calculables.gen.genPdfWeights('CT10.LHgrid','CT10as.LHgrid'))
                 calcs.append(calculables.gen.genPtWeights(8,'semi'))
         return calcs
@@ -185,7 +192,7 @@ class topAsymm(supy.analysis) :
 
         ssteps = supy.steps
 
-        saDisable = 'ttj' not in pars['sample'] or not any(w in pars['sample'].split('.') for w in ['wQQ','wQG','wAG','wGG'])
+        saDisable = not any(s in pars['sample'] for s in ['ttj','extra']) or not any(w in pars['sample'].split('.') for w in ['wQQ','wQG','wAG','wGG'])
         saWeights = []
         return (
             [ssteps.printer.progressPrinter()
@@ -339,7 +346,10 @@ class topAsymm(supy.analysis) :
                                                        ("w1j_mg",[]), ("w2j_mg",[]), ("w3j_mg",[]), ("w4j_mg",[]),
                                                        ('single_top', ['.'.join([s,rw,'sf']) for s in cls.single_top()]),
                                                        ('ttj_%s'%tt,['ttj_'+'.'.join([tt,s,rw,'sf'])
-                                                                     for s in ['','wGG','wQG','wAG','wQQ']])]).onlySim()
+                                                                     for s in ['','wGG','wQG','wAG','wQQ']]),
+                                                       ('extra_%s'%tt,['extra_'+'.'.join([tt,s,rw,'sf'])
+                                                                       for s in ['','wQG','wAG','wQQ']]),
+                                                       ]).onlySim()
 
     def tridiscriminant(self,pars) :
         rw = pars['reweights']['abbr']
