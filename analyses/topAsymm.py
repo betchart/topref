@@ -448,6 +448,9 @@ class topAsymm(supy.analysis) :
                 'ttj_%s.wQG.pu.sf'%tt:'ttqg',
                 'ttj_%s.wAG.pu.sf'%tt:'ttag',
                 'ttj_%s.wQQ.pu.sf'%tt:'ttqq',
+                'extra_%s.wQQ.pu.sf'%tt:'ettqq',
+                'extra_%s.wQG.pu.sf'%tt:'ettqg',
+                'extra_%s.wAG.pu.sf'%tt:'ettag',
                 'Single' : 'st',
                 'Data 2012': 'data'
                 }
