@@ -8,7 +8,8 @@ singleT = pnfs_cre + 'v119/%s_%s_TuneZ2star_8TeV-powheg-tauola.Summer12_DR53X-PU
 ttj_ph = 'v119/TT_CT10_TuneZ2star_8TeV-powheg-tauola.Summer12_DR53X-PU_S10_START53_V7A-v%d.AODSIM'
 
 top119_fnal.add("ttj_ph", '+'.join(['%s/%s")'%(pnfs_cre,ttj_ph%v) for v in [1,2]]), xs = 211.0 )
-top119_fnal.add("extra_ph", pnfs_bb + '/TOP/automated/2013_10_28_20_19_09")', xs = 9999 )
+top119_fnal.add("extra_ph", pnfs_bb + '/TOP/automated/2013_11_19_19_52_22")', xs = 9999 )
+
 #top119_fnal.add("ttj_mn", '%s/2013_02_04_22_38_13/")'%srm_burt, xs = 211.1 )
 
 top119_fnal.add("top_s_ph", singleT%('T','s-channel'), xs = 2.82 )
