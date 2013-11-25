@@ -103,9 +103,6 @@ class SelectionScaleFactors(ScaleFactors):
         self.deltaDn = np.array([[-math.sqrt(g.GetErrorYlow(i)**2+sys**2) for i in range(g.GetN())] for g in graphs])
         tfile.Close()
 
-        print self.central
-        print self.deltaUp
-
         assert len(columns) == 1
         self.rows = [e[1] for e in absEtaBins] # |eta|
         self.columns = list(list(columns)[0]) # pt
