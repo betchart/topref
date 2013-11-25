@@ -1,6 +1,6 @@
 from supy import wrappedChain,utils
 from calculables.other import ScaleFactors
-import ROOT as r, numpy as np
+import math, ROOT as r, numpy as np
 
 class Indices(wrappedChain.calculable) :
     def __init__(self, collection = None, ptMin = 26, absEtaMax = 2.1, ) :
@@ -70,9 +70,10 @@ class TriggerScaleFactors(ScaleFactors):
             deltaDn2 += lumi * np.array([[g.GetErrorYlow(i)**2 for i in range(g.GetN())] for g in graphs])
             tfile.Close()
 
+        sys = 0.002
         self.central = central / lumiSum
-        self.deltaUp = np.sqrt(deltaUp2 / lumiSum)
-        self.deltaDn = -np.sqrt(deltaDn2 / lumiSum)
+        self.deltaUp = np.sqrt(deltaUp2 / lumiSum + sys*sys)
+        self.deltaDn = -np.sqrt(deltaDn2 / lumiSum + sys*sys)
 
         assert len(columns) == 1
         self.rows = [e[1] for e in absEtaBins] # |eta|
@@ -96,10 +97,14 @@ class SelectionScaleFactors(ScaleFactors):
         graphs = [tfile.Get(pattern % ebin[0]) for ebin in absEtaBins]
         for g in graphs:
             columns.add(tuple([(g.GetX()[i] - g.GetErrorXlow(i), g.GetX()[i] + g.GetErrorXhigh(i)) for i in range(g.GetN())]))
+        sys = math.sqrt(0.005**2+0.002**2)
         self.central = np.array([[g.GetY()[i] for i in range(g.GetN())] for g in graphs])
-        self.deltaUp = np.array([[g.GetErrorYhigh(i) for i in range(g.GetN())] for g in graphs])
-        self.deltaDn = np.array([[-g.GetErrorYlow(i) for i in range(g.GetN())] for g in graphs])
+        self.deltaUp = np.array([[math.sqrt(g.GetErrorYhigh(i)**2+sys**2) for i in range(g.GetN())] for g in graphs])
+        self.deltaDn = np.array([[-math.sqrt(g.GetErrorYlow(i)**2+sys**2) for i in range(g.GetN())] for g in graphs])
         tfile.Close()
+
+        print self.central
+        print self.deltaUp
 
         assert len(columns) == 1
         self.rows = [e[1] for e in absEtaBins] # |eta|
