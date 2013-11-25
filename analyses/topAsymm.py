@@ -29,7 +29,8 @@ class topAsymm(supy.analysis) :
             'ptMin'    : [                   26.0 ,                     30.0 ],
             'etaMax'   : [                    2.1 ,                      2.5 ],
             'isoNormal': [             {"max":0.12},             {'max':0.10}],
-            'isoInvert': [ {"min":0.13, "max":0.20}, {'min':0.11, 'max':0.15}]
+            'isoInvert': [ {"min":0.13, "max":0.20},  {'min':0.11, 'max':0.15}],
+            'isoExtreme': [ {"min":0.16, "max":0.20}, {'min':0.13, 'max':0.15}],
             }
 
         #btag working points: https://twiki.cern.ch/twiki/bin/viewauth/CMS/BTagPerformanceOP
@@ -46,7 +47,8 @@ class topAsymm(supy.analysis) :
                                         for index in range(2) if leptons['name'][index] in ['mu','el'][:2]]),
                  "reweights" : reweights,
                  "selection" : self.vary({"top" : {"bCut":bCut["normal"],  "iso":"isoNormal"},
-                                          "QCD" : {"bCut":bCut["normal"],  "iso":"isoInvert"}
+                                          "QCD" : {"bCut":bCut["normal"],  "iso":"isoInvert"},
+                                          "QCDx": {"bCut":bCut["normal"],  "iso":"isoExtreme"}
                                           }),
                  "toptype" : self.vary({"ph":"ph"}),#,'mn':'mn'}),
                  "ptscale" : self.vary({"20":20,"30":30}),
@@ -87,7 +89,7 @@ class topAsymm(supy.analysis) :
 
         def ewk(eL = None) :
             dy = ['dy%dj_mg'%n for n in range(1,5)] if "QCD" not in pars['tag'] else []
-            w =  ['w%dj_mg'%n for n in range(1,5)]
+            w =  ['wbb_mg'] + ['w%dj_mg'%n for n in range(1,5)]
             return supy.samples.specify( names = ( w + dy ),
                                          effectiveLumi = eL, color = 28, weights = [rw,'sf'] )
 

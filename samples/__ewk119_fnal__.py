@@ -3,8 +3,7 @@ import supy
 ewk119_fnal = supy.samples.SampleHolder()
 
 pnfs_cre = supy.sites.pnfs().replace('lpcsusyra1','cerba17')
-
-#srm_burt = srm+'/bbetchar/TOP/automated'
+pnfs_bb = supy.sites.pnfs().replace('lpcsusyra1','bbetchar')
 
 #dynj = "2013_01_25_01_48_16/DY%dJetsToLL_M-50_TuneZ2Star_8TeV-madgraph.Summer12_DR53X-PU_S10_START53_V7%s-v1.AODSIM"
 dynj = "v119/DY%dJetsToLL_M-50_TuneZ2Star_8TeV-madgraph.Summer12_DR53X-PU_S10_START53_V7%s-v1.AODSIM"
@@ -20,3 +19,5 @@ ewk119_fnal.add("w1j_mg", '%s/%s")'%(pnfs_cre,wnj%1), xs = 5400.0 )
 ewk119_fnal.add("w2j_mg", '%s/%s")'%(pnfs_cre,wnj%2), xs = 1750.0 )
 ewk119_fnal.add("w3j_mg", '%s/%s")'%(pnfs_cre,wnj%3), xs =  519.0 )
 ewk119_fnal.add("w4j_mg", '%s/%s")'%(pnfs_cre,wnj%4), xs =  214.0 )
+
+ewk119_fnal.add("wbb_mg", '%s/%s")'%(pnfs_bb,'TOP/automated/2013_11_25_22_33_48'), xs = 211.3 )
