@@ -357,6 +357,7 @@ class topAsymm(supy.analysis) :
                                                                        for s in ['','wQG','wAG','wQQ']]),
                                                        ('calib_mg',[]),
                                                        ('calib_mn',[]),
+                                                       ('wbb_mg',[])
                                                        ]).onlySim()
 
     def tridiscriminant(self,pars) :
