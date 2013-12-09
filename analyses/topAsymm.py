@@ -210,6 +210,7 @@ class topAsymm(supy.analysis) :
                                        'genPdfWeights', 57, self.doSystematics(pars) ).disable(saDisable)
              , ssteps.other.reweights( ssteps.histos.value( ('genTopTanhDeltaAbsY','genTopDPtDPhi'), (2,2), (-1,-1), (1,1) ),
                                        'genPtWeights', 3, self.doSystematics(pars) ).disable(saDisable)
+             , ssteps.histos.value( ('genTopTanhDeltaAbsY','genTopDPtDPhi'), (2,2),(-1,-1),(1,1)).disable(saDisable and 'calib' not in pars['sample'])
              , steps.gen.pdfWeightsPlotter(['genTopTanhRapiditySum','genTopPtOverSumPt',
                                             'genTopTanhDeltaAbsY','genTopDPtDPhi'],
                                            [0,0,-1,-1],
