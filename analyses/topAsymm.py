@@ -110,6 +110,9 @@ class topAsymm(supy.analysis) :
             wSub =  [  "wGG",  "wQG",    "wAG",    "wQQ"][1:]
             return sum([supy.samples.specify(names = 'extra_%s'%tt, effectiveLumi = eL,
                                              color = c, weights = [w,rw,'sf']) for w,c in zip(wSub,color)],[])
+
+        def calib(eL = None):
+            return supy.samples.specify(names=['calib_mg','calib_mn'], weights = [rw,'sf'])
         
         def data() :
             return sum( [supy.samples.specify( names = ds, weights = calculables.other.jw(jfn))
@@ -117,7 +120,7 @@ class topAsymm(supy.analysis) :
                                             "el":self.electrons()}[pars['lepton']['name']],
                                            self.jsonFiles())],[])
 
-        return  ( data() + ewk() + ttbar() + single_top() + ttextra())
+        return  ( data() + ewk() + ttbar() + single_top() + ttextra() + calib())
 
     ########################################################################################
     def listOfCalculables(self, pars) :
@@ -351,6 +354,8 @@ class topAsymm(supy.analysis) :
                                                                      for s in ['','wGG','wQG','wAG','wQQ']]),
                                                        ('extra_%s'%tt,['extra_'+'.'.join([tt,s,rw,'sf'])
                                                                        for s in ['','wQG','wAG','wQQ']]),
+                                                       ('calib_mg',[]),
+                                                       ('calib_mn',[]),
                                                        ]).onlySim()
 
     def tridiscriminant(self,pars) :
