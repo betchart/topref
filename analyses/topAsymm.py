@@ -420,6 +420,7 @@ class topAsymm(supy.analysis) :
                          sources=getattr(self,'muons' if pars['lepton']['name']=='mu' else 'electrons')('.jw') )
             
         org.mergeSamples(targetSpec={"name":"t#bar{t}", "color":r.kViolet}, allWithPrefix='ttj', keepSources=True)
+        org.mergeSamples(targetSpec={"name":"Wbb", "color":r.kRed}, allWithPrefix='wbb')
         org.mergeSamples(targetSpec={"name":"W", "color":28}, allWithPrefix='w')
         org.mergeSamples(targetSpec={"name":"DY", "color":r.kYellow}, allWithPrefix="dy")
         org.mergeSamples(targetSpec={"name":"Single", "color":r.kGray}, sources=['.'.join([s,rw,'sf']) for s in self.single_top()])
