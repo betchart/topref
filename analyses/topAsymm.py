@@ -470,11 +470,11 @@ class topAsymm(supy.analysis) :
         fileName = '%s/stats_%s.root'%(self.globalStem,org.tag)
         tfile = r.TFile.Open(fileName,'RECREATE')
 
-        for g in ['lumiHisto','xsHisto','meweighted'] :
-            print g
-            tfile.mkdir(g,'_').cd()
+        for g in ['lumiHisto','xsHisto','meweighted','genTopTanhDeltaAbsY; genTopDPtDPhi'] :
+            tfile.mkdir(g.replace(';','').replace(' ','_'),'_').cd()
+            index = next(i for i in org.indicesOfStepsWithKey(g) if 'reweights' not in org.steps[i].name)
             for ss,hist in zip( org.samples,
-                                org.steps[next(org.indicesOfStepsWithKey(g))][g] ) :
+                                org.steps[index][g] ) :
                 if not hist or ss['name'] in ['St.Model','S.M.']: continue
                 h = hist.Clone(statsname[ss['name']] if ss['name'] in statsname else
                                ss['name'])
