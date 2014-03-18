@@ -239,6 +239,15 @@ class genTopTTbar(wrappedChain.calculable) :
     def update(self,_) :
         ids = [] if self.source['isRealData'] else list(self.source['genPdgId'])
         self.value = tuple(ids.index(i) for i in [6,-6]) if all([id in ids for id in [-6,6]]) else ()
+
+class genTopTTbarP4(wrappedChain.calculable) :
+    def update(self,_) :
+        iTT = self.source['genTopTTbar']
+        if not iTT:
+            self.value = None
+        else:
+            p4 = self.source['genP4']
+            self.value = p4[iTT[0]] + p4[iTT[1]]
 ######################################
 class ttDecayMode(wrappedChain.calculable) :
     def update(self,_) :
