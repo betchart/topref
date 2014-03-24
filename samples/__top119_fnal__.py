@@ -1,7 +1,7 @@
 import supy
 top119_fnal = supy.samples.SampleHolder()
 
-eos = 'utils.fileListFromDisk(location="/store/user/bbetchar/'
+eos = 'utils.fileListFromDisk(location="/eos/uscms/store/user/bbetchar/'
 
 singleT = eos + 'v119/%s_%s_TuneZ2star_8TeV-powheg-tauola.Summer12_DR53X-PU_S10_START53_V7A-v1.AODSIM/")'
 ttj_ph = 'v119/TT_CT10_TuneZ2star_8TeV-powheg-tauola.Summer12_DR53X-PU_S10_START53_V7A-v%d.AODSIM'
