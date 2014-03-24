@@ -112,7 +112,10 @@ class topAsymm(supy.analysis) :
                                              color = c, weights = [w,rw,'sf']) for w,c in zip(wSub,color)],[])
 
         def calib(eL = None):
-            return supy.samples.specify(names=['calib_mg','calib_mn'], weights = [rw,'sf'])
+            colors = [r.kBlack, r.kBlack, r.kOrange, r.kBlue, r.kCyan, r.kGreen, r.kRed, r.kGray]
+            names=['calib_mg','calib_mn','calib_ZP','calib_A2K',
+                   'calib_A200','calib_L200','calib_R2K','calib_R200']
+            return sum([supy.samples.specify(names=n, color=c, weights = [rw,'sf']) for c,n in zip(colors,names)], [])
         
         def data() :
             return sum( [supy.samples.specify( names = ds, weights = calculables.other.jw(jfn))
@@ -357,6 +360,12 @@ class topAsymm(supy.analysis) :
                                                                        for s in ['','wQG','wAG','wQQ']]),
                                                        ('calib_mg',[]),
                                                        ('calib_mn',[]),
+                                                       ('calib_R200',[]),
+                                                       ('calib_L200',[]),
+                                                       ('calib_A200',[]),
+                                                       ('calib_R2K',[]),
+                                                       ('calib_A2K',[]),
+                                                       ('calib_ZP',[]),
                                                        ('wbb_mg',[])
                                                        ]).onlySim()
 

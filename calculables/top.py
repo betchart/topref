@@ -270,12 +270,13 @@ class genTTbarIndices(wrappedChain.calculable) :
     def update(self,_) :
         ids = [i for i in self.source['genPdgId']]
         mom = self.source['genMotherPdgId']
-        self.value = dict([(name, ids.index(i)) for name,i in [('t',6),
-                                                               ('tbar',-6),
-                                                               ('wplus',24),
-                                                               ('wminus',-24)
-                                                               ]])
-        self.value.update(dict([ (w+"Child",filter(lambda i: mom[i]==ids[self.value[w]],range(len(ids)))) for w in ['wplus','wminus','t','tbar']]))
+        self.value = dict([(name, ids.index(i) if i in ids else None) for name,i in [('t',6),
+                                                                                     ('tbar',-6),
+                                                                                     ('wplus',24),
+                                                                                     ('wminus',-24)
+                                                                                     ]])
+        self.value.update(dict([ (w+"Child",filter(lambda i: mom[i]==ids[index],range(len(ids))) if index!=None else [])
+                                 for w,index in self.value.items()]))
         self.value['b'] = next(i for i in self.value['tChild'] if abs(ids[i])!=24)
         self.value['bbar'] = next(i for i in self.value['tbarChild'] if abs(ids[i])!=24)
         self.value['lplus'] = next((i for i in self.value['wplusChild'] if ids[i] in [-11,-13]),None)
@@ -453,6 +454,9 @@ class bHadDeltaRTopRecoGen(wrappedChain.calculable) :
         self.value = [r.Math.VectorUtil.DeltaR(genHadB,reco['hadB']) for reco in self.source['TopReconstruction']]
 class pqDeltaRTopRecoGen(wrappedChain.calculable) :
     def update(self,_):
+        if not self.source['genTTbarIndices']['q']:
+            self.value = [(0,0)] * len(self.source['TopReconstruction'])
+            return
         PQ = tuple([self.source['genP4'][self.source['genTTbarIndices']['q'][i]] for i in range(2)])
         self.value= [min([ tuple(sorted([r.Math.VectorUtil.DeltaR(*t) for t in [(reco['hadP'],PQ[i]),(reco['hadQ'],PQ[j])]])) for i,j in [(0,1),(1,0)]])\
                      for reco in self.source['TopReconstruction']]
