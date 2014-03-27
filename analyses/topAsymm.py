@@ -440,7 +440,7 @@ class topAsymm(supy.analysis) :
             self.printTable(org)
             self.skimControl(org)
         except: pass
-        org.scale( lumiToUseInAbsenceOfData = 19590 )
+        org.scale( lumiToUseInAbsenceOfData = 19590, toPdf=False )
 
         names = [ss["name"] for ss in org.samples]
         kwargs = {"detailedCalculables": False,
