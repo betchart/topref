@@ -3,7 +3,7 @@ import collections
 
 lepton119_fnal = supy.samples.SampleHolder()
 
-pnfs_cre = supy.sites.pnfs().replace('lpcsusyra1','cerba17')
+eos = 'utils.fileListFromDisk(location="/eos/uscms/store/user/bbetchar/'
 
 #srm_burt = srm + "/bbetchar/TOP/automated"
 
@@ -38,5 +38,5 @@ for elmu,loc in elMuLoc :
         run = loc[loc.index("2012"):][4:5]
         counts[lep+run]+=1
         lepton119_fnal.add("%s.%s.%d"%(lep,run,counts[lep+run]),
-                      '%s/%s")'%(pnfs_cre, loc%({"El":"Electron","Mu":"Mu"}[lep])),
+                      '%s/%s")'%(eos, loc%({"El":"Electron","Mu":"Mu"}[lep])),
                       lumi = lumi)
