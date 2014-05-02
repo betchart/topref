@@ -326,7 +326,7 @@ class TopReconstruction(wrappedChain.calculable) :
                 iQQBB = iPQHL[:2]+tuple(sorted(iPQHL[2:]))
                 b = jets["AdjustedP4"][iL]
                 bscale = jets['ScalingBQN']['B'][iL]
-                nuXY_b = nuXY - (bscale - 1)*np.array([b.y(),b.y()])
+                nuXY_b = nuXY - (bscale - 1)*np.array([b.x(),b.y()])
                 nuErr2_b = nuErr2-self.eCoupling*jets["CovariantResolution2"][iL]
                 lepFit = utils.fitKinematic.leastsqLeptonicTop2( b*bscale, jets["Resolution"][iL], lepton["P4"], nuXY_b, nuErr2_b)
                 tt = hadFit.fitT + lepFit.fitT
@@ -356,6 +356,73 @@ class TopReconstruction(wrappedChain.calculable) :
                                "nuChi2Matrix"    : lepFit.X
                                })
                 recos[-1]["key"] = recos[-1]['chi2'] - 2*math.log(recos[-1]['probability'])
+
+        self.value = sorted( recos,  key = lambda x: x["key"] )
+
+######################################
+class TopReconstruction3(wrappedChain.calculable) :
+    @property
+    def name(self): return 'TopReconstruction'
+    
+    def __init__(self) :
+        self.epsilon = 1e-7
+        self.maxFits = 1
+
+    def update(self,_) :
+        
+        jets = dict( (item, self.source[item.join(self.source["TopJets"])] )
+                     for item in ["AdjustedP4","Indices","Resolution","ScalingBQN"] )
+
+        lepton = dict( (item, self.source[item.join(self.source['TopLeptons'])][self.source["SemileptonicTopIndex"]])
+                       for item in ["Charge","P4"])
+
+        topP = self.source["TopComboQQBBProbability"]
+        TCL = self.source['TopCandidateLikelihood']
+
+        recos = []
+        metP4 = self.source["metAdjustedP4"]
+        nuXY = np.array([metP4.x(), metP4.y()])
+        nuErr2 = self.source["metCovariance"]
+
+        for iPQHL in TCL.keys()[:self.maxFits] :
+            iProxyL = [i for i in iPQHL if i!=None]
+            p4s = [jets['AdjustedP4'][i] for i in iProxyL]
+            scales = [jets['ScalingBQN']['B' if j>1 else 'Q'][i] for j,i in enumerate(iPQHL) if i!=None]
+            sp4s = [j*s for j,s in zip(p4s,scales)]
+
+            hadProxy = sum(sp4s[:3], utils.LorentzV())
+
+            iL = iPQHL[-1]
+            iQQBB = iPQHL[:2]+tuple(sorted(iPQHL[2:]))
+            nuXY_mod = sum([(1-s)*np.array([j.x(),j.y()]) for j,s in zip(p4s,scales)],nuXY)
+            lepFit = utils.fitKinematic.leastsqLeptonicTop2( sp4s[-1], jets["Resolution"][iL], lepton["P4"], nuXY_mod, nuErr2)
+            tt = hadProxy + lepFit.fitT
+            iX,ttx = (None,tt)
+            recos.append( {"nu"   : lepFit.fitNu,       "hadP" : sp4s[0],
+                           "lep"  : lepFit.mu,          "hadQ" : sp4s[1],
+                           "lepB" : lepFit.fitB,        "hadB" : sp4s[2],
+                           "lepW" : lepFit.fitW,        "hadW" : utils.LorentzV(),
+                           "lepTopP4" : lepFit.fitT,    "hadTopP4": hadProxy,
+                           "lepChi2" : lepFit.chi2,     "hadChi2" : 0,
+                           "chi2" : 0 + lepFit.chi2,
+                           "probability" : max(self.epsilon,topP[iQQBB]),
+
+                           "top"  : lepFit.fitT if lepton["Charge"] > 0 else hadProxy,
+                           "tbar" : hadProxy if lepton["Charge"] > 0 else lepFit.fitT,
+                           "ttx" : ttx, "iX" : iX,
+
+                           "iPQHL": iPQHL,
+                           "lepCharge": lepton["Charge"], "hadTraw" : hadProxy, "lepTraw" : lepFit.rawT,
+                           "lepBound" : lepFit.bound,     "hadWraw" : utils.LorentzV(), "lepWraw" : lepFit.rawW,
+                           "metP4": metP4 + sp4s[-1] - lepFit.fitB,
+                           "nuErr2":nuErr2,
+                           "residuals" : dict( zip(["lep"+i for i in "BSLWT"],  lepFit.residualsBSLWT ) +
+                                               zip(["had"+i for i in "PQBWT"], [0]*5 ) ),
+                           "nuEllipse"       : lepFit.Ellipse,
+                           "nuSolutions"     : lepFit.solutions,
+                           "nuChi2Matrix"    : lepFit.X
+                           })
+            recos[-1]["key"] = recos[-1]['chi2'] - 2*math.log(recos[-1]['probability'])
 
         self.value = sorted( recos,  key = lambda x: x["key"] )
 

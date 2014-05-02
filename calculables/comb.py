@@ -14,10 +14,11 @@ class TopCandidateIndices(wrappedChain.calculable) :
 
     def update(self,_) :
         indices = sorted(self.source['Indices'.join(self.source['TopJets'])])
-        self.value = sorted([ PQ+HL
+        if len(indices)<4: indices += [None]
+        self.value = sorted([ tuple(sorted(PQ))+HL
                               for PQ in itertools.combinations(indices,2)
                               for HL in itertools.permutations(indices,2)
-                              if len(set(PQ+HL))==4 ])
+                              if len(set(PQ+HL))==4 and HL[1]!=None])
 
 class HTopCandidateIndices(wrappedChain.calculable) :
     '''3-tuples of jet indices from hadronically decaying top, last index the b-jet.'''
@@ -50,16 +51,17 @@ class TopGenLikelihoodIndex(wrappedChain.calculable) :
 ######################################
 class TopCandidateLikelihood(wrappedChain.calculable) :
     def update(self,_) :
+        njets = len(self.source['Indices'.join(self.source['TopJets'])])
         self.value = {}
         qqbbL = self.source['TopComboQQBBLikelihood']
-        sigmasLR = self.source['HTopSigmasPQBCombinationsLR']
+        sigmasLR = self.source['HTopSigmasPQBCombinationsLR' if njets>3 else
+                               'ProxyMassPQBCombinationsLR']
         unfitX2LR = self.source['LTopUnfitSqrtChi2CombinationsLR']
         for iPQHL in self.source['TopCandidateIndices'] :
             self.value[iPQHL] = reduce(operator.mul, [qqbbL[ iPQHL[:2]+tuple(sorted(iPQHL[2:])) ],
                                                       sigmasLR[ iPQHL[:3] ],
                                                       unfitX2LR[ iPQHL[3] ]
                                                       ])
-
 
 ######################################
 class LTopUnfitSqrtChi2(wrappedChain.calculable) :
@@ -102,9 +104,21 @@ class HTopSigmasPQB(wrappedChain.calculable) :
         self.value = dict( ( iPQH, math.sqrt(np.dot( v, np.dot(self.matrix, v) )) ) for iPQH,v in
                            [( i3, ms+(1,) ) for i3,ms in rawM.items()])
 
+class ProxyMassPQB(wrappedChain.calculable):
+    def update(self,_):
+        jets = self.source['TopJets']
+        p4 = self.source['AdjustedP4'.join(jets)]
+        scale = self.source['ScalingBQN'.join(jets)]
+        self.value = {}
+        for iPQB in self.source['HTopCandidateIndices']:
+            proxy = sum([p4[i]*(scale['B' if j==2 else 'Q'][i]) for j,i in enumerate(iPQB) if i!=None], utils.LorentzV())
+            self.value[iPQB] = proxy.M()
+
 class ProbabilityHTopMasses(wrappedChain.calculable) :
     def update(self,_):
-        LRs = self.source['HTopSigmasPQBCombinationsLR'].values()
+        njets = len(self.source['Indices'.join(self.source['TopJets'])])
+        var = 'HTopSigmasPQBCombinationsLR' if njets>3 else 'ProxyMassPQBCombinationsLR'
+        LRs = self.source[var].values()
         sumLRs = sum(LRs)
         self.value = sumLRs / (sumLRs + len(LRs) )
 
@@ -121,8 +135,8 @@ class TopComboQQBBLikelihood(wrappedChain.calculable) :
         B,Q,N = zip(*self.source[self.tagProbabilityGivenBQN.join(jets)])
         for iPQHL in self.source["TopCandidateIndices"] :
             if iPQHL[2] > iPQHL[3] : continue
-            self.value[iPQHL] = reduce(operator.mul, ([Q[i] for i in iPQHL[:2]] +
-                                                      [B[i] for i in iPQHL[2:]]  +
+            self.value[iPQHL] = reduce(operator.mul, ([Q[i] for i in iPQHL[:2] if i!=None] +
+                                                      [B[i] for i in iPQHL[2:] if i!=None] +
                                                       [N[k] for k in indices if k not in iPQHL]) )
 
 class TopComboQQBBLikelihoodRatio(wrappedChain.calculable) :
