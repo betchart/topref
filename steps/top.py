@@ -197,9 +197,19 @@ class signalhists(analysisStep):
         
     def uponAcceptance(self,ev):
         vals = tuple([ev[item] for item in self.vars])
-        self.book.fill(vals[1:], '_'.join(self.vars[1:]), self.nbins[1:], self.lo[1:], self.hi[1:])
+        zipped = zip(vals,self.vars,self.nbins,self.lo,self.hi)
+        self.book.fill(*zip(*zipped[1:]))
         self.book.fill((ev['fitTopTanhDeltaAbsY'],ev['TridiscriminantWTopQCD']),'fitTopTanhDeltaAbsY_TridiscriminantWTopQCD', (25,5), (-1,-1), (1,1))
         self.book.fill((ev['fitTopDPtDPhi'],      ev['TridiscriminantWTopQCD']),'fitTopDPtDPhi_TridiscriminantWTopQCD',       (25,5), (-1,-1), (1,1))
-        if self.doGen:
-            self.book.fill(vals, '_'.join(self.vars), self.nbins, self.lo, self.hi)
+        self.book.fill((ev['fitTopTanhDeltaAbsY'],ev['TridiscriminantWTopQCD']),'fitTopTanhDeltaAbsY_TridiscriminantWTopQCD13', (13,5), (-1,-1), (1,1))
+        self.book.fill((ev['fitTopDPtDPhi'],      ev['TridiscriminantWTopQCD']),'fitTopDPtDPhi_TridiscriminantWTopQCD13',       (13,5), (-1,-1), (1,1))
+        if ev['genTopTTbar']:
+            self.book.fill((ev['genTopTanhDeltaAbsY'],ev['fitTopTanhDeltaAbsY']), 'genTopTanhDeltaAbsY_fitTopTanhDeltaAbsY', (2,2), (-1,-1), (1,1))
+            self.book.fill((ev['genTopDPtDPhi'],ev['fitTopDPtDPhi']), 'genTopDPtDPhi_fitTopDPtDPhi', (2,2), (-1,-1), (1,1))
+        if self.doGen: self.book.fill(*zip(*zipped))
+
+        # higher resolution tridiscriminant
+        zipped[2] = list(zipped[2])
+        zipped[2][2] *= 5
+        self.book.fill(*zipped[2])
         
