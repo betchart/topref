@@ -364,7 +364,7 @@ class TopReconstruction3(wrappedChain.calculable) :
     @property
     def name(self): return 'TopReconstruction'
     
-    def __init__(self) :
+    def __init__(self, _) :
         self.epsilon = 1e-7
         self.maxFits = 1
 
