@@ -1,4 +1,4 @@
-export LHAPDFSYS=/uscms/home/bbetchar/local
+export LHAPDFSYS=`pwd`/local
 export PATH=${PATH}:${LHAPDFSYS}/bin
 export LD_LIBRARY_PATH=${LHAPDFSYS}/lib:${LD_LIBRARY_PATH}
 export PYTHONPATH=$PYTHONPATH:${LHAPDFSYS}/lib/python2.6/site-packages

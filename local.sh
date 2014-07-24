@@ -1,0 +1,1 @@
+source `pwd`/lhapdf.sh
