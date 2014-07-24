@@ -51,7 +51,9 @@ class topAsymm(supy.analysis) :
                                           "QCDx": {"bCut":bCut["normal"],  "iso":"isoExtreme"}
                                           }),
                  "toptype" : self.vary({"ph":"ph"}),#,'mn':'mn'}),
-                 "ptscale" : self.vary({"20":20,"30":30}),
+                 "ptscale" : self.vary({"20":20,
+                                        #"30":30
+                                        }),
                  "smear" : self.vary({'sn':"Smear",'su':'SmearUp','sd':'SmearDown'}),
                  "jec" : self.vary({'jn':0,'ju':1,'jd':-1}),
                  "topSamples": ("ttj_%s",['ttj_%s.wGG.%s','ttj_%s.wQG.%s','ttj_%s.wQQ.%s','ttj_%s.wAG.%s']),
@@ -214,6 +216,7 @@ class topAsymm(supy.analysis) :
              , ssteps.other.reweights( ssteps.histos.value( ('genTopTanhDeltaAbsY','genTopDPtDPhi'), (2,2), (-1,-1), (1,1) ),
                                        'genPtWeights', 3, self.doSystematics(pars) ).disable(saDisable)
              , ssteps.histos.value( ('genTopTanhDeltaAbsY','genTopDPtDPhi'), (2,2),(-1,-1),(1,1)).disable(saDisable and 'calib' not in pars['sample'])
+             , ssteps.histos.value( 'genTopTanhDeltaAbsY', 50,-1,1).disable(saDisable and 'calib' not in pars['sample'])
              , steps.gen.pdfWeightsPlotter(['genTopTanhRapiditySum','genTopPtOverSumPt',
                                             'genTopTanhDeltaAbsY','genTopDPtDPhi'],
                                            [0,0,-1,-1],
@@ -479,9 +482,13 @@ class topAsymm(supy.analysis) :
         fileName = '%s/stats_%s.root'%(self.globalStem,org.tag)
         tfile = r.TFile.Open(fileName,'RECREATE')
 
-        for g in ['lumiHisto','xsHisto','meweighted','genTopTanhDeltaAbsY; genTopDPtDPhi'] :
+        for g in ['lumiHisto','xsHisto','meweighted','genTopTanhDeltaAbsY; genTopDPtDPhi','genTopTanhDeltaAbsY'] :
             tfile.mkdir(g.replace(';','').replace(' ','_'),'_').cd()
-            index = next(i for i in org.indicesOfStepsWithKey(g) if 'reweights' not in org.steps[i].name)
+            index = next((i for i in org.indicesOfStepsWithKey(g) if 'reweights' not in org.steps[i].name and
+                          (g!='genTopTanhDeltaAbsY' or 'value'==org.steps[i].name)), None)
+            if index is None:
+                print 'Missing', g
+                continue
             for ss,hist in zip( org.samples,
                                 org.steps[index][g] ) :
                 if not hist or ss['name'] in ['St.Model','S.M.']: continue
