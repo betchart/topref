@@ -113,6 +113,11 @@ class topAsymm(supy.analysis) :
             return sum([supy.samples.specify(names = 'extra_%s'%tt, effectiveLumi = eL,
                                              color = c, weights = [w,rw,'sf']) for w,c in zip(wSub,color)],[])
 
+        def ttscale(eL = None) :
+            names = ['ttj_qd','ttj_qu']
+            colors = [r.kBlack, r.kBlack]
+            return sum([supy.samples.specify(names=n, color=c, weights=[rw,'sf']) for n,c in zip(names,colors)],[])
+
         def calib(eL = None):
             colors = [r.kBlack, r.kBlack, r.kOrange, r.kBlue, r.kCyan, r.kGreen, r.kRed, r.kGray]
             names=['calib_mg','calib_mn','calib_ZP','calib_A2K',
@@ -125,7 +130,7 @@ class topAsymm(supy.analysis) :
                                             "el":self.electrons()}[pars['lepton']['name']],
                                            self.jsonFiles())],[])
 
-        return  ( data() + ewk() + ttbar() + single_top() + ttextra() + calib())
+        return  ( data() + ewk() + ttbar() + single_top() + ttextra() + calib() + ttscale())
 
     ########################################################################################
     def listOfCalculables(self, pars) :
@@ -215,8 +220,8 @@ class topAsymm(supy.analysis) :
                                        'genPdfWeights', 57, self.doSystematics(pars) ).disable(saDisable)
              , ssteps.other.reweights( ssteps.histos.value( ('genTopTanhDeltaAbsY','genTopDPtDPhi'), (2,2), (-1,-1), (1,1) ),
                                        'genPtWeights', 3, self.doSystematics(pars) ).disable(saDisable)
-             , ssteps.histos.value( ('genTopTanhDeltaAbsY','genTopDPtDPhi'), (2,2),(-1,-1),(1,1)).disable(saDisable and 'calib' not in pars['sample'])
-             , ssteps.histos.value( 'genTopTanhDeltaAbsY', 50,-1,1).disable(saDisable and 'calib' not in pars['sample'])
+             , ssteps.histos.value( ('genTopTanhDeltaAbsY','genTopDPtDPhi'), (2,2),(-1,-1),(1,1)).disable(saDisable and 'calib' not in pars['sample'] and 'ttj' not in pars['sample'])
+             , ssteps.histos.value( 'genTopTanhDeltaAbsY', 50,-1,1).disable(saDisable and 'calib' not in pars['sample'] and 'ttj' not in pars['sample'])
              , steps.gen.pdfWeightsPlotter(['genTopTanhRapiditySum','genTopPtOverSumPt',
                                             'genTopTanhDeltaAbsY','genTopDPtDPhi'],
                                            [0,0,-1,-1],
@@ -369,7 +374,9 @@ class topAsymm(supy.analysis) :
                                                        ('calib_R2K',[]),
                                                        ('calib_A2K',[]),
                                                        ('calib_ZP',[]),
-                                                       ('wbb_mg',[])
+                                                       ('wbb_mg',[]),
+                                                       ('ttj_qu',[]),
+                                                       ('ttj_qd',[]),
                                                        ]).onlySim()
 
     def tridiscriminant(self,pars) :
@@ -430,8 +437,8 @@ class topAsymm(supy.analysis) :
 
         org.mergeSamples(targetSpec = {"name":"Data 2012", "color":r.kBlack, "markerStyle":20},
                          sources=getattr(self,'muons' if pars['lepton']['name']=='mu' else 'electrons')('.jw') )
-            
-        org.mergeSamples(targetSpec={"name":"t#bar{t}", "color":r.kViolet}, allWithPrefix='ttj', keepSources=True)
+
+        org.mergeSamples(targetSpec={"name":"t#bar{t}", "color":r.kViolet}, sources=['ttj_ph.wAG.pu.sf','ttj_ph.wQG.pu.sf','ttj_ph.wQQ.pu.sf','ttj_ph.wGG.pu.sf'], keepSources=True)
         org.mergeSamples(targetSpec={"name":"Wbb", "color":r.kRed}, allWithPrefix='wbb')
         org.mergeSamples(targetSpec={"name":"W", "color":28}, allWithPrefix='w')
         org.mergeSamples(targetSpec={"name":"DY", "color":r.kYellow}, allWithPrefix="dy")
