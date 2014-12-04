@@ -9,6 +9,9 @@ ttj_ph = 'v119/TT_CT10_TuneZ2star_8TeV-powheg-tauola.Summer12_DR53X-PU_S10_START
 top119_fnal.add("ttj_ph", '+'.join(['%s/%s")'%(eos,ttj_ph%v) for v in [1,2]]), xs = 211.0 )
 top119_fnal.add("extra_ph", eos + '/TOP/automated/2013_11_19_19_52_22")', xs = 9999 )
 
+top119_fnal.add("ttj_qd", eos + '/TOP/automated/2014_12_01_16_21_59/TT_scaledown_CT10_TuneZ2star_8TeV-powheg-tauola.Summer12-START53_V7C_FSIM-v1.AODSIM")', xs = 262.0)
+top119_fnal.add("ttj_qu", eos + '/TOP/automated/2014_12_01_16_21_59/TT_scaleup_CT10_TuneZ2star_8TeV-powheg-tauola.Summer12-START53_V7C_FSIM-v1.AODSIM")', xs = 158.0)
+
 top119_fnal.add("top_s_ph", singleT%('T','s-channel'), xs = 2.82 )
 top119_fnal.add("top_t_ph", singleT%('T','t-channel'), xs = 47.0 )
 top119_fnal.add("top_tW_ph", singleT%('T','tW-channel-DR'), xs = 10.7 )
