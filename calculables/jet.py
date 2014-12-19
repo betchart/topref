@@ -324,6 +324,123 @@ class ScalingBQN(calculables.secondary) :
         if org.tag == self.tag :
             org.mergeSamples(targetSpec = {"name":'merged'}, sources = self.samples )
 ######################################
+class CSV(calculables.secondary) :
+    def __init__(self, collection = None, binning = (0,0,0), samples = [], tag = None, activated = False) :
+        self.fixes = collection
+        self.leaf = 'combinedSecondaryVertex'.join(collection)
+        for item in ['binning','samples','tag','activated'] : setattr(self,item,eval(item))
+        self.stash(['Indices','IndicesGenB'])
+        self.moreName = ('CSV sf-adjusted') + '; ' + ','.join(samples)
+        self.wpNames = ['zero','CSVL','CSVM','CSVT','one']
+        self.workingPoints = [0.0, 0.244, 0.679, 0.898, 1.0]
+        # SF reference: http://cds.cern.ch/record/1494669/files/1748-0221_8_04_P04013.pdf
+        self.sfPointsBN = ([1.0, 1.01, 0.97, 0.96, 1.0], # Table 10, b-jet sf fot tt-like events
+                           [1.0, 1.10, 1.11, 1.17, 1.0]) # Table 12, misidentification sf
+        self.sfBN = [r.TGraph(5, np.array(self.workingPoints), np.array(points)) for points in self.sfPointsBN]
+
+    def baseSamples(self) : return self.samples
+
+    def setup(self,*_) :
+        hists = self.fromCache(['merged'],['B','N'], tag = self.tag)
+        self.histsBN = [hists['merged'][jetType] for jetType in ['B','N']]
+        for hist in filter(None,self.histsBN) : hist.Scale(1./hist.Integral(),"width")
+        def makeCDF(h):
+            cdf = h.Clone(h.GetName()+"_cdf")
+            cdf.Reset()
+            for i in range(1,2+h.GetNbinsX()):
+                cdf.SetBinContent(i, h.Integral(1,i,"width"))
+            return cdf
+        self.cdfBN = map(makeCDF, self.histsBN)
+        self.cdfBN_d = [h.Clone(h.GetName()+"_d") for h in self.cdfBN]
+        for h,sf in zip(self.cdfBN_d, self.sfBN):
+            for i in range(1,1+h.GetNbinsX()):
+                P_MC = h.GetBinContent(i)
+                SF = sf.Eval(h.GetBinLowEdge(i)+h.GetBinWidth(i))
+                h.SetBinContent(i, 1-SF*(1-P_MC))
+
+        def interpolate(x,h):
+            i = h.FindFixBin(x)
+            P = h.GetBinContent(i)
+            P_ = h.GetBinContent(i-1)
+            X = h.GetBinLowEdge(i+1)
+            X_ = h.GetBinLowEdge(i)
+            return P_ + (x-X_) * (P-P_) / (X-X_)
+        points = np.arange(0,1+1e-8,0.005)
+        cdfs = [np.array([interpolate(p,cdf) for p in points]) for cdf in self.cdfBN]
+        self.testsBN = [r.TGraph(len(points),points, Ps) for Ps in cdfs]
+
+        def inverse(p,h):
+            i = h.FindFirstBinAbove(p)
+            if i==-1: return 1
+            P = h.GetBinContent(i)
+            P_ = h.GetBinContent(i-1)
+            X = h.GetBinLowEdge(i+1)
+            X_ = h.GetBinLowEdge(i)
+            return X_ + (X-X_) * (p-P_) / (P-P_)
+        funcs = [np.array([inverse(interpolate(p,cdf),cdf_d) for p in points ]) for cdf,cdf_d in zip(self.cdfBN, self.cdfBN_d)]
+        self.funcsBN = [r.TGraph(len(points),points,func) for func in funcs]
+        
+        
+    def uponAcceptance(self,ev) :
+        if ev['isRealData'] : return
+        indices = ev[self.Indices]
+        iB = ev[self.IndicesGenB]
+        bvar = ev[self.leaf]
+        for i in indices :
+            jetType = "B" if i in iB else "N"
+            self.book.fill(bvar.at(i), jetType, *self.binning, title = ";CSV (%s);events / bin"%(jetType))
+    
+    def update(self,_) :
+        csv = self.source[self.leaf]
+        if self.source['isRealData'] or not self.activated:
+            self.value = csv
+            return
+        iB = self.source[self.IndicesGenB]
+        self.value = utils.vector( [ self.funcsBN[0 if i in iB else 1].Eval(c) for i,c in enumerate(csv) ] )
+        
+    def organize(self,org) :
+        if org.tag != self.tag : return
+        missing = [s for s in self.samples if s not in [ss['name'] for ss in org.samples]]
+        if missing: print self.name, "-- no such samples :\n", missing
+        org.mergeSamples( targetSpec = {'name':'merged'}, sources = self.samples )
+
+    def reportCache(self) :
+        optStat = r.gStyle.GetOptStat()
+        r.gStyle.SetOptStat(0)
+        r.gROOT.ProcessLine(".L %s/cpp/tdrstyle.C"%whereami())
+        r.setTDRStyle()
+        self.setup(None)
+        if None in self.histsBN :
+            print '%s.setup() failed'%self.name
+            r.gStyle.SetOptStat(optStat)
+            return
+        fileName = '/'.join(self.outputFileName.split('/')[:-1]+[self.name]) + '.pdf'
+        c = r.TCanvas()
+        c.Print(fileName +'[')
+        histlist = [self.histsBN, self.cdfBN, self.cdfBN_d, self.sfBN, self.funcsBN]
+        titles = [";CSV (MC);pdf",";CSV (MC);cdf",";CSV (Data);cdf",";CSV (MC);Scale Factors",";CSV (MC);CSV (Data)"]
+        for hists,title in zip(histlist, titles):
+            leg = r.TLegend(0.36,0.55,0.6,0.7)
+            leg.SetHeader("jet flavor")
+            height = 1.1 * max(h.GetMaximum() for h in hists)
+            if height<0: height = 1.1 * max(sum(self.sfPointsBN,[]))
+            for i,(f,color) in enumerate(zip('BN',[r.kRed,r.kBlue,r.kGreen])) :
+                h = hists[i]
+                h.SetTitle(title)
+                h.UseCurrentStyle()
+                h.SetLineColor(color)
+                h.SetLineWidth(2)
+                h.SetMarkerColor(color)
+                h.SetMaximum(height)
+                h.SetMinimum(0)
+                h.Draw("hist" + ("same" if i else "")) if type(h)!=r.TGraph else h.Draw("APL"[1 if i else None:])
+                leg.AddEntry(h,{"B":"B jets","N":"other jets"}[f],'l')
+            leg.Draw()
+            c.Print(fileName)
+        c.Print(fileName +']')
+        print 'Wrote : %s'%fileName
+        r.gStyle.SetOptStat(optStat)
+######################################
 
 class __value__(wrappedChain.calculable) :
     def __init__(self, jets = None, index = 0, Btagged = True ) :

@@ -39,16 +39,18 @@ class topAsymm(supy.analysis) :
                 "inverted" : {"index":0, "min":csvWP['CSVL'], "max":csvWP['CSVM']}}
 
         return { "vary" : ['selection','lepton','toptype','smear','jec','ptscale'],
-                 "nullvary": list(itertools.combinations(['ju','jd','su','sd','mn','30'],2)),
+                 "nullvary": list(itertools.combinations(['ju','jd','su','sd','mn','30','QCDSF','QCDx','topSF'],2)),
                  "discriminant2DPlots": True,
                  "bVar" : "CSV", # "Combined Secondary Vertex"
                  "objects" : dict([(item,(item,'')) for item in ['jet','mu','el','met']]),
                  "lepton" : self.vary([ ( leptons['name'][index], dict((key,val[index]) for key,val in leptons.iteritems()))
                                         for index in range(2) if leptons['name'][index] in ['mu','el'][:2]]),
                  "reweights" : reweights,
-                 "selection" : self.vary({"top" : {"bCut":bCut["normal"],  "iso":"isoNormal"},
-                                          "QCD" : {"bCut":bCut["normal"],  "iso":"isoInvert"},
-                                          "QCDx": {"bCut":bCut["normal"],  "iso":"isoExtreme"}
+                 "selection" : self.vary({"top" : {"bCut":bCut["normal"],  "iso":"isoNormal", "sfActivated":False},
+                                          "QCD" : {"bCut":bCut["normal"],  "iso":"isoInvert", "sfActivated":False},
+                                          "QCDx": {"bCut":bCut["normal"],  "iso":"isoExtreme", "sfActivated":False},
+                                          "topSF" : {"bCut":bCut["normal"],  "iso":"isoNormal", "sfActivated":True},
+                                          "QCDSF" : {"bCut":bCut["normal"],  "iso":"isoInvert", "sfActivated":True},
                                           }),
                  "toptype" : self.vary({"ph":"ph"}),#,'mn':'mn'}),
                  "ptscale" : self.vary({"20":20,
@@ -60,7 +62,7 @@ class topAsymm(supy.analysis) :
                  }
 
     @staticmethod
-    def doSystematics(pars) : return 'ph_sn_jn_20' in pars['tag'] 
+    def doSystematics(pars) : return 'ph_sn_jn_20' in pars['tag'] and 'SF' not in pars['tag']
 
     @staticmethod
     def scaleFactor() : return 1.0
@@ -149,7 +151,7 @@ class topAsymm(supy.analysis) :
             calculables.jet.AdjustedP4(jet, pars['smear'], pars['jec']),
             calculables.jet.Indices(jet,ptMin = 20 ),
             calculables.jet.IndicesBtagged(jet,pars["bVar"]),
-            supy.calculables.other.abbreviation('combinedSecondaryVertex','CSV',jet),
+            #supy.calculables.other.abbreviation('combinedSecondaryVertex','CSV',jet),
             calculables.muon.Indices(mu),
             calculables.electron.Indices(el),
 
@@ -239,6 +241,7 @@ class topAsymm(supy.analysis) :
              ssteps.filters.value("Pt".join(jet), min = 35, indices = "Indices".join(jet), index=1),
              ssteps.filters.value("Pt".join(jet), min = 20, indices = "Indices".join(jet), index=2),
              ssteps.filters.value("Pt".join(jet), min = 20, indices = "Indices".join(jet), index=3),
+             calculables.jet.CSV(jet, binning=(50, 0, 1), activated=pars["selection"]["sfActivated"], **ttSmpTag), # cdfs for b-tag sf need to be pre-cut
              ssteps.filters.value(bVar, indices = "IndicesBtagged".join(jet), **pars["selection"]["bCut"]),
              ssteps.filters.value('RelIso'.join(lepton), indices='Indices'.join(lepton), index=0, **lIsoMinMax),
              steps.trigger.singleLepton(lname=='mu')
@@ -442,6 +445,8 @@ class topAsymm(supy.analysis) :
         org.mergeSamples(targetSpec={"name":"Wbb", "color":r.kRed}, allWithPrefix='wbb')
         org.mergeSamples(targetSpec={"name":"W", "color":28}, allWithPrefix='w')
         org.mergeSamples(targetSpec={"name":"DY", "color":r.kYellow}, allWithPrefix="dy")
+        org.mergeSamples(targetSpec={"name":"t", "color":r.kWhite}, sources=['.'.join([s,rw,'sf']) for s in self.single_top() if 'top_t_' in s], keepSources=True)
+        org.mergeSamples(targetSpec={"name":"t_", "color":r.kWhite}, sources=['.'.join([s,rw,'sf']) for s in self.single_top() if 'tbar_t_' in s], keepSources=True)
         org.mergeSamples(targetSpec={"name":"Single", "color":r.kGray}, sources=['.'.join([s,rw,'sf']) for s in self.single_top()])
         org.mergeSamples(targetSpec={"name":"St.Model", "color":r.kGreen+2}, sources=["t#bar{t}","W","DY","Single"],
                          keepSources=True)
