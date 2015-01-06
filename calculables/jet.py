@@ -418,7 +418,7 @@ class CSV(calculables.secondary) :
         c = r.TCanvas()
         c.Print(fileName +'[')
         histlist = [self.histsBN, self.cdfBN, self.cdfBN_d, self.sfBN, self.funcsBN]
-        titles = [";CSV (MC);pdf",";CSV (MC);cdf",";CSV (Data);cdf",";CSV (MC);Scale Factors",";CSV (MC);CSV (Data)"]
+        titles = [";CSV';pdf",";CSV';cdf",";CSV;cdf",";CSV Working Point;Scale Factor",";CSV';CSV\""]
         for hists,title in zip(histlist, titles):
             leg = r.TLegend(0.36,0.55,0.6,0.7)
             leg.SetHeader("jet flavor")
