@@ -301,10 +301,12 @@ class ScalingBQN(calculables.secondary) :
         for f in 'BQN' :
             leg = r.TLegend(0.6,0.6,0.9,0.9)
             leg.SetHeader("#eta range")
+            leg.SetFillColor(r.kWhite)
+            leg.SetBorderSize(0)
             for i,color in enumerate([r.kRed,r.kBlue,r.kGreen]) :
                 h = self.hists[f+str(i)]
                 label = h.GetTitle().split(',')[1]
-                h.SetTitle(';(%s): p_{T}^{meas};median log(E^{gen}/E^{meas})'%h.GetTitle().split(',')[0])
+                h.SetTitle(';(%s): p_{T}^{meas} (GeV);median log(E^{gen}/E^{meas})'%h.GetTitle().split(',')[0])
                 h.SetLineColor(color)
                 h.SetMarkerColor(color)
                 h.SetLineWidth(2)
@@ -343,6 +345,9 @@ class CSV(calculables.secondary) :
     def setup(self,*_) :
         hists = self.fromCache(['merged'],['B','N'], tag = self.tag)
         self.histsBN = [hists['merged'][jetType] for jetType in ['B','N']]
+        if not any(self.histsBN):
+            self.activated = False
+        if not self.activated: return
         for hist in filter(None,self.histsBN) : hist.Scale(1./hist.Integral(),"width")
         def makeCDF(h):
             cdf = h.Clone(h.GetName()+"_cdf")
@@ -405,6 +410,9 @@ class CSV(calculables.secondary) :
         org.mergeSamples( targetSpec = {'name':'merged'}, sources = self.samples )
 
     def reportCache(self) :
+        if not self.activated:
+            print '%s: Not activated' % self.name
+            return
         optStat = r.gStyle.GetOptStat()
         r.gStyle.SetOptStat(0)
         r.gROOT.ProcessLine(".L %s/cpp/tdrstyle.C"%whereami())
