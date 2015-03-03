@@ -192,6 +192,8 @@ class ProbabilityGivenBQN(calculables.secondary) :
         r.gROOT.ProcessLine(".L %s/cpp/tdrstyle.C"%whereami())
         r.setTDRStyle()
         self.setup(None)
+        for hist in filter(None,self.histsBQN) :
+            hist.Scale(1./hist.Integral(0,hist.GetNbinsX()+1))
         if None in self.histsBQN :
             print '%s.setup() failed'%self.name
             r.gStyle.SetOptStat(optStat)
@@ -201,6 +203,8 @@ class ProbabilityGivenBQN(calculables.secondary) :
         c.Print(fileName +'[')
         leg = r.TLegend(0.4,0.55,0.7,0.85)
         leg.SetHeader("jet flavor")
+        leg.SetFillColor(r.kWhite)
+        leg.SetBorderSize(0)
         for h in self.histsBQN :
             h.Fill(h.GetBinCenter(1), h.GetBinContent(0))
             h.SetBinContent(0,0)
@@ -208,7 +212,7 @@ class ProbabilityGivenBQN(calculables.secondary) :
         for i,(f,color) in enumerate(zip('BQN',[r.kRed,r.kBlue,r.kGreen])) :
             h = self.histsBQN[i]
             h.UseCurrentStyle()
-            h.SetTitle(";%s;"%h.GetXaxis().GetTitle().split()[0])
+            h.SetTitle(";%s;Probability / %.2f"%(h.GetXaxis().GetTitle().split()[0],(self.binning[2]-self.binning[1]) / self.binning[0]))
             h.SetLineColor(color)
             h.SetLineWidth(2)
             h.SetMarkerColor(color)
