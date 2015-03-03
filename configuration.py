@@ -10,6 +10,9 @@ def mainTree() :
 def otherTreesToKeepWhenSkimming() :
     return [("lumiTree","tree")]
 
+def computeEntriesAtMakeFileList():
+    return True
+
 def trace() :
     return True
 

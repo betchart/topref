@@ -48,7 +48,7 @@ class topAsymm(supy.analysis) :
                  "reweights" : reweights,
                  "selection" : self.vary({"top" : {"bCut":bCut["normal"],  "iso":"isoNormal", "sfActivated":False},
                                           "QCD" : {"bCut":bCut["normal"],  "iso":"isoInvert", "sfActivated":False},
-                                          "QCDx": {"bCut":bCut["normal"],  "iso":"isoExtreme", "sfActivated":False},
+                                          #"QCDx": {"bCut":bCut["normal"],  "iso":"isoExtreme", "sfActivated":False},
                                           "topSF" : {"bCut":bCut["normal"],  "iso":"isoNormal", "sfActivated":True},
                                           "QCDSF" : {"bCut":bCut["normal"],  "iso":"isoInvert", "sfActivated":True},
                                           }),
@@ -62,7 +62,7 @@ class topAsymm(supy.analysis) :
                  }
 
     @staticmethod
-    def doSystematics(pars) : return 'ph_sn_jn_20' in pars['tag'] and 'SF' not in pars['tag']
+    def doSystematics(pars) : return 'ph_sn_jn_20' in pars['tag'] and 'SF' not in pars['tag'] and 'QCDx' not in pars['tag']
 
     @staticmethod
     def scaleFactor() : return 1.0
@@ -118,13 +118,13 @@ class topAsymm(supy.analysis) :
         def ttscale(eL = None) :
             names = ['ttj_qd','ttj_qu']
             colors = [r.kBlack, r.kBlack]
-            return sum([supy.samples.specify(names=n, color=c, weights=[rw,'sf']) for n,c in zip(names,colors)],[])
+            return sum([supy.samples.specify(names=n, color=c, weights=[rw,'sf']) for n,c in zip(names,colors)],[]) if self.doSystematics(pars) else []
 
         def calib(eL = None):
             colors = [r.kBlack, r.kBlack, r.kOrange, r.kBlue, r.kCyan, r.kGreen, r.kRed, r.kGray]
             names=['calib_mg','calib_mn','calib_ZP','calib_A2K',
                    'calib_A200','calib_L200','calib_R2K','calib_R200']
-            return sum([supy.samples.specify(names=n, color=c, weights = [rw,'sf']) for c,n in zip(colors,names)], [])
+            return sum([supy.samples.specify(names=n, color=c, weights = [rw,'sf']) for c,n in zip(colors,names)], []) if self.doSystematics(pars) else []
         
         def data() :
             return sum( [supy.samples.specify( names = ds, weights = calculables.other.jw(jfn))
@@ -132,7 +132,7 @@ class topAsymm(supy.analysis) :
                                             "el":self.electrons()}[pars['lepton']['name']],
                                            self.jsonFiles())],[])
 
-        return  ( data() + ewk() + ttbar() + single_top() + ttextra() + calib() + ttscale())
+        return  ( data() + ewk() + ttbar() + single_top() + calib() + ttscale())
 
     ########################################################################################
     def listOfCalculables(self, pars) :
