@@ -41,3 +41,6 @@ def LorentzVectorType() :
 
 def computeEntriesForReport() :
     return False
+
+def overrideROOT(r) :
+    r.TGaxis.SetMaxDigits(3)
