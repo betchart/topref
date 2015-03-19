@@ -201,26 +201,28 @@ class ProbabilityGivenBQN(calculables.secondary) :
         fileName = '/'.join(self.outputFileName.split('/')[:-1]+[self.name]) + '.pdf'
         c = r.TCanvas()
         c.Print(fileName +'[')
-        leg = r.TLegend(0.4,0.55,0.7,0.85)
-        leg.SetHeader("jet flavor")
+        leg = r.TLegend(0.2,0.55,0.88,0.85)
+        #leg.SetHeader("jet flavor")
         leg.SetFillColor(r.kWhite)
         leg.SetBorderSize(0)
+        leg.SetTextFont(42)
         for h in self.histsBQN :
             h.Fill(h.GetBinCenter(1), h.GetBinContent(0))
             h.SetBinContent(0,0)
         height = 1.1 * max(h.GetMaximum() for h in self.histsBQN)
-        for i,(f,color) in enumerate(zip('BQN',[r.kRed,r.kBlue,r.kGreen])) :
+        for i,(f,color,style) in enumerate(zip('BQN',[r.kBlack,r.kRed,r.kBlue],[1,7,8])) :
             h = self.histsBQN[i]
             h.UseCurrentStyle()
-            h.SetTitle(";%s;Probability / %.2f"%(h.GetXaxis().GetTitle().split()[0],(self.binning[2]-self.binning[1]) / self.binning[0]))
+            h.SetTitle(";%s;probability / %.2f"%(h.GetXaxis().GetTitle().split()[0].replace('jet',''),(self.binning[2]-self.binning[1]) / self.binning[0]))
             h.SetLineColor(color)
-            h.SetLineWidth(2)
-            h.SetMarkerColor(color)
+            h.SetLineWidth(2 if style==1 else 3)
+            h.SetLineStyle(style)
             h.SetMaximum(height)
             h.SetMinimum(0)
             h.Draw("hist" + ("same" if i else ""))
-            leg.AddEntry(h,{"B":"B jets","Q":"jets from W","N":"other jets"}[f],'l')
+            leg.AddEntry(h,{"B":"jets from b quark hadronization","Q":"jets from W boson decay","N":"other jets"}[f],'l')
         leg.Draw()
+        r.gPad.RedrawAxis()
         c.Print(fileName)
         c.Print(fileName +']')
         print 'Wrote : %s'%fileName
@@ -303,22 +305,24 @@ class ScalingBQN(calculables.secondary) :
         c = r.TCanvas()
         c.Print(fileName +'[')
         for f in 'BQN' :
-            leg = r.TLegend(0.6,0.6,0.9,0.9)
-            leg.SetHeader("#eta range")
+            leg = r.TLegend(0.4,0.6,0.9,0.95)
+            #leg.SetHeader("#eta range")
             leg.SetFillColor(r.kWhite)
             leg.SetBorderSize(0)
-            for i,color in enumerate([r.kRed,r.kBlue,r.kGreen]) :
+            leg.SetTextFont(42)
+            for i,(color,style) in enumerate(zip([r.kBlack,r.kRed,r.kBlue],[1,7,8])) :
                 h = self.hists[f+str(i)]
-                label = h.GetTitle().split(',')[1]
+                label = h.GetTitle().split(',')[1].replace("<"," < ")
                 h.SetTitle(';(%s): p_{T}^{meas} (GeV);median log(E^{gen}/E^{meas})'%h.GetTitle().split(',')[0])
                 h.SetLineColor(color)
-                h.SetMarkerColor(color)
-                h.SetLineWidth(2)
+                h.SetLineStyle(style)
+                h.SetLineWidth(3 if style!=1 else 2)
                 h.SetMaximum(0.2)
                 h.SetMinimum(-0.2)
                 h.Draw("histsame" if i else "hist")
                 leg.AddEntry(h,label,'l')
             leg.Draw()
+            r.gPad.RedrawAxis()
             c.Print(fileName)
         c.Print(fileName +']')
         print 'Wrote : %s'%fileName
