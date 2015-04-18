@@ -223,6 +223,12 @@ class ProbabilityGivenBQN(calculables.secondary) :
             leg.AddEntry(h,{"B":"jets from b quark hadronization","Q":"jets from W boson decay","N":"other jets"}[f],'l')
         leg.Draw()
         r.gPad.RedrawAxis()
+
+        cmsstamp = r.TText(0.2, 0.87, "CMS Simulation")
+        cmsstamp.SetNDC()
+        cmsstamp.SetTextSize(0.9 * cmsstamp.GetTextSize())
+        cmsstamp.Draw()
+
         c.Print(fileName)
         c.Print(fileName +']')
         print 'Wrote : %s'%fileName
@@ -304,6 +310,11 @@ class ScalingBQN(calculables.secondary) :
         fileName = '/'.join(self.outputFileName.split('/')[:-1]+[self.name]) + '.pdf'
         c = r.TCanvas()
         c.Print(fileName +'[')
+
+        cmsstamp = r.TText(0.2, 0.2, "CMS Simulation")
+        cmsstamp.SetNDC()
+        cmsstamp.SetTextSize(0.9 * cmsstamp.GetTextSize())
+
         for f in 'BQN' :
             leg = r.TLegend(0.4,0.6,0.9,0.95)
             #leg.SetHeader("#eta range")
@@ -323,6 +334,8 @@ class ScalingBQN(calculables.secondary) :
                 leg.AddEntry(h,label,'l')
             leg.Draw()
             r.gPad.RedrawAxis()
+            cmsstamp.Draw()
+
             c.Print(fileName)
         c.Print(fileName +']')
         print 'Wrote : %s'%fileName
