@@ -224,10 +224,17 @@ class ProbabilityGivenBQN(calculables.secondary) :
         leg.Draw()
         r.gPad.RedrawAxis()
 
-        cmsstamp = r.TText(0.2, 0.87, "CMS Simulation")
-        cmsstamp.SetNDC()
-        cmsstamp.SetTextSize(0.9 * cmsstamp.GetTextSize())
-        cmsstamp.Draw()
+        stamp = r.TText()
+        ssize = stamp.GetTextSize()
+        stamp.SetTextFont(62)
+        stamp.SetTextSize(ssize)
+        stamp.DrawTextNDC(0.16 ,0.96,"CMS")
+        stamp.SetTextFont(52)
+        stamp.SetTextSize(0.8 * ssize)
+        stamp.DrawTextNDC(0.27, 0.96, "Simulation")
+        stamp.SetTextFont(42)
+        stamp.DrawTextNDC(0.88, 0.96, "(8TeV)")
+
 
         c.Print(fileName)
         c.Print(fileName +']')
@@ -311,9 +318,8 @@ class ScalingBQN(calculables.secondary) :
         c = r.TCanvas()
         c.Print(fileName +'[')
 
-        cmsstamp = r.TText(0.2, 0.2, "CMS Simulation")
-        cmsstamp.SetNDC()
-        cmsstamp.SetTextSize(0.9 * cmsstamp.GetTextSize())
+        stamp = r.TText()
+        ssize = stamp.GetTextSize()
 
         for f in 'BQN' :
             leg = r.TLegend(0.4,0.6,0.9,0.95)
@@ -334,7 +340,15 @@ class ScalingBQN(calculables.secondary) :
                 leg.AddEntry(h,label,'l')
             leg.Draw()
             r.gPad.RedrawAxis()
-            cmsstamp.Draw()
+
+            stamp.SetTextFont(62)
+            stamp.SetTextSize(ssize)
+            stamp.DrawTextNDC(0.16 ,0.96,"CMS")
+            stamp.SetTextFont(52)
+            stamp.SetTextSize(0.8 * ssize)
+            stamp.DrawTextNDC(0.27, 0.96, "Simulation")
+            stamp.SetTextFont(42)
+            stamp.DrawTextNDC(0.83, 0.96, "(8TeV)")
 
             c.Print(fileName)
         c.Print(fileName +']')
