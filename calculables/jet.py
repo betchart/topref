@@ -220,7 +220,7 @@ class ProbabilityGivenBQN(calculables.secondary) :
             h.SetMaximum(height)
             h.SetMinimum(0)
             h.Draw("hist" + ("same" if i else ""))
-            leg.AddEntry(h,{"B":"jets from b quark hadronization","Q":"jets from W boson decay","N":"other jets"}[f],'l')
+            leg.AddEntry(h,{"B":"Jets from b quark hadronization","Q":"Jets from W boson decay","N":"Other jets"}[f],'l')
         leg.Draw()
         r.gPad.RedrawAxis()
 
@@ -329,7 +329,7 @@ class ScalingBQN(calculables.secondary) :
             leg.SetTextFont(42)
             for i,(color,style) in enumerate(zip([r.kBlack,r.kRed,r.kBlue],[1,7,8])) :
                 h = self.hists[f+str(i)]
-                label = h.GetTitle().split(',')[1].replace("<"," < ")
+                label = h.GetTitle().split(',')[1].replace("0.000<","").replace("<"," < ")
                 h.SetTitle(';(%s): p_{T}^{meas} (GeV);median log(E^{gen}/E^{meas})'%h.GetTitle().split(',')[0])
                 h.SetLineColor(color)
                 h.SetLineStyle(style)
