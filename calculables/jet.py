@@ -213,7 +213,7 @@ class ProbabilityGivenBQN(calculables.secondary) :
         for i,(f,color,style) in enumerate(zip('BQN',[r.kBlack,r.kRed,r.kBlue],[1,7,8])) :
             h = self.histsBQN[i]
             h.UseCurrentStyle()
-            h.SetTitle(";%s;probability / %.2f"%(h.GetXaxis().GetTitle().split()[0].replace('jet',''),(self.binning[2]-self.binning[1]) / self.binning[0]))
+            h.SetTitle(";%s;Probability / %.2f"%(h.GetXaxis().GetTitle().split()[0].replace('jet',''),(self.binning[2]-self.binning[1]) / self.binning[0]))
             h.SetLineColor(color)
             h.SetLineWidth(2 if style==1 else 3)
             h.SetLineStyle(style)
@@ -233,7 +233,7 @@ class ProbabilityGivenBQN(calculables.secondary) :
         stamp.SetTextSize(0.8 * ssize)
         stamp.DrawTextNDC(0.27, 0.96, "Simulation")
         stamp.SetTextFont(42)
-        stamp.DrawTextNDC(0.88, 0.96, "(8TeV)")
+        stamp.DrawTextNDC(0.86, 0.96, "(8 TeV)")
 
 
         c.Print(fileName)
