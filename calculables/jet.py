@@ -330,7 +330,7 @@ class ScalingBQN(calculables.secondary) :
             for i,(color,style) in enumerate(zip([r.kBlack,r.kRed,r.kBlue],[1,7,8])) :
                 h = self.hists[f+str(i)]
                 label = h.GetTitle().split(',')[1].replace("0.000<","").replace("<"," < ")
-                h.SetTitle(';(%s): p_{T}^{meas} (GeV);median log(E^{gen}/E^{meas})'%h.GetTitle().split(',')[0])
+                h.SetTitle(';#lower[0.2]{(%s): p_{#lower[-0.25]{T}}^{meas} (GeV)};#lower[-0.15]{Median log(E^{#lower[0.4]{gen}}/E^{#lower[0.4]{meas}})}'%h.GetTitle().split(',')[0])
                 h.SetLineColor(color)
                 h.SetLineStyle(style)
                 h.SetLineWidth(3 if style!=1 else 2)
@@ -348,7 +348,7 @@ class ScalingBQN(calculables.secondary) :
             stamp.SetTextSize(0.8 * ssize)
             stamp.DrawTextNDC(0.27, 0.96, "Simulation")
             stamp.SetTextFont(42)
-            stamp.DrawTextNDC(0.83, 0.96, "(8TeV)")
+            stamp.DrawTextNDC(0.83, 0.96, "(8 TeV)")
 
             c.Print(fileName)
         c.Print(fileName +']')
