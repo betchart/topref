@@ -257,7 +257,7 @@ class topAsymm(supy.analysis) :
                                                      labelsXY = ("m_{#hat{c}#hat{d}} (GeV)","m_{#hat{b}#hat{c}#hat{d}} (GeV)"),
                                                      tailSuppression=0.01, **ttSmpTag)
              , supy.calculables.other.CombinationsLR( var='HTopSigmasPQB', varMax=5, trueKey='IndicesGenTopPQH', label="MSD", **ttSmpTag)
-             , supy.calculables.other.CombinationsLR( var='LTopUnfitSqrtChi2', varMax=10, trueKey='IndexGenTopL', label="#chi_{a}", **ttSmpTag)
+             , supy.calculables.other.CombinationsLR( var='LTopUnfitSqrtChi2', varMax=10, trueKey='IndexGenTopL', label="#lower[0.08]{#sqrt{#lower[-0.08]{#chi^{2}_{a}}}}", **ttSmpTag)
              , supy.calculables.other.CombinationsLR( var='TopComboQQBBLikelihoodRatio', varMax=1, trueKey='IndicesGenTopQQBB', label='L_i^{CSV}/max(L^{CSV})', **ttSmpTag)
              , self.tridiscriminant(pars)
 
