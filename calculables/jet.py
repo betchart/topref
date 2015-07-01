@@ -322,7 +322,7 @@ class ScalingBQN(calculables.secondary) :
         ssize = stamp.GetTextSize()
 
         for f in 'BQN' :
-            leg = r.TLegend(0.4,0.6,0.9,0.95)
+            leg = r.TLegend(0.31,0.65,0.9,0.95)
             #leg.SetHeader("#eta range")
             leg.SetFillColor(r.kWhite)
             leg.SetBorderSize(0)
@@ -348,7 +348,8 @@ class ScalingBQN(calculables.secondary) :
             stamp.SetTextSize(0.8 * ssize)
             stamp.DrawTextNDC(0.27, 0.96, "Simulation")
             stamp.SetTextFont(42)
-            stamp.DrawTextNDC(0.83, 0.96, "(8 TeV)")
+            stamp.SetTextSize(ssize)
+            stamp.DrawTextNDC(0.8, 0.96, "(8 TeV)")
 
             c.Print(fileName)
         c.Print(fileName +']')
