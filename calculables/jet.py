@@ -201,7 +201,7 @@ class ProbabilityGivenBQN(calculables.secondary) :
         fileName = '/'.join(self.outputFileName.split('/')[:-1]+[self.name]) + '.pdf'
         c = r.TCanvas()
         c.Print(fileName +'[')
-        leg = r.TLegend(0.2,0.55,0.88,0.85)
+        leg = r.TLegend(0.18,0.55,0.95,0.85)
         #leg.SetHeader("jet flavor")
         leg.SetFillColor(r.kWhite)
         leg.SetBorderSize(0)
@@ -233,7 +233,8 @@ class ProbabilityGivenBQN(calculables.secondary) :
         stamp.SetTextSize(0.8 * ssize)
         stamp.DrawTextNDC(0.27, 0.96, "Simulation")
         stamp.SetTextFont(42)
-        stamp.DrawTextNDC(0.86, 0.96, "(8 TeV)")
+        stamp.SetTextSize(ssize)
+        stamp.DrawTextNDC(0.84, 0.96, "(8 TeV)")
 
 
         c.Print(fileName)
