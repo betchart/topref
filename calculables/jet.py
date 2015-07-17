@@ -341,7 +341,7 @@ class ScalingBQN(calculables.secondary) :
                 h.Draw("histsame" if i else "hist")
                 stamp.SetTextFont(42)
                 stamp.SetTextSize(ssize)
-                stamp.DrawTextNDC(0.2,0.2, {'B':'b jets', 'Q':'Jets from W boson', 'N':'Other jets'}[letter])
+                stamp.DrawTextNDC(0.2,0.2, {'B':'Jets from b quark hadronization', 'Q':'Jets from W boson decay', 'N':'Other jets'}[letter])
                 leg.AddEntry(h,label,'l')
             leg.Draw()
             r.gPad.RedrawAxis()
