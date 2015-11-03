@@ -11,10 +11,10 @@ eos = 'utils.fileListFromDisk(location="/eos/uscms/store/user/bbetchar/TOP/autom
 #!!!! lumi not checked for this run (406)
 
 elMuLoc = [
-    ({"Mu":( 809.3793, 0),"El":( 809.3793, 0)}, "2015_10_26_22_00_44/Single%s.Run2012A-22Jan2013-v1.AOD"),
-    ({"Mu":(4403.7631, 0),"El":(4396.6948, 0)}, "2015_10_26_23_04_30/Single%s.Run2012B-22Jan2013-v1.AOD"),
-    ({"Mu":(7021.7481, 0),"El":(7027.7248, 0)}, "2015_10_26_23_15_37/Single%s.Run2012C-22Jan2013-v1.AOD"),
-    ({"Mu":(7273.7043, 0),"El":(7273.1408, 0)}, "2015_10_26_23_31_27/Single%s.Run2012D-22Jan2013-v1.AOD")
+    ({"Mu":( 809.3793, 25150),"El":( 809.3793, 25148)}, "2015_10_26_22_00_44/Single%s.Run2012A-22Jan2013-v1.AOD"),
+    ({"Mu":(4403.7631, 60376),"El":(4396.6948, 60239)}, "2015_10_26_23_04_30/Single%s.Run2012B-22Jan2013-v1.AOD"),
+    ({"Mu":(7021.7481, 91829),"El":(7027.7248, 91662)}, "2015_10_26_23_15_37/Single%s.Run2012C-22Jan2013-v1.AOD"),
+    ({"Mu":(7273.7043, 86699),"El":(7273.1408, 86732)}, "2015_10_26_23_31_27/Single%s.Run2012D-22Jan2013-v1.AOD")
 ]
 
 counts = collections.defaultdict(int)
