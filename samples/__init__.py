@@ -12,4 +12,5 @@ for module in [
     "lepton119_fnal",
     "top119_fnal",
     "ewk119_fnal",
+    "lepton406_fnal",
     ] : exec("from __%s__ import %s"%(module,module))
