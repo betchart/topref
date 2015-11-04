@@ -38,10 +38,16 @@ class topAsymmJES(supy.analysis) :
         bCut = {"normal"   : {"index":0, "min":csvWP['CSVM']},
                 "inverted" : {"index":0, "min":csvWP['CSVL'], "max":csvWP['CSVM']}}
 
+        jesSys = {'Tot':'',
+                  'InS':'CorrelationGroupMPFInSitu',
+                  'Flv':'CorrelationGroupFlavor',
+                  'InC':'CorrelationGroupInterCallibration',
+                  'Unc':'CorrelationGroupUncorrelated'}
+
         return { "vary" : ['selection','lepton','toptype','smear','jec','ptscale'],
-                 "nullvary": list(itertools.combinations(['ju','jd',
+                 "nullvary": (list(itertools.combinations(['ju','jd',
                                                           'su','sd','mn','30','QCDSF','QCDx','topSF'
-                                                          ],2)),
+                                                          ],2)) + [('jn', sys) for sys in ['InS','Flv','InC','Unc']]),
                  "discriminant2DPlots": False,
                  "bVar" : "CSV", # "Combined Secondary Vertex"
                  "objects" : dict([(item,(item,'')) for item in ['jet','mu','el','met']]),
@@ -62,6 +68,7 @@ class topAsymmJES(supy.analysis) :
                                       #'su':'SmearUp','sd':'SmearDown'
                                       }),
                  "jec" : self.vary({'jn':0,'ju':1,'jd':-1}),
+                 "jecSys": self.vary(jesSys),
                  "topSamples": ("ttj_%s",['ttj_%s.wGG.%s','ttj_%s.wQG.%s','ttj_%s.wQQ.%s','ttj_%s.wAG.%s']),
                  }
 
@@ -150,7 +157,8 @@ class topAsymmJES(supy.analysis) :
         calcs += supy.calculables.fromCollections(calculables.top,[('genTop',""),('fitTop',"")])
         calcs += [
             calculables.met.AdjustedP4(met, jet, pars['smear'], djec=pars['jec']),
-            calculables.jet.AdjustedP4(jet, pars['smear'], pars['jec']),
+            calculables.jet.AdjustedP4(jet, pars['smear'], pars['jec'], jecUncSuffix=pars['jecSys']),
+            calculables.jet.DeltaMETJEC(jet, jecUncSuffix=pars['jecSys']),
             calculables.jet.Indices(jet,ptMin = 20 ),
             calculables.jet.IndicesBtagged(jet,pars["bVar"]),
             #supy.calculables.other.abbreviation('combinedSecondaryVertex','CSV',jet),
@@ -475,7 +483,7 @@ class topAsymmJES(supy.analysis) :
         supy.plotter(org, pdfFileName = self.pdfFileName(org.tag+"_nolog"), doLog=False, **kwargs ).plotAll()
 
     def statsname(self,org):
-        _,lepton,tt,smear,jec,pt = org.tag.split('_')
+        _,lepton,tt,smear,jec,pt,jesSys = org.tag.split('_')
         print org.tag
         return {'DY':'dy',
                 'W': 'wj',
@@ -586,7 +594,7 @@ class topAsymmJES(supy.analysis) :
             print tagSuffix, "not in", self.orgMelded.keys()
             print "run meldScale() before plotMeldScale()"; return
         melded = copy.deepcopy(self.orgMelded[tagSuffix])
-        lname,tt,sn,jn,ptMin = tagSuffix.split('_')
+        lname,tt,sn,jn,ptMin,jesSys = tagSuffix.split('_')
         for s in ['top.ttj_%s.%s.pu'%(tt,s) for s in ['wQQ','wQG','wAG','wGG']] :
             melded.drop(s)
         for log,label in [(False,""),(True,"_log")][:1] : 
@@ -605,7 +613,7 @@ class topAsymmJES(supy.analysis) :
         print melded.indicesOfStepsWithKey('fitTopDPtDPhi')
 
     def meldScale(self,tagSuffix) :
-        lname,tt,sn,jn,ptMin = tagSuffix.split('_')
+        lname,tt,sn,jn,ptMin,jesSys = tagSuffix.split('_')
         meldSamples = {"top_"+tagSuffix :( { 'mu': self.muons('.jw'),
                                              'el': self.electrons('.jw')}[lname]+
                                            ["ttj_%s"%tt]+self.single_top()+

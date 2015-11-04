@@ -5,11 +5,12 @@ except: np = None
 
 ##############################
 class AdjustedP4(wrappedChain.calculable) :
-    def __init__(self, collection = None, smear = "", jec = 0 ) :
+    def __init__(self, collection = None, smear = "", jec = 0, jecUncSuffix = "" ) :
         self.fixes = collection
         self.Smear = smear.join(collection)
+        self.JecUnc = ('JecUnc' + jecUncSuffix).join(collection)
         self.jec = jec
-        self.stash(['P4','JecUnc','JecFactor'])
+        self.stash(['P4','JecFactor'])
         self.moreName = "p4 * %s * (1 + %d * jecUnc/jecFac)" % (smear, jec)
 
     @staticmethod
@@ -21,10 +22,12 @@ class AdjustedP4(wrappedChain.calculable) :
                        utils.hackMap(self.smear, self.source[self.P4], self.source[self.Smear]) )
 ##############################
 class DeltaMETJEC(wrappedChain.calculable) :
-    def __init__(self, collection = None) :
+    def __init__(self, collection = None, jecUncSuffix = "") :
         self.fixes = collection
-        self.stashed = ['P4','JecFactor','JecUnc']
+        self.stashed = ['P4','JecFactor']
         self.stash(self.stashed)
+        self.JecUnc = ('JecUnc'+jecUncSuffix).join(collection)
+        self.stashed.append('JecUnc')
 
     @staticmethod
     def delta(p4,fac,unc) : return p4 * (-unc/fac)

@@ -149,6 +149,7 @@ class topAsymm(supy.analysis) :
         calcs += [
             calculables.met.AdjustedP4(met, jet, pars['smear'], djec=pars['jec']),
             calculables.jet.AdjustedP4(jet, pars['smear'], pars['jec']),
+            calculables.jet.DeltaMETJEC(jet),
             calculables.jet.Indices(jet,ptMin = 20 ),
             calculables.jet.IndicesBtagged(jet,pars["bVar"]),
             #supy.calculables.other.abbreviation('combinedSecondaryVertex','CSV',jet),
