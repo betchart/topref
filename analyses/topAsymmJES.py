@@ -30,7 +30,7 @@ class topAsymmJES(supy.analysis) :
             'etaMax'   : [                    2.1 ,                      2.5 ],
             'isoNormal': [             {"max":0.12},             {'max':0.10}],
             'isoInvert': [ {"min":0.13, "max":0.20},  {'min':0.11, 'max':0.15}],
-            'isoExtreme': [ {"min":0.16, "max":0.20}, {'min':0.13, 'max':0.15}],
+            'isoExtreme':[ {"min":0.16, "max":0.20},  {'min':0.13, 'max':0.15}],
             }
 
         #btag working points: https://twiki.cern.ch/twiki/bin/viewauth/CMS/BTagPerformanceOP
@@ -39,8 +39,10 @@ class topAsymmJES(supy.analysis) :
                 "inverted" : {"index":0, "min":csvWP['CSVL'], "max":csvWP['CSVM']}}
 
         return { "vary" : ['selection','lepton','toptype','smear','jec','ptscale'],
-                 "nullvary": list(itertools.combinations(['ju','jd','su','sd','mn','30','QCDSF','QCDx','topSF'],2)),
-                 "discriminant2DPlots": True,
+                 "nullvary": list(itertools.combinations(['ju','jd',
+                                                          'su','sd','mn','30','QCDSF','QCDx','topSF'
+                                                          ],2)),
+                 "discriminant2DPlots": False,
                  "bVar" : "CSV", # "Combined Secondary Vertex"
                  "objects" : dict([(item,(item,'')) for item in ['jet','mu','el','met']]),
                  "lepton" : self.vary([ ( leptons['name'][index], dict((key,val[index]) for key,val in leptons.iteritems()))
@@ -49,20 +51,22 @@ class topAsymmJES(supy.analysis) :
                  "selection" : self.vary({"top" : {"bCut":bCut["normal"],  "iso":"isoNormal", "sfActivated":False},
                                           "QCD" : {"bCut":bCut["normal"],  "iso":"isoInvert", "sfActivated":False},
                                           #"QCDx": {"bCut":bCut["normal"],  "iso":"isoExtreme", "sfActivated":False},
-                                          "topSF" : {"bCut":bCut["normal"],  "iso":"isoNormal", "sfActivated":True},
-                                          "QCDSF" : {"bCut":bCut["normal"],  "iso":"isoInvert", "sfActivated":True},
+                                          #"topSF" : {"bCut":bCut["normal"],  "iso":"isoNormal", "sfActivated":True},
+                                          #"QCDSF" : {"bCut":bCut["normal"],  "iso":"isoInvert", "sfActivated":True},
                                           }),
                  "toptype" : self.vary({"ph":"ph"}),#,'mn':'mn'}),
                  "ptscale" : self.vary({"20":20,
                                         #"30":30
                                         }),
-                 "smear" : self.vary({'sn':"Smear",'su':'SmearUp','sd':'SmearDown'}),
+                 "smear" : self.vary({'sn':"Smear",
+                                      #'su':'SmearUp','sd':'SmearDown'
+                                      }),
                  "jec" : self.vary({'jn':0,'ju':1,'jd':-1}),
                  "topSamples": ("ttj_%s",['ttj_%s.wGG.%s','ttj_%s.wQG.%s','ttj_%s.wQQ.%s','ttj_%s.wAG.%s']),
                  }
 
     @staticmethod
-    def doSystematics(pars) : return 'ph_sn_jn_20' in pars['tag'] and 'SF' not in pars['tag'] and 'QCDx' not in pars['tag']
+    def doSystematics(pars) : return False #'ph_sn_jn_20' in pars['tag'] and 'SF' not in pars['tag'] and 'QCDx' not in pars['tag']
 
     @staticmethod
     def scaleFactor() : return 1.0
@@ -91,7 +95,7 @@ class topAsymmJES(supy.analysis) :
 
         def ewk(eL = None) :
             dy = ['dy%dj_mg'%n for n in range(1,5)] if "QCD" not in pars['tag'] else []
-            w =  ['wbb_mg'] + ['w%dj_mg'%n for n in range(1,5)]
+            w =  (['wbb_mg'] + ['w%dj_mg'%n for n in range(1,5)])[1:]
             return supy.samples.specify( names = ( w + dy ),
                                          effectiveLumi = eL, color = 28, weights = [rw,'sf'] )
 
