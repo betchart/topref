@@ -41,7 +41,7 @@ class topAsymmJES(supy.analysis) :
         jesSys = {'Tot':'',
                   'InS':'CorrelationGroupMPFInSitu',
                   'Flv':'CorrelationGroupFlavor',
-                  'InC':'CorrelationGroupInterCallibration',
+                  'InC':'CorrelationGroupIntercalibration',
                   'Unc':'CorrelationGroupUncorrelated'}
 
         return { "vary" : ['selection','lepton','toptype','smear','jec','ptscale'],
@@ -437,7 +437,7 @@ class topAsymmJES(supy.analysis) :
         self.orgMelded = {}
         self.sensitivityPoints = {}
         self.rowcolors = 2*[13] + 2*[45]
-        super(topAsymm,self).concludeAll()
+        super(topAsymmJES,self).concludeAll()
 
         for tagSuffix in set( '_'.join(pars['tag'].split('_')[1:]) for pars in self.readyConfs) :
             self.meldScale(tagSuffix)
